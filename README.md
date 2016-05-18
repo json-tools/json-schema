@@ -1,9 +1,9 @@
 # Elm Hot Loader Starter Kit
 
 ## Requirements
-Elm 0.17+
-elm-webpack-loader 3.0.0+
-elm-hot-loader 0.3.0+
+* Elm 0.17+
+* elm-webpack-loader 3.0.0+
+* elm-hot-loader 0.3.0+
 
 ## Setup
 ```shell
