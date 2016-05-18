@@ -1,97 +1,108 @@
-import Effects exposing (Never)
-import Counter
-import StartApp
-import Task
-import Html exposing (div, text, ul, li, button, img, br)
-import Html.Attributes exposing (src)
-import Html.Events exposing (onClick)
+port module Main exposing (..)
 
-type Action 
-  = Empty -- this action does not modify model, just to trigger a re-render
-  | CounterAction Counter.Action
-  | AppendLog String
+import Html exposing (div, button, text, h2, input, ul, li)
+import Html.App exposing (program)
+import Html.Events exposing (onClick, onInput)
+import Html.Attributes exposing (..)
+import Time
 
--- for elm-hot-loader to trigger a re-render
-port swap : Signal Bool
 
-swapsignal : Signal Action
-swapsignal =
-  Signal.map (\_ -> Empty) swap
-
-app : StartApp.App Model
-app =
-  StartApp.start
+main : Program Never
+main =
+  program
     { init = init
-    , update = update
     , view = view
-    , inputs = [ swapsignal ]
+    , update = update
+    , subscriptions = subscriptions
     }
 
-type alias Model =
-  { counter : Counter.Model
+-- MODEL
+
+
+type alias Model = 
+  { count : Int
+  , elapsed : Int
+  , alertText : String
   , logs : List String
   }
 
-init : ( Model, Effects.Effects Action )
+init : (Model, Cmd msg)
 init =
-  ({ counter = Counter.init, logs = [] }, Effects.none)
+  (Model 0 0 "It works!" [], Cmd.none)
 
-update : Action -> Model -> ( Model, Effects.Effects Action) 
-update action model =
-  case action of
-    Empty -> (model, Effects.none)
 
-    CounterAction counterAction ->
-      let 
-        (counterModel, _) = Counter.update counterAction model.counter 
-      in
-        ( { model | 
-            counter = counterModel
-          }
-        , Effects.none
-        )
+-- UPDATE
 
-    AppendLog log ->
-      ( { model | 
-          logs = log :: model.logs        
-        }
-      , callJSLog log -- call js using port
-      )
 
-view : Signal.Address Action -> Model -> Html.Html
-view address model =
-  div []
-    [ text "counter:"
-    , Counter.view (Signal.forwardTo address CounterAction) model.counter 
-    , text "logs:"
-    , button [ onClick address (AppendLog (getLog model)) ] 
-        [ text "append log" ]
-    , ul [] (List.map (\log -> li [] [ text log ]) model.logs)
-    , text "powered by"
-    , br [] []
-    , img [ src "assets/logo.png" ] []
+type Msg = Increment | Decrement | Tick | Alert | ChangeAlertText String | Log String
+
+update : Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+  case msg of
+    Increment ->
+      ({ model | count = model.count + 1 }, Cmd.none)
+
+    Decrement ->
+      ({ model | count = model.count - 1 }, Cmd.none)
+
+    Tick ->
+      ({ model | elapsed = model.elapsed + 1}, Cmd.none)
+
+    Alert ->
+      (model, alert model.alertText)
+
+    ChangeAlertText text ->
+      ({ model | alertText = text }, Cmd.none)
+
+    Log text ->
+      ({ model | logs = text :: model.logs }, Cmd.none)
+
+port alert : String -> Cmd msg
+port log : (String -> msg) -> Sub msg
+
+
+-- SUBSCRIPTIONS
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+  Sub.batch
+    [ Time.every Time.second <| always Tick
+    , log Log
     ]
 
-main : Signal Html.Html
-main =
-  app.html
 
-port tasks : Signal (Task.Task Never ())
-port tasks =
-  app.tasks
+-- VIEW
 
-getLog : Model -> String
-getLog model =
-  ("Count = " ++ (toString model.counter))
+boxStyle : List ( String, String )
+boxStyle =
+  [ ("border", "1px solid #ccc")
+  , ("border-radius", "4px")
+  , ("padding", "10px")
+  , ("margin", "10px")
+  ]
 
-callJSLog : String -> Effects.Effects Action
-callJSLog log =
-  Signal.send logMailbox.address log
-    |> Effects.task
-    |> Effects.map (\_ -> Empty)
-
-logMailbox : Signal.Mailbox String
-logMailbox =
-  Signal.mailbox ""
-port logs : Signal String
-port logs = logMailbox.signal
+view : Model -> Html.Html Msg
+view model =
+  div []
+    [ div [ style boxStyle ]
+        [ h2 [] [ text "Counter" ]
+        , button [ onClick Decrement ] [ text "-" ]
+        , div [] [ text (toString model.count) ]
+        , button [ onClick Increment ] [ text "+" ]
+        ]
+    , div [ style boxStyle ]
+        [ h2 [] [ text "Time.every second" ]
+        , text <| "elapsed seconds: " ++ (toString model.elapsed)
+        ]
+    , div [ style boxStyle ]
+        [ h2 [] [ text "Outgoing Port" ]
+        , input [ type' "text", value model.alertText, onInput ChangeAlertText ] []
+        , button [ onClick Alert ] [ text "call alert" ]
+        ]
+    , div [ style boxStyle ]
+        [ h2 [] [ text "Incoming Port" ]
+        , ul [] <|
+            List.map (\t -> li [] [ text t]) model.logs
+        ]
+    ]
