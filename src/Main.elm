@@ -4,7 +4,7 @@ import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, (:
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault, lazy)
 import Json.Encode as Encode exposing (Value)
 import Http
-import Html exposing (div, button, text, form, input, ul, li)
+import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.App exposing (program)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
@@ -246,7 +246,8 @@ update msg model =
                 valueDecoder =
                     Decode.oneOf
                         [ Decode.map (\s -> Encode.string s) string
-                        , Decode.map (\d -> encodeDict d) (Decode.dict valueDecoder)
+                        , Decode.map (\d -> encodeDict d)
+                            (Decode.dict (DecodeExtra.lazy (\_ -> valueDecoder)))
                         ]
 
                 decodeDict val =
@@ -331,6 +332,11 @@ view model =
                     , Attrs.placeholder "Client secret (go grab it from db)"
                     , Attrs.name "credentials"
                     , onInput SetCredentials
+                    , style
+                        [ ( "width", "50%" )
+                        , ( "font-family", "menlo, monospace" )
+                        , ( "font-size", "12px" )
+                        ]
                     ]
                     []
                 , button [ onClick FetchServices ] [ text "Fetch services" ]
@@ -342,7 +348,7 @@ view model =
                     text ""
 
                 Just svcs ->
-                    renderServices svcs
+                    renderServices svcs model.serviceId
 
         schema =
             case model.schema of
@@ -428,14 +434,14 @@ renderSchema schema path inputData rootSchema =
                             digDefinition ref
             in
                 div [ style boxStyle ]
-                    [ text (name ++ ": ")
-                    , renderProperty expandedProperty (path ++ [ name ]) inputData schema
-                    , text
+                    [ text
                         (if required then
-                            " *"
+                            "* "
                          else
                             ""
                         )
+                    , text (name ++ ": ")
+                    , renderProperty expandedProperty (path ++ [ name ]) inputData schema
                     ]
 
         renderProps (Properties props) =
@@ -526,18 +532,19 @@ getString inputData path schema =
 getValue : List String -> InputData -> Value
 getValue path inputData =
     let
+        encodeDict dict =
+            Encode.object (Dict.toList dict)
+
         valueDecoder =
             Decode.oneOf
                 [ Decode.map (\s -> Encode.string s) string
-                , Decode.map (\d -> encodeDict d) (Decode.dict valueDecoder)
+                , Decode.map (\d -> encodeDict d)
+                    (Decode.dict (DecodeExtra.lazy (\_ -> valueDecoder)))
                 ]
 
         decodeDict val =
             Decode.decodeValue (Decode.dict valueDecoder) val
                 |> Result.withDefault Dict.empty
-
-        encodeDict dict =
-            Encode.object (Dict.toList dict)
     in
         case path of
             head :: [] ->
@@ -556,19 +563,37 @@ getValue path inputData =
                 Encode.string ""
 
 
-renderServices : List ServiceDescriptor -> Html.Html Msg
-renderServices services =
+renderServices : List ServiceDescriptor -> Id -> Html.Html Msg
+renderServices services id =
     div []
         [ div [ style boxStyle ]
             [ div []
                 (services
                     |> List.map
                         (\svc ->
-                            div
-                                [ style entityRowStyle
+                            span
+                                [ style
+                                    (entityRowStyle
+                                        ++ [ ( "margin-right", "10px" )
+                                           , ( "display", "inline-block" )
+                                           , ( "font-weight", "bold" )
+                                           , ( "background"
+                                             , if id == svc.id then
+                                                "black"
+                                               else
+                                                "lightgrey"
+                                             )
+                                           , ( "color"
+                                             , if id == svc.id then
+                                                "seashell"
+                                               else
+                                                "black"
+                                             )
+                                           ]
+                                    )
                                 , onClick (FetchSchema svc.id)
                                 ]
-                                [ text ("Service " ++ svc.id ++ ": " ++ svc.name) ]
+                                [ text (svc.name) ]
                         )
                 )
             ]
