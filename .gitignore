@@ -3,3 +3,4 @@ repl-temp-*
 elm-stuff
 dist
 .DS_Store
+npm-debug.log
