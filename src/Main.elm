@@ -9,6 +9,7 @@ import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.App exposing (program)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
+import Base64
 import Task
 import Dict
 import Set
@@ -62,9 +63,15 @@ type alias Job =
     , state : String
     }
 
+buildAuthHeader : String -> String
+buildAuthHeader clientSecretKey =
+    clientSecretKey ++ ":"
+        |> Base64.encode
+        |> Result.withDefault ""
+        |> (++) "Basic "
 
 fetchServices : String -> Cmd Msg
-fetchServices credentials =
+fetchServices clientSecretKey =
     Task.perform FetchError
         FetchServicesSuccess
         (Http.fromJson
@@ -72,7 +79,7 @@ fetchServices credentials =
             (Http.send
                 Http.defaultSettings
                 { verb = "GET"
-                , headers = [ ( "Authorization", "Basic " ++ credentials ) ]
+                , headers = [ ( "Authorization", buildAuthHeader clientSecretKey) ]
                 , url = "http://localhost:3000/services"
                 , body = Http.empty
                 }
@@ -81,12 +88,12 @@ fetchServices credentials =
 
 
 fetchSchema : String -> Id -> Cmd Msg
-fetchSchema credentials id =
+fetchSchema clientSecretKey id =
     Task.perform
         ResponseError
         FetchSchemaSuccess
         (HttpBuilder.get ("http://localhost:3000/services/" ++ id)
-            |> HttpBuilder.withHeader "Authorization" ("Basic " ++ credentials)
+            |> HttpBuilder.withHeader "Authorization" (buildAuthHeader clientSecretKey)
             |> HttpBuilder.send
                 (HttpBuilder.jsonReader (Decode.at [ "schema" ] Decode.value))
                 (HttpBuilder.stringReader)
@@ -103,12 +110,12 @@ fetchSchema credentials id =
 
 
 submitJob : String -> Id -> Value -> Cmd Msg
-submitJob credentials serviceId inputData =
+submitJob clientSecretKey serviceId inputData =
     Task.perform
         SubmitJobError
         SubmitJobSuccess
         (HttpBuilder.post "http://localhost:3000/jobs"
-            |> HttpBuilder.withHeader "Authorization" ("Basic " ++ credentials)
+            |> HttpBuilder.withHeader "Authorization" (buildAuthHeader clientSecretKey)
             |> HttpBuilder.withJsonBody
                 (Encode.object
                     [ ( "service_id", Encode.string serviceId )
@@ -146,7 +153,7 @@ init =
         -- validationErrors
         Dict.empty
         -- credentials
-        "MGNkNTcxNjZjMGQ1YzE3NTMwZWE3NzZkOTExZDNlMDliMjAzNTUzNjMyNWFhMzVjOg=="
+        "MjRmMmY0ZDg1NTM3MTk1MDQ2ZjM0YmE5NWRiYzQ0ODU1MTU4ZDE4MmFkM2Y5NmExOg=="
         -- schema
         Nothing
         -- input
@@ -188,7 +195,7 @@ update msg model =
             { model | credentials = c } ! []
 
         FetchServices ->
-            model ! [ fetchServices model.credentials ]
+            { model | error = "" } ! [ fetchServices model.credentials ]
 
         FetchError err ->
             { model | error = toString err } ! []
@@ -200,7 +207,7 @@ update msg model =
             { model | services = Just svcs } ! []
 
         FetchSchema id ->
-            { model | serviceId = id } ! [ fetchSchema model.credentials id ]
+            { model | serviceId = id, error = "" } ! [ fetchSchema model.credentials id ]
 
         FetchSchemaSuccess { data } ->
             let
@@ -230,7 +237,7 @@ update msg model =
         SubmitJob ->
             case model.input of
                 Just input ->
-                    model ! [ submitJob model.credentials model.serviceId input ]
+                    { model | error = "" } ! [ submitJob model.credentials model.serviceId input ]
 
                 Nothing ->
                     model ! []
