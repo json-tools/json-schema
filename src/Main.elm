@@ -470,12 +470,26 @@ renderSchema schema path inputData rootSchema validationErrors =
     in
         div [] (renderProps schema.properties)
 
+renderSelect : List String -> Schema -> Bool -> List String -> Value -> Schema -> Html.Html Msg
+renderSelect options prop required path inputData schema =
+    options
+        |> List.map (\opt -> Html.option [] [ text opt ])
+        |> Html.select
+            [ Html.Events.onInput (\s -> UpdateProperty path <| Encode.string s)
+            , Attrs.value <| JS.getString schema path inputData
+            ]
+
 
 renderProperty : Schema -> Bool -> List String -> Value -> Schema -> ValidationErrors -> Html.Html Msg
 renderProperty prop required path inputData schema validationErrors =
     case prop.type_ of
         "string" ->
-            renderInput prop required path inputData schema
+            case prop.enum of
+                Nothing ->
+                    renderInput prop required path inputData schema
+
+                Just enum ->
+                    renderSelect enum prop required path inputData schema
 
         "integer" ->
             renderInput prop required path inputData schema
