@@ -288,6 +288,8 @@ boxStyle =
     , ( "border-radius", "2px" )
     , ( "padding", "10px" )
     , ( "margin", "10px" )
+    , ( "font-family", "iosevka, firacode, menlo, monospace" )
+    , ( "font-size", "14px" )
     ]
 
 
@@ -375,8 +377,18 @@ renderSchema schema path inputData rootSchema validationErrors =
 
                 propPath =
                     path ++ [ name ]
+
+                validationError =
+                    Dict.get propPath validationErrors
+                        |> Maybe.withDefault ""
+
+                rowStyle =
+                    if String.isEmpty validationError then
+                        boxStyle
+                    else
+                        boxStyle ++ [ ( "border-color", "red" ) ]
             in
-                div [ style boxStyle ]
+                div [ style rowStyle ]
                     [ text
                         (if required then
                             "* "
@@ -385,7 +397,20 @@ renderSchema schema path inputData rootSchema validationErrors =
                         )
                     , text (name ++ ": ")
                     , renderProperty property required propPath inputData rootSchema validationErrors
-                    , text (Maybe.withDefault "" (Dict.get propPath validationErrors))
+                    , if String.isEmpty validationError then
+                        text ""
+                      else
+                        span
+                            [ style
+                                [ ( "display", "inline-block" )
+                                , ( "font-style", "italic" )
+                                , ( "background", "lightyellow" )
+                                , ( "color", "red" )
+                                  -- , ( "font-weight", "bold" )
+                                , ( "margin-top", "5px" )
+                                ]
+                            ]
+                            [ text validationError ]
                     ]
 
         renderProps (JS.Properties props) =
@@ -434,17 +459,29 @@ renderArray p required path inputData s validationErrors =
             (([0..(length - 1)]
                 |> List.map
                     (\index ->
-                        renderProperty
-                            property
-                            required
-                            (path ++ [ toString index ])
-                            inputData
-                            schema
-                            validationErrors
+                        div [ style boxStyle ]
+                            [ text ("#" ++ (toString (index + 1)))
+                            , renderProperty
+                                property
+                                required
+                                (path ++ [ toString index ])
+                                inputData
+                                schema
+                                validationErrors
+                            ]
                     )
              )
                 ++ [ span
                         [ onClick (UpdateProperty (path ++ [ toString length ]) (JS.defaultFor property))
+                        , style
+                            [ ("background", "lightgoldenrodyellow")
+                            , ("cursor", "pointer" )
+                            , ("border", "1px solid royalblue")
+                            , ("color", "royalblue")
+                            , ("margin", "10px")
+                            , ("padding", "5px")
+                            , ("display", "inline-block")
+                            ]
                         ]
                         [ text "Add item" ]
                    ]
@@ -458,6 +495,18 @@ renderInput property required path inputData schema =
             case property.format of
                 Just "uri" ->
                     "url"
+
+                Just "email" ->
+                    "email"
+
+                Just "date" ->
+                    "date"
+
+                Just "phone" ->
+                    "tel"
+
+                Just "color" ->
+                    "color"
 
                 _ ->
                     case property.type_ of
@@ -510,7 +559,15 @@ renderInput property required path inputData schema =
                         )
                 )
             , style [ ( "font-family", "menlo, monospace" ), ( "width", "100%" ) ]
-            , Attrs.value (JS.getString schema path inputData)
+            , Attrs.value
+                (case property.type_ of
+                    "integer" ->
+                        JS.getInt schema path inputData
+                            |> toString
+
+                    _ ->
+                        JS.getString schema path inputData
+                )
             ]
             []
 
@@ -554,7 +611,7 @@ renderServices services id =
                                              )
                                            , ( "color"
                                              , if id == svc.id then
-                                                "seashell"
+                                                "lightyellow"
                                                else
                                                 "black"
                                              )

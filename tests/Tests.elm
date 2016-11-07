@@ -5,7 +5,7 @@ import JsonSchema as JS exposing (Schema, empty)
 
 --import Json.Decode as Decode exposing (decodeString, value)
 
-import Json.Encode as Encode exposing (Value, string, object, list)
+import Json.Encode as Encode exposing (Value, string, int, object, list)
 import Test exposing (..)
 import Expect
 
@@ -43,12 +43,18 @@ all =
                         |> Expect.equal (Ok empty)
             ]
         , describe "Manipulation"
-            [ skip "simple object" <|
+            [ test "simple object with string" <|
                 \() ->
                     blankRoot
                         |> JS.setValue simpleSchema [ "foo" ] (string "bar")
                         |> Expect.equal (object [ ( "foo", string "bar" ) ])
-            , skip "nested object" <|
+            , test "simple object with int" <|
+                \() ->
+                    blankRoot
+                        |> JS.setValue simpleIntSchema [ "foo" ] (int 0)
+                        |> JS.getValue simpleIntSchema [ "foo" ]
+                        |> Expect.equal (int 0)
+            , test "nested object" <|
                 \() ->
                     blankRoot
                         |> JS.setValue nestedSchema [ "foo", "bar" ] (string "baz")
@@ -91,6 +97,14 @@ simpleSchema : Schema
 simpleSchema =
     schema """
         { "properties": { "foo": { type: "string" } }
+        }
+    """
+
+
+simpleIntSchema : Schema
+simpleIntSchema =
+    schema """
+        { "properties": { "foo": { type: "integer" } }
         }
     """
 

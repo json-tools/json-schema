@@ -32,7 +32,7 @@ empty : Schema
 empty =
     Schema
         -- type_
-        "object"
+        ""
         -- required []
         Set.empty
         -- format
@@ -52,19 +52,19 @@ empty =
 fromString : String -> Result String Schema
 fromString str =
     Decode.decodeString decodeSchema str
-        `Result.andThen` expandRefs
+        `Result.andThen` convert
 
 
 fromValue : Value -> Result String Schema
 fromValue val =
     Decode.decodeValue decodeSchema val
-        `Result.andThen` expandRefs
+        `Result.andThen` convert
 
 
 decodeSchema : Decoder Schema
 decodeSchema =
     succeed Schema
-        |: (withDefault "object" ("type" := string))
+        |: (withDefault "" ("type" := string))
         |: (withDefault Set.empty ("required" := DecodeExtra.set string))
         |: (maybe ("format" := string))
         |: (maybe ("$ref" := string))
@@ -95,8 +95,8 @@ traverse schema path =
             Nothing
 
 
-expandRefs : Schema -> Result String Schema
-expandRefs rootSchema =
+convert : Schema -> Result String Schema
+convert rootSchema =
     let
         digDefinition : String -> Schema -> Result String Schema
         digDefinition ref node =
@@ -113,7 +113,7 @@ expandRefs rootSchema =
                 tryNext ( key, prop ) list =
                     case walk prop of
                         Ok p ->
-                            Ok (list ++ [ ( key, p ) ])
+                            Ok ( (key, p )  :: list)
 
                         Err s ->
                             Err s
@@ -145,6 +145,32 @@ expandRefs rootSchema =
                         Err s ->
                             Err s
 
+
+        clarifyType node =
+            let
+                checkEnum node =
+                    case node.enum of
+                        Nothing -> checkItems node
+                        Just enum -> { node | type_ = "string" }
+
+                checkProperties node (Properties p) =
+                    if List.isEmpty p then
+                        { node | type_ = "any" }
+                    else
+                        { node | type_ = "object" }
+
+                checkItems node =
+                    case node.items of
+                        Nothing -> checkProperties node node.properties
+                        Just items -> { node | type_ = "array" }
+
+
+            in
+                if String.isEmpty node.type_ then
+                    Ok (checkEnum node)
+                else
+                    Ok node
+
         walk : Schema -> Result String Schema
         walk node =
             case node.ref of
@@ -152,7 +178,10 @@ expandRefs rootSchema =
                     digDefinition ref node
 
                 Nothing ->
-                    updateProperties node `Result.andThen` updateArrayItemDef
+                    updateProperties node
+                        `Result.andThen` updateArrayItemDef
+                        `Result.andThen` clarifyType
+
     in
         walk rootSchema
 
@@ -249,6 +278,13 @@ setValue schema subPath finalValue dataNode =
                                 finalValue
     in
         result
+
+
+getInt : Schema -> List String -> Value -> Int
+getInt schema path value =
+    getValue schema path value
+        |> Decode.decodeValue Decode.int
+        |> Result.withDefault 0
 
 
 getString : Schema -> List String -> Value -> String
