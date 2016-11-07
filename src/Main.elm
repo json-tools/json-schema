@@ -6,7 +6,7 @@ import Json.Encode as Encode exposing (Value)
 import Http
 import HttpBuilder
 import Html exposing (div, span, button, text, form, input, ul, li)
-import Html.App exposing (program)
+import Html.App exposing (programWithFlags)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
 import Base64
@@ -17,15 +17,16 @@ import String
 import JsonSchema as JS exposing (Schema)
 
 
-main : Program Never
+main : Program (Maybe ServiceApiConfig)
 main =
-    program
+    programWithFlags
         { init = init
         , view = view
         , update = update
         , subscriptions = subscriptions
         }
 
+port storeConfig : ServiceApiConfig -> Cmd msg
 
 
 -- MODEL
@@ -39,13 +40,17 @@ type alias Model =
     { services : Maybe (List ServiceDescriptor)
     , error : String
     , validationErrors : ValidationErrors
-    , credentials : String
+    , apiConfig : ServiceApiConfig
     , schema : Maybe Schema
     , input : Maybe Value
     , serviceId : Id
     , job : Maybe Job
     }
 
+type alias ServiceApiConfig =
+    { apiHost : String
+    , clientSecretKey : String
+    }
 
 type alias ServiceDescriptor =
     { id : Id
@@ -70,8 +75,8 @@ buildAuthHeader clientSecretKey =
         |> Result.withDefault ""
         |> (++) "Basic "
 
-fetchServices : String -> Cmd Msg
-fetchServices clientSecretKey =
+fetchServices : ServiceApiConfig -> Cmd Msg
+fetchServices apiConfig =
     Task.perform FetchError
         FetchServicesSuccess
         (Http.fromJson
@@ -79,21 +84,21 @@ fetchServices clientSecretKey =
             (Http.send
                 Http.defaultSettings
                 { verb = "GET"
-                , headers = [ ( "Authorization", buildAuthHeader clientSecretKey) ]
-                , url = "http://localhost:3000/services"
+                , headers = [ ( "Authorization", buildAuthHeader apiConfig.clientSecretKey) ]
+                , url = apiConfig.apiHost ++ "/services"
                 , body = Http.empty
                 }
             )
         )
 
 
-fetchSchema : String -> Id -> Cmd Msg
-fetchSchema clientSecretKey id =
+fetchSchema : ServiceApiConfig -> Id -> Cmd Msg
+fetchSchema apiConfig id =
     Task.perform
         ResponseError
         FetchSchemaSuccess
-        (HttpBuilder.get ("http://localhost:3000/services/" ++ id)
-            |> HttpBuilder.withHeader "Authorization" (buildAuthHeader clientSecretKey)
+        (HttpBuilder.get (apiConfig.apiHost ++ "/services/" ++ id)
+            |> HttpBuilder.withHeader "Authorization" (buildAuthHeader apiConfig.clientSecretKey)
             |> HttpBuilder.send
                 (HttpBuilder.jsonReader (Decode.at [ "schema" ] Decode.value))
                 (HttpBuilder.stringReader)
@@ -109,13 +114,14 @@ fetchSchema clientSecretKey id =
         )
 
 
-submitJob : String -> Id -> Value -> Cmd Msg
-submitJob clientSecretKey serviceId inputData =
+submitJob : ServiceApiConfig -> Id -> Value -> Cmd Msg
+submitJob apiConfig serviceId inputData =
     Task.perform
         SubmitJobError
         SubmitJobSuccess
-        (HttpBuilder.post "http://localhost:3000/jobs"
-            |> HttpBuilder.withHeader "Authorization" (buildAuthHeader clientSecretKey)
+        (HttpBuilder.post (apiConfig.apiHost ++ "/jobs")
+            |> HttpBuilder.withHeader "Authorization"
+                (buildAuthHeader apiConfig.clientSecretKey)
             |> HttpBuilder.withJsonBody
                 (Encode.object
                     [ ( "service_id", Encode.string serviceId )
@@ -143,8 +149,8 @@ decodeService =
         |: ("type" := string)
 
 
-init : ( Model, Cmd msg )
-init =
+init : Maybe ServiceApiConfig -> ( Model, Cmd msg )
+init apiConfig =
     Model
         -- list services
         Nothing
@@ -152,8 +158,11 @@ init =
         ""
         -- validationErrors
         Dict.empty
-        -- credentials
-        "MjRmMmY0ZDg1NTM3MTk1MDQ2ZjM0YmE5NWRiYzQ0ODU1MTU4ZDE4MmFkM2Y5NmExOg=="
+        -- apiConfig
+        (Maybe.withDefault
+            (ServiceApiConfig "http://localhost:3000" "")
+            apiConfig
+        )
         -- schema
         Nothing
         -- input
@@ -171,7 +180,8 @@ init =
 
 type Msg
     = NoOp
-    | SetCredentials String
+    | SetClientSecretKey String
+    | SetApiHost String
     | FetchServices
     | FetchError Http.Error
     | FetchServicesSuccess (List ServiceDescriptor)
@@ -191,11 +201,26 @@ update msg model =
         NoOp ->
             model ! []
 
-        SetCredentials c ->
-            { model | credentials = c } ! []
+        SetClientSecretKey c ->
+            let
+                updateConfig config =
+                    { config | clientSecretKey = c }
+
+                updated = updateConfig model.apiConfig
+            in
+                { model | apiConfig = updated } ! [ storeConfig updated ]
+
+        SetApiHost c ->
+            let
+                updateConfig config =
+                    { config | apiHost = c }
+
+                updated = updateConfig model.apiConfig
+            in
+                { model | apiConfig = updated } ! [ storeConfig updated ]
 
         FetchServices ->
-            { model | error = "" } ! [ fetchServices model.credentials ]
+            { model | error = "" } ! [ fetchServices model.apiConfig ]
 
         FetchError err ->
             { model | error = toString err } ! []
@@ -207,7 +232,7 @@ update msg model =
             { model | services = Just svcs } ! []
 
         FetchSchema id ->
-            { model | serviceId = id, error = "" } ! [ fetchSchema model.credentials id ]
+            { model | serviceId = id, error = "" } ! [ fetchSchema model.apiConfig id ]
 
         FetchSchemaSuccess { data } ->
             let
@@ -237,7 +262,7 @@ update msg model =
         SubmitJob ->
             case model.input of
                 Just input ->
-                    { model | error = "" } ! [ submitJob model.credentials model.serviceId input ]
+                    { model | error = "" } ! [ submitJob model.apiConfig model.serviceId input ]
 
                 Nothing ->
                     model ! []
@@ -314,21 +339,39 @@ view : Model -> Html.Html Msg
 view model =
     let
         credentials =
-            div [ style boxStyle ]
+            form [ style boxStyle, onSubmit FetchServices ]
                 [ input
-                    [ Attrs.value model.credentials
-                    , Attrs.autocomplete False
-                    , Attrs.placeholder "Client secret (go grab it from db)"
-                    , Attrs.name "credentials"
-                    , onInput SetCredentials
+                    [ Attrs.value model.apiConfig.apiHost
+                    , Attrs.autocomplete True
+                    , Attrs.placeholder "Service API url"
+                    , Attrs.name "api-host"
+                    , Attrs.type' "url"
+                    , onInput SetApiHost
                     , style
-                        [ ( "width", "50%" )
+                        [ ( "width", "200px" )
                         , ( "font-family", "menlo, monospace" )
                         , ( "font-size", "12px" )
                         ]
                     ]
                     []
-                , button [ onClick FetchServices ] [ text "Fetch services" ]
+                , input
+                    [ Attrs.value model.apiConfig.clientSecretKey
+                    , Attrs.autocomplete False
+                    , Attrs.placeholder "Client secret key (go grab it from db)"
+                    , Attrs.name "client-secret-key"
+                    , onInput SetClientSecretKey
+                    , style
+                        [ ( "width", "300px" )
+                        , ( "font-family", "menlo, monospace" )
+                        , ( "font-size", "12px" )
+                        ]
+                    ]
+                    []
+                , button
+                    [ Attrs.type' "submit"
+                    , Attrs.disabled
+                        (String.isEmpty model.apiConfig.clientSecretKey)
+                    ] [ text "Fetch services" ]
                 ]
 
         services =
