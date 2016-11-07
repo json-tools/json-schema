@@ -237,7 +237,9 @@ update msg model =
         FetchSchemaSuccess { data } ->
             let
                 updatedSchema =
-                    Debug.log "updated schema" ((Result.withDefault JS.empty (JS.fromValue data)))
+                    Debug.log "updated schema"
+                        <| Result.withDefault JS.empty
+                        <| JS.fromValue data
             in
                 { model | schema = Just updatedSchema } ! []
 

@@ -32,7 +32,7 @@ empty : Schema
 empty =
     Schema
         -- type_
-        ""
+        "any"
         -- required []
         Set.empty
         -- format
@@ -149,9 +149,14 @@ convert rootSchema =
         clarifyType node =
             let
                 checkEnum node =
-                    case node.enum of
+                    case Debug.log "checkEnum" node.enum of
                         Nothing -> checkItems node
                         Just enum -> { node | type_ = "string" }
+
+                checkItems node =
+                    case node.items of
+                        Nothing -> checkProperties node node.properties
+                        Just items -> { node | type_ = "array" }
 
                 checkProperties node (Properties p) =
                     if List.isEmpty p then
@@ -159,28 +164,25 @@ convert rootSchema =
                     else
                         { node | type_ = "object" }
 
-                checkItems node =
-                    case node.items of
-                        Nothing -> checkProperties node node.properties
-                        Just items -> { node | type_ = "array" }
-
 
             in
-                if String.isEmpty node.type_ then
+                if String.isEmpty node.type_ || node.type_ == "any" then
                     Ok (checkEnum node)
                 else
                     Ok node
 
         walk : Schema -> Result String Schema
         walk node =
-            case node.ref of
+            (case node.ref of
                 Just ref ->
                     digDefinition ref node
 
                 Nothing ->
-                    updateProperties node
-                        `Result.andThen` updateArrayItemDef
-                        `Result.andThen` clarifyType
+                    Ok node
+            )
+                `Result.andThen` updateProperties
+                `Result.andThen` updateArrayItemDef
+                `Result.andThen` clarifyType
 
     in
         walk rootSchema

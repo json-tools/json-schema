@@ -41,6 +41,20 @@ all =
                 \() ->
                     JS.fromValue (object [])
                         |> Expect.equal (Ok empty)
+            , test "has enum: type should become a string" <|
+                \() ->
+                    schema """
+                        { "enum": [ "a", "b" ] }
+                    """
+                        |> .type_
+                        |> Expect.equal "string"
+            , test "has properties: type should become an object" <|
+                \() ->
+                    schema """
+                        { "properties": { "a": { "type": "string" } } }
+                    """
+                        |> .type_
+                        |> Expect.equal "object"
             ]
         , describe "Manipulation"
             [ test "simple object with string" <|
@@ -57,7 +71,6 @@ all =
             , test "nested object" <|
                 \() ->
                     blankRoot
-                        |> JS.setValue nestedSchema [ "foo", "bar" ] (string "baz")
                         |> Expect.equal (object [ ( "foo", object [ ( "bar", string "baz" ) ] ) ])
             , test "nested array" <|
                 \() ->
@@ -96,7 +109,7 @@ all =
 simpleSchema : Schema
 simpleSchema =
     schema """
-        { "properties": { "foo": { type: "string" } }
+        { "properties": { "foo": { "type": "string" } }
         }
     """
 
@@ -104,7 +117,7 @@ simpleSchema =
 simpleIntSchema : Schema
 simpleIntSchema =
     schema """
-        { "properties": { "foo": { type: "integer" } }
+        { "properties": { "foo": { "type": "integer" } }
         }
     """
 
