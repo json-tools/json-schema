@@ -14,14 +14,14 @@ type alias Schema =
     , format : Maybe String
     , ref : Maybe String
     , enum : Maybe (List String)
-    , items : Maybe ArrayItems
+    , items : Maybe ArrayItemDefinition
     , properties : Properties
     , definitions : Properties
     }
 
 
-type ArrayItems
-    = ArrayItems (Schema)
+type ArrayItemDefinition
+    = ArrayItemDefinition (Schema)
 
 
 type Properties
@@ -69,7 +69,7 @@ decodeSchema =
         |: (maybe ("format" := string))
         |: (maybe ("$ref" := string))
         |: (maybe ("enum" := (Decode.list string)))
-        |: (maybe ("items" := (lazy (\_ -> Decode.map ArrayItems decodeSchema))))
+        |: (maybe ("items" := (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema))))
         |: (withDefault (Properties []) ("properties" := (lazy (\_ -> decodeProperties))))
         |: (withDefault (Properties []) ("definitions" := (lazy (\_ -> decodeProperties))))
 
@@ -137,10 +137,10 @@ convert rootSchema =
                 Nothing ->
                     Ok node
 
-                Just (ArrayItems def) ->
+                Just (ArrayItemDefinition def) ->
                     case walk def of
                         Ok newDef ->
-                            Ok { node | items = Just (ArrayItems newDef) }
+                            Ok { node | items = Just (ArrayItemDefinition newDef) }
 
                         Err s ->
                             Err s
@@ -244,7 +244,7 @@ setValue schema subPath finalValue dataNode =
                                                     (\index item ->
                                                         if index == i then
                                                             case schema.items of
-                                                                Just (ArrayItems prop) ->
+                                                                Just (ArrayItemDefinition prop) ->
                                                                     setValue
                                                                         prop
                                                                         tail
@@ -265,7 +265,7 @@ setValue schema subPath finalValue dataNode =
                                         Debug.log "just upd" list
                                      else
                                         (case schema.items of
-                                            Just (ArrayItems prop) ->
+                                            Just (ArrayItemDefinition prop) ->
                                                 list
                                                     ++ [ defaultFor prop ]
 
@@ -374,7 +374,7 @@ getValue schema path inputData =
                             (String.toInt key |> Result.withDefault 0)
                     in
                         case schema.items of
-                            Just (ArrayItems def) ->
+                            Just (ArrayItemDefinition def) ->
                                 inputData
                                     |> decodeList
                                     |> List.drop i
@@ -393,3 +393,7 @@ getValue schema path inputData =
 withDefaultFor : Schema -> Maybe Value -> Value
 withDefaultFor schema a =
     (Maybe.withDefault (defaultFor schema) a)
+
+mapProperties : Properties -> ( ( String, Schema ) -> a) -> List a
+mapProperties (Properties props) fn =
+    List.map fn props

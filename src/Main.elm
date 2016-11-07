@@ -3,7 +3,6 @@ port module Main exposing (..)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, (:=))
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault, lazy)
 import Json.Encode as Encode exposing (Value)
-import Http
 import HttpBuilder
 import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.App exposing (programWithFlags)
@@ -26,7 +25,9 @@ main =
         , subscriptions = subscriptions
         }
 
+
 port storeConfig : ServiceApiConfig -> Cmd msg
+
 
 
 -- MODEL
@@ -47,10 +48,23 @@ type alias Model =
     , job : Maybe Job
     }
 
+
+type alias Path =
+    List String
+
+
+type alias Context =
+    { root : Schema
+    , data : Value
+    , errors : ValidationErrors
+    }
+
+
 type alias ServiceApiConfig =
     { apiHost : String
     , clientSecretKey : String
     }
+
 
 type alias ServiceDescriptor =
     { id : Id
@@ -68,28 +82,30 @@ type alias Job =
     , state : String
     }
 
+
 buildAuthHeader : String -> String
 buildAuthHeader clientSecretKey =
-    clientSecretKey ++ ":"
+    clientSecretKey
+        ++ ":"
         |> Base64.encode
         |> Result.withDefault ""
         |> (++) "Basic "
 
+
 fetchServices : ServiceApiConfig -> Cmd Msg
 fetchServices apiConfig =
-    Task.perform FetchError
-        FetchServicesSuccess
-        (Http.fromJson
-            (Decode.at [ "data" ] (Decode.list decodeService))
-            (Http.send
-                Http.defaultSettings
-                { verb = "GET"
-                , headers = [ ( "Authorization", buildAuthHeader apiConfig.clientSecretKey) ]
-                , url = apiConfig.apiHost ++ "/services"
-                , body = Http.empty
-                }
+    if String.isEmpty apiConfig.clientSecretKey then
+        Cmd.none
+    else
+        Task.perform
+            ResponseError
+            FetchServicesSuccess
+            (HttpBuilder.get (apiConfig.apiHost ++ "/services")
+                |> HttpBuilder.withHeader "Authorization" (buildAuthHeader apiConfig.clientSecretKey)
+                |> HttpBuilder.send
+                    (HttpBuilder.jsonReader <| Decode.at [ "data" ] <| Decode.list decodeService)
+                    (HttpBuilder.stringReader)
             )
-        )
 
 
 fetchSchema : ServiceApiConfig -> Id -> Cmd Msg
@@ -100,17 +116,8 @@ fetchSchema apiConfig id =
         (HttpBuilder.get (apiConfig.apiHost ++ "/services/" ++ id)
             |> HttpBuilder.withHeader "Authorization" (buildAuthHeader apiConfig.clientSecretKey)
             |> HttpBuilder.send
-                (HttpBuilder.jsonReader (Decode.at [ "schema" ] Decode.value))
+                (HttpBuilder.jsonReader <| Decode.at [ "schema" ] Decode.value)
                 (HttpBuilder.stringReader)
-         -- (Decode.at [ "schema" ] JS.decodeSchema)
-         -- (Http.send
-         --     Http.defaultSettings
-         --     { verb = "GET"
-         --     , headers = [ ( "Authorization", "Basic " ++ credentials ) ]
-         --     , url =
-         --     , body = Http.empty
-         --     }
-         -- )
         )
 
 
@@ -149,29 +156,30 @@ decodeService =
         |: ("type" := string)
 
 
-init : Maybe ServiceApiConfig -> ( Model, Cmd msg )
+init : Maybe ServiceApiConfig -> ( Model, Cmd Msg )
 init apiConfig =
-    Model
-        -- list services
-        Nothing
-        -- error
-        ""
-        -- validationErrors
-        Dict.empty
-        -- apiConfig
-        (Maybe.withDefault
-            (ServiceApiConfig "http://localhost:3000" "")
-            apiConfig
-        )
-        -- schema
-        Nothing
-        -- input
-        Nothing
-        -- serviceId
-        ""
-        -- job
-        Nothing
-        ! []
+    let
+        cfg =
+            apiConfig |> Maybe.withDefault (ServiceApiConfig "http://localhost:3000" "")
+    in
+        Model
+            -- list services
+            Nothing
+            -- error
+            ""
+            -- validationErrors
+            Dict.empty
+            -- apiConfig
+            cfg
+            -- schema
+            Nothing
+            -- input
+            Nothing
+            -- serviceId
+            ""
+            -- job
+            Nothing
+            ! [ fetchServices cfg ]
 
 
 
@@ -183,8 +191,7 @@ type Msg
     | SetClientSecretKey String
     | SetApiHost String
     | FetchServices
-    | FetchError Http.Error
-    | FetchServicesSuccess (List ServiceDescriptor)
+    | FetchServicesSuccess (HttpBuilder.Response (List ServiceDescriptor))
     | FetchSchema Id
     | FetchSchemaSuccess (HttpBuilder.Response Value)
     | UpdateProperty (List String) Value
@@ -206,7 +213,8 @@ update msg model =
                 updateConfig config =
                     { config | clientSecretKey = c }
 
-                updated = updateConfig model.apiConfig
+                updated =
+                    updateConfig model.apiConfig
             in
                 { model | apiConfig = updated } ! [ storeConfig updated ]
 
@@ -215,21 +223,19 @@ update msg model =
                 updateConfig config =
                     { config | apiHost = c }
 
-                updated = updateConfig model.apiConfig
+                updated =
+                    updateConfig model.apiConfig
             in
                 { model | apiConfig = updated } ! [ storeConfig updated ]
 
         FetchServices ->
             { model | error = "" } ! [ fetchServices model.apiConfig ]
 
-        FetchError err ->
-            { model | error = toString err } ! []
-
         ResponseError err ->
             { model | error = toString err } ! []
 
-        FetchServicesSuccess svcs ->
-            { model | services = Just svcs } ! []
+        FetchServicesSuccess { data } ->
+            { model | services = Just data } ! []
 
         FetchSchema id ->
             { model | serviceId = id, error = "" } ! [ fetchSchema model.apiConfig id ]
@@ -237,9 +243,9 @@ update msg model =
         FetchSchemaSuccess { data } ->
             let
                 updatedSchema =
-                    Debug.log "updated schema"
-                        <| Result.withDefault JS.empty
-                        <| JS.fromValue data
+                    Debug.log "updated schema" <|
+                        Result.withDefault JS.empty <|
+                            JS.fromValue data
             in
                 { model | schema = Just updatedSchema } ! []
 
@@ -324,6 +330,7 @@ boxStyle =
     , ( "margin", "10px" )
     , ( "font-family", "iosevka, firacode, menlo, monospace" )
     , ( "font-size", "14px" )
+    , ( "background-color", "rgba(0, 0, 0, 0.02)" )
     ]
 
 
@@ -373,7 +380,8 @@ view model =
                     [ Attrs.type' "submit"
                     , Attrs.disabled
                         (String.isEmpty model.apiConfig.clientSecretKey)
-                    ] [ text "Fetch services" ]
+                    ]
+                    [ text "Fetch services" ]
                 ]
 
         services =
@@ -390,12 +398,19 @@ view model =
                     text ""
 
                 Just schema ->
-                    form [ onSubmit SubmitJob ]
-                        [ renderSchema schema [] (Maybe.withDefault (JS.defaultFor schema) model.input) schema model.validationErrors
-                        , div [ style boxStyle ]
-                            [ button [ Attrs.type' "submit" ] [ text "Create Job" ]
+                    let
+                        context =
+                            Context
+                                schema
+                                (Maybe.withDefault (JS.defaultFor schema) model.input)
+                                model.validationErrors
+                    in
+                        form [ onSubmit SubmitJob, style [ ( "max-width", "500px" ), ( "margin", "0 auto" ) ] ]
+                            [ renderSchema context [] schema
+                            , div [ style boxStyle ]
+                                [ button [ Attrs.type' "submit" ] [ text "Create Job" ]
+                                ]
                             ]
-                        ]
 
         job =
             case model.job of
@@ -418,27 +433,30 @@ view model =
             ]
 
 
-renderSchema : Schema -> List String -> Value -> Schema -> ValidationErrors -> Html.Html Msg
-renderSchema schema path inputData rootSchema validationErrors =
+renderSchema : Context -> Path -> Schema -> Html.Html Msg
+renderSchema context path node =
     let
         renderRow : ( String, Schema ) -> Html.Html Msg
         renderRow ( name, property ) =
             let
                 required =
-                    Set.member name schema.required
+                    Set.member name node.required
 
-                propPath =
+                newPath =
                     path ++ [ name ]
 
                 validationError =
-                    Dict.get propPath validationErrors
+                    Dict.get newPath context.errors
                         |> Maybe.withDefault ""
 
+                hasError =
+                    Dict.member newPath context.errors
+
                 rowStyle =
-                    if String.isEmpty validationError then
-                        boxStyle
-                    else
+                    if hasError then
                         boxStyle ++ [ ( "border-color", "red" ) ]
+                    else
+                        boxStyle
             in
                 div [ style rowStyle ]
                     [ text
@@ -448,10 +466,8 @@ renderSchema schema path inputData rootSchema validationErrors =
                             ""
                         )
                     , text (name ++ ": ")
-                    , renderProperty property required propPath inputData rootSchema validationErrors
-                    , if String.isEmpty validationError then
-                        text ""
-                      else
+                    , renderProperty context property required newPath
+                    , if hasError then
                         span
                             [ style
                                 [ ( "display", "inline-block" )
@@ -463,44 +479,44 @@ renderSchema schema path inputData rootSchema validationErrors =
                                 ]
                             ]
                             [ text validationError ]
+                      else
+                        text ""
                     ]
-
-        renderProps (JS.Properties props) =
-            List.map renderRow props
     in
-        div [] (renderProps schema.properties)
+        div [] <| JS.mapProperties node.properties renderRow
 
-renderSelect : List String -> Schema -> Bool -> List String -> Value -> Schema -> Html.Html Msg
-renderSelect options prop required path inputData schema =
+
+renderSelect : Context -> List String -> Schema -> Bool -> Path -> Html.Html Msg
+renderSelect context options prop required path =
     options
         |> List.map (\opt -> Html.option [] [ text opt ])
         |> Html.select
             [ Html.Events.onInput (\s -> UpdateProperty path <| Encode.string s)
-            , Attrs.value <| JS.getString schema path inputData
+            , Attrs.value <| JS.getString context.root path context.data
             ]
 
 
-renderProperty : Schema -> Bool -> List String -> Value -> Schema -> ValidationErrors -> Html.Html Msg
-renderProperty prop required path inputData schema validationErrors =
+renderProperty : Context -> Schema -> Bool -> Path -> Html.Html Msg
+renderProperty context prop required path =
     case prop.type_ of
         "string" ->
             case prop.enum of
                 Nothing ->
-                    renderInput prop required path inputData schema
+                    renderInput context prop required path
 
                 Just enum ->
-                    renderSelect enum prop required path inputData schema
+                    renderSelect context enum prop required path
 
         "integer" ->
-            renderInput prop required path inputData schema
+            renderInput context prop required path
 
         "object" ->
-            renderSchema prop path inputData schema validationErrors
+            renderSchema context path prop
 
         "array" ->
             case prop.items of
-                Just (JS.ArrayItems itemDefinition) ->
-                    renderArray itemDefinition required path inputData schema validationErrors
+                Just (JS.ArrayItemDefinition itemDefinition) ->
+                    renderArray context itemDefinition required path
 
                 Nothing ->
                     text "missing item definition for array"
@@ -509,53 +525,46 @@ renderProperty prop required path inputData schema validationErrors =
             text ("Unknown property type: " ++ prop.type_)
 
 
-renderArray : Schema -> Bool -> List String -> Value -> Schema -> ValidationErrors -> Html.Html Msg
-renderArray p required path inputData s validationErrors =
+renderArray : Context -> Schema -> Bool -> List String -> Html.Html Msg
+renderArray context property required path =
     let
-        schema =
-            s
-
-        property =
-            p
-
         length =
-            JS.getLength schema path inputData
+            JS.getLength context.root path context.data
+
+        buttonStyle =
+            [ ( "background", "white" )
+            , ( "cursor", "pointer" )
+            , ( "border", "1px solid ActiveBorder" )
+            , ( "color", "ActiveBorder" )
+            , ( "margin", "10px" )
+            , ( "padding", "5px" )
+            , ( "display", "inline-block" )
+            ]
+
+        renderItem index =
+            div [ style boxStyle ]
+                [ text ("#" ++ index)
+                , renderProperty
+                    context
+                    property
+                    required
+                    (path ++ [ index ])
+                ]
     in
         div []
-            (([0..(length - 1)]
-                |> List.map
-                    (\index ->
-                        div [ style boxStyle ]
-                            [ text ("#" ++ (toString (index + 1)))
-                            , renderProperty
-                                property
-                                required
-                                (path ++ [ toString index ])
-                                inputData
-                                schema
-                                validationErrors
-                            ]
-                    )
-             )
-                ++ [ span
-                        [ onClick (UpdateProperty (path ++ [ toString length ]) (JS.defaultFor property))
-                        , style
-                            [ ("background", "lightgoldenrodyellow")
-                            , ("cursor", "pointer" )
-                            , ("border", "1px solid royalblue")
-                            , ("color", "royalblue")
-                            , ("margin", "10px")
-                            , ("padding", "5px")
-                            , ("display", "inline-block")
-                            ]
-                        ]
-                        [ text "Add item" ]
-                   ]
-            )
+            [ div [] <|
+                List.map renderItem <|
+                    List.map toString [0..(length - 1)]
+            , span
+                [ onClick (UpdateProperty (path ++ [ toString length ]) (JS.defaultFor property))
+                , style buttonStyle
+                ]
+                [ text "Add item" ]
+            ]
 
 
-renderInput : Schema -> Bool -> List String -> Value -> Schema -> Html.Html Msg
-renderInput property required path inputData schema =
+renderInput : Context -> Schema -> Bool -> Path -> Html.Html Msg
+renderInput context property required path =
     let
         inputType =
             case property.format of
@@ -606,6 +615,16 @@ renderInput property required path inputData schema =
 
                 _ ->
                     ""
+
+        update s =
+            UpdateProperty path
+                (case property.type_ of
+                    "integer" ->
+                        Encode.int (Result.withDefault 0 (String.toInt s))
+
+                    _ ->
+                        Encode.string s
+                )
     in
         input
             [ Attrs.required required
@@ -613,80 +632,49 @@ renderInput property required path inputData schema =
             , Attrs.title title
             , Attrs.pattern pattern
             , Attrs.type' inputType
-            , onInput
-                (\s ->
-                    UpdateProperty path
-                        (case property.type_ of
-                            "integer" ->
-                                Encode.int (Result.withDefault 0 (String.toInt s))
-
-                            _ ->
-                                Encode.string s
-                        )
-                )
-            , style [ ( "font-family", "menlo, monospace" ), ( "width", "100%" ) ]
-            , Attrs.value
-                (case property.type_ of
-                    "integer" ->
-                        JS.getInt schema path inputData
-                            |> toString
-
-                    _ ->
-                        JS.getString schema path inputData
-                )
+            , onInput update
+            , style
+                [ ( "font-family", "iosevka, menlo, monospace" )
+                , ( "min-width", "90%" )
+                , ( "font-size", "12px" )
+                , ( "padding", "3px" )
+                ]
+            , Attrs.value <|
+                if property.type_ == "integer" then
+                    JS.getInt context.root path context.data |> toString
+                else
+                    JS.getString context.root path context.data
             ]
             []
 
 
-encodeDict : Dict.Dict String Value -> Value
-encodeDict dict =
-    Encode.object (Dict.toList dict)
-
-
-decodeDict : Value -> Dict.Dict String Value
-decodeDict val =
-    Decode.decodeValue (Decode.dict Decode.value) val
-        |> Result.withDefault Dict.empty
-
-
-decodeList : Value -> List Value
-decodeList val =
-    Decode.decodeValue (Decode.list Decode.value) val
-        |> Result.withDefault []
-
-
 renderServices : List ServiceDescriptor -> Id -> Html.Html Msg
 renderServices services id =
-    div []
-        [ div [ style boxStyle ]
-            [ div []
-                (services
-                    |> List.map
-                        (\svc ->
-                            span
-                                [ style
-                                    (entityRowStyle
-                                        ++ [ ( "margin-right", "10px" )
-                                           , ( "display", "inline-block" )
-                                           , ( "font-weight", "bold" )
-                                           , ( "background"
-                                             , if id == svc.id then
-                                                "black"
-                                               else
-                                                "lightgrey"
-                                             )
-                                           , ( "color"
-                                             , if id == svc.id then
-                                                "lightyellow"
-                                               else
-                                                "black"
-                                             )
-                                           ]
-                                    )
-                                , onClick (FetchSchema svc.id)
-                                ]
-                                [ text (svc.name) ]
-                        )
-                )
+    let
+        entityStyle isActive =
+            [ ( "margin-right", "10px" )
+            , ( "display", "inline-block" )
+            , ( "font-weight", "bold" )
+            , ( "background"
+              , if isActive then
+                    "black"
+                else
+                    "lightgrey"
+              )
+            , ( "color"
+              , if isActive then
+                    "lightyellow"
+                else
+                    "black"
+              )
             ]
-        ]
+
+        renderService svc =
+            span
+                [ style <| (++) entityRowStyle <| entityStyle <| svc.id == id
+                , onClick (FetchSchema svc.id)
+                ]
+                [ text svc.name ]
+    in
+        div [ style boxStyle ]
+            [ div [] <| List.map renderService services ]
