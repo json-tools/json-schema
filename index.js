@@ -34,7 +34,7 @@
 /******/ 	__webpack_require__.c = installedModules;
 
 /******/ 	// __webpack_public_path__
-/******/ 	__webpack_require__.p = "/elm-json-schema/";
+/******/ 	__webpack_require__.p = "";
 
 /******/ 	// Load entry module and return exports
 /******/ 	return __webpack_require__(0);
@@ -10280,6 +10280,36 @@
 		function (a, b) {
 			return {ctor: 'UpdateProperty', _0: a, _1: b};
 		});
+	var _user$project$Main$renderSelect = F6(
+		function (options, prop, required, path, inputData, schema) {
+			return A2(
+				_elm_lang$html$Html$select,
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html_Events$onInput(
+						function (s) {
+							return A2(
+								_user$project$Main$UpdateProperty,
+								path,
+								_elm_lang$core$Json_Encode$string(s));
+						}),
+						_elm_lang$html$Html_Attributes$value(
+						A3(_user$project$JsonSchema$getString, schema, path, inputData))
+					]),
+				A2(
+					_elm_lang$core$List$map,
+					function (opt) {
+						return A2(
+							_elm_lang$html$Html$option,
+							_elm_lang$core$Native_List.fromArray(
+								[]),
+							_elm_lang$core$Native_List.fromArray(
+								[
+									_elm_lang$html$Html$text(opt)
+								]));
+					},
+					options));
+		});
 	var _user$project$Main$renderInput = F5(
 		function (property, required, path, inputData, schema) {
 			var title = function () {
@@ -10403,15 +10433,20 @@
 			var _p6 = prop.type_;
 			switch (_p6) {
 				case 'string':
-					return A5(_user$project$Main$renderInput, prop, required, path, inputData, schema);
+					var _p7 = prop.$enum;
+					if (_p7.ctor === 'Nothing') {
+						return A5(_user$project$Main$renderInput, prop, required, path, inputData, schema);
+					} else {
+						return A6(_user$project$Main$renderSelect, _p7._0, prop, required, path, inputData, schema);
+					}
 				case 'integer':
 					return A5(_user$project$Main$renderInput, prop, required, path, inputData, schema);
 				case 'object':
 					return A5(_user$project$Main$renderSchema, prop, path, inputData, schema, validationErrors);
 				case 'array':
-					var _p7 = prop.items;
-					if (_p7.ctor === 'Just') {
-						return A6(_user$project$Main$renderArray, _p7._0._0, required, path, inputData, schema, validationErrors);
+					var _p8 = prop.items;
+					if (_p8.ctor === 'Just') {
+						return A6(_user$project$Main$renderArray, _p8._0._0, required, path, inputData, schema, validationErrors);
 					} else {
 						return _elm_lang$html$Html$text('missing item definition for array');
 					}
@@ -10501,14 +10536,14 @@
 		});
 	var _user$project$Main$renderSchema = F5(
 		function (schema, path, inputData, rootSchema, validationErrors) {
-			var renderRow = function (_p8) {
-				var _p9 = _p8;
-				var _p10 = _p9._0;
+			var renderRow = function (_p9) {
+				var _p10 = _p9;
+				var _p11 = _p10._0;
 				var propPath = A2(
 					_elm_lang$core$Basics_ops['++'],
 					path,
 					_elm_lang$core$Native_List.fromArray(
-						[_p10]));
+						[_p11]));
 				var validationError = A2(
 					_elm_lang$core$Maybe$withDefault,
 					'',
@@ -10520,7 +10555,7 @@
 						[
 							{ctor: '_Tuple2', _0: 'border-color', _1: 'red'}
 						]));
-				var required = A2(_elm_lang$core$Set$member, _p10, schema.required);
+				var required = A2(_elm_lang$core$Set$member, _p11, schema.required);
 				return A2(
 					_elm_lang$html$Html$div,
 					_elm_lang$core$Native_List.fromArray(
@@ -10532,8 +10567,8 @@
 							_elm_lang$html$Html$text(
 							required ? '* ' : ''),
 							_elm_lang$html$Html$text(
-							A2(_elm_lang$core$Basics_ops['++'], _p10, ': ')),
-							A6(_user$project$Main$renderProperty, _p9._1, required, propPath, inputData, rootSchema, validationErrors),
+							A2(_elm_lang$core$Basics_ops['++'], _p11, ': ')),
+							A6(_user$project$Main$renderProperty, _p10._1, required, propPath, inputData, rootSchema, validationErrors),
 							_elm_lang$core$String$isEmpty(validationError) ? _elm_lang$html$Html$text('') : A2(
 							_elm_lang$html$Html$span,
 							_elm_lang$core$Native_List.fromArray(
@@ -10554,9 +10589,9 @@
 								]))
 						]));
 			};
-			var renderProps = function (_p11) {
-				var _p12 = _p11;
-				return A2(_elm_lang$core$List$map, renderRow, _p12._0);
+			var renderProps = function (_p12) {
+				var _p13 = _p12;
+				return A2(_elm_lang$core$List$map, renderRow, _p13._0);
 			};
 			return A2(
 				_elm_lang$html$Html$div,
@@ -10691,8 +10726,8 @@
 	};
 	var _user$project$Main$update = F2(
 		function (msg, model) {
-			var _p13 = A2(_elm_lang$core$Debug$log, 'update', msg);
-			switch (_p13.ctor) {
+			var _p14 = A2(_elm_lang$core$Debug$log, 'update', msg);
+			switch (_p14.ctor) {
 				case 'NoOp':
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
@@ -10703,7 +10738,7 @@
 					var updateConfig = function (config) {
 						return _elm_lang$core$Native_Utils.update(
 							config,
-							{clientSecretKey: _p13._0});
+							{clientSecretKey: _p14._0});
 					};
 					var updated = updateConfig(model.apiConfig);
 					return A2(
@@ -10719,7 +10754,7 @@
 					var updateConfig = function (config) {
 						return _elm_lang$core$Native_Utils.update(
 							config,
-							{apiHost: _p13._0});
+							{apiHost: _p14._0});
 					};
 					var updated = updateConfig(model.apiConfig);
 					return A2(
@@ -10747,7 +10782,7 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								error: _elm_lang$core$Basics$toString(_p13._0)
+								error: _elm_lang$core$Basics$toString(_p14._0)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
@@ -10757,7 +10792,7 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								error: _elm_lang$core$Basics$toString(_p13._0)
+								error: _elm_lang$core$Basics$toString(_p14._0)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
@@ -10767,20 +10802,20 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								services: _elm_lang$core$Maybe$Just(_p13._0)
+								services: _elm_lang$core$Maybe$Just(_p14._0)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'FetchSchema':
-					var _p14 = _p13._0;
+					var _p15 = _p14._0;
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
-							{serviceId: _p14, error: ''}),
+							{serviceId: _p15, error: ''}),
 						_elm_lang$core$Native_List.fromArray(
 							[
-								A2(_user$project$Main$fetchSchema, model.apiConfig, _p14)
+								A2(_user$project$Main$fetchSchema, model.apiConfig, _p15)
 							]));
 				case 'FetchSchemaSuccess':
 					var updatedSchema = A2(
@@ -10789,7 +10824,7 @@
 						A2(
 							_elm_lang$core$Result$withDefault,
 							_user$project$JsonSchema$empty,
-							_user$project$JsonSchema$fromValue(_p13._0.data)));
+							_user$project$JsonSchema$fromValue(_p14._0.data)));
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -10802,18 +10837,18 @@
 				case 'UpdateProperty':
 					var upd = F3(
 						function (path, schema, value) {
-							var _p15 = model.schema;
-							if (_p15.ctor === 'Just') {
-								var _p16 = _p15._0;
+							var _p16 = model.schema;
+							if (_p16.ctor === 'Just') {
+								var _p17 = _p16._0;
 								return _elm_lang$core$Maybe$Just(
 									A4(
 										_user$project$JsonSchema$setValue,
-										_p16,
+										_p17,
 										path,
 										value,
 										A2(
 											_elm_lang$core$Maybe$withDefault,
-											_user$project$JsonSchema$defaultFor(_p16),
+											_user$project$JsonSchema$defaultFor(_p17),
 											model.input)));
 							} else {
 								return _elm_lang$core$Maybe$Nothing;
@@ -10824,13 +10859,13 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								input: A3(upd, _p13._0, model.schema, _p13._1)
+								input: A3(upd, _p14._0, model.schema, _p14._1)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'SubmitJob':
-					var _p17 = model.input;
-					if (_p17.ctor === 'Just') {
+					var _p18 = model.input;
+					if (_p18.ctor === 'Just') {
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
@@ -10838,7 +10873,7 @@
 								{error: ''}),
 							_elm_lang$core$Native_List.fromArray(
 								[
-									A3(_user$project$Main$submitJob, model.apiConfig, model.serviceId, _p17._0)
+									A3(_user$project$Main$submitJob, model.apiConfig, model.serviceId, _p18._0)
 								]));
 					} else {
 						return A2(
@@ -10853,14 +10888,14 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								job: _elm_lang$core$Maybe$Just(_p13._0.data)
+								job: _elm_lang$core$Maybe$Just(_p14._0.data)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				default:
-					var _p19 = _p13._0;
-					var _p18 = _p19;
-					if (_p18.ctor === 'BadResponse') {
+					var _p20 = _p14._0;
+					var _p19 = _p20;
+					if (_p19.ctor === 'BadResponse') {
 						var val = function (str) {
 							return A2(
 								_elm_lang$core$String$join,
@@ -10899,7 +10934,7 @@
 												val(str));
 										},
 										_elm_lang$core$Dict$empty,
-										_p18._0.data)
+										_p19._0.data)
 								}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
@@ -10909,7 +10944,7 @@
 							_elm_lang$core$Native_Utils.update(
 								model,
 								{
-									error: _elm_lang$core$Basics$toString(_p19)
+									error: _elm_lang$core$Basics$toString(_p20)
 								}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
@@ -10925,11 +10960,11 @@
 	};
 	var _user$project$Main$view = function (model) {
 		var job = function () {
-			var _p20 = model.job;
-			if (_p20.ctor === 'Nothing') {
+			var _p21 = model.job;
+			if (_p21.ctor === 'Nothing') {
 				return _elm_lang$html$Html$text('');
 			} else {
-				var _p21 = _p20._0;
+				var _p22 = _p21._0;
 				return A2(
 					_elm_lang$html$Html$div,
 					_elm_lang$core$Native_List.fromArray(
@@ -10952,18 +10987,18 @@
 										'Job ',
 										A2(
 											_elm_lang$core$Basics_ops['++'],
-											_p21.id,
-											A2(_elm_lang$core$Basics_ops['++'], ': ', _p21.state))))
+											_p22.id,
+											A2(_elm_lang$core$Basics_ops['++'], ': ', _p22.state))))
 								]))
 						]));
 			}
 		}();
 		var schema = function () {
-			var _p22 = model.schema;
-			if (_p22.ctor === 'Nothing') {
+			var _p23 = model.schema;
+			if (_p23.ctor === 'Nothing') {
 				return _elm_lang$html$Html$text('');
 			} else {
-				var _p23 = _p22._0;
+				var _p24 = _p23._0;
 				return A2(
 					_elm_lang$html$Html$form,
 					_elm_lang$core$Native_List.fromArray(
@@ -10974,14 +11009,14 @@
 						[
 							A5(
 							_user$project$Main$renderSchema,
-							_p23,
+							_p24,
 							_elm_lang$core$Native_List.fromArray(
 								[]),
 							A2(
 								_elm_lang$core$Maybe$withDefault,
-								_user$project$JsonSchema$defaultFor(_p23),
+								_user$project$JsonSchema$defaultFor(_p24),
 								model.input),
-							_p23,
+							_p24,
 							model.validationErrors),
 							A2(
 							_elm_lang$html$Html$div,
@@ -11006,11 +11041,11 @@
 			}
 		}();
 		var services = function () {
-			var _p24 = model.services;
-			if (_p24.ctor === 'Nothing') {
+			var _p25 = model.services;
+			if (_p25.ctor === 'Nothing') {
 				return _elm_lang$html$Html$text('');
 			} else {
-				return A2(_user$project$Main$renderServices, _p24._0, model.serviceId);
+				return A2(_user$project$Main$renderServices, _p25._0, model.serviceId);
 			}
 		}();
 		var credentials = A2(
