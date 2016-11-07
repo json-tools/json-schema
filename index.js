@@ -10203,6 +10203,23 @@
 	var _user$project$Main$ResponseError = function (a) {
 		return {ctor: 'ResponseError', _0: a};
 	};
+	var _user$project$Main$fetch = F4(
+		function (url, msg, decoder, apiConfig) {
+			return _elm_lang$core$String$isEmpty(apiConfig.clientSecretKey) ? _elm_lang$core$Platform_Cmd$none : A3(
+				_elm_lang$core$Task$perform,
+				_user$project$Main$ResponseError,
+				msg,
+				A3(
+					_lukewestby$elm_http_builder$HttpBuilder$send,
+					_lukewestby$elm_http_builder$HttpBuilder$jsonReader(decoder),
+					_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+					A3(
+						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+						'Authorization',
+						_user$project$Main$buildAuthHeader(apiConfig.clientSecretKey),
+						_lukewestby$elm_http_builder$HttpBuilder$get(
+							A2(_elm_lang$core$Basics_ops['++'], apiConfig.apiHost, url)))));
+		});
 	var _user$project$Main$SubmitJobSuccess = function (a) {
 		return {ctor: 'SubmitJobSuccess', _0: a};
 	};
@@ -10559,31 +10576,17 @@
 	var _user$project$Main$FetchSchemaSuccess = function (a) {
 		return {ctor: 'FetchSchemaSuccess', _0: a};
 	};
-	var _user$project$Main$fetchSchema = F2(
-		function (apiConfig, id) {
-			return A3(
-				_elm_lang$core$Task$perform,
-				_user$project$Main$ResponseError,
-				_user$project$Main$FetchSchemaSuccess,
-				A3(
-					_lukewestby$elm_http_builder$HttpBuilder$send,
-					_lukewestby$elm_http_builder$HttpBuilder$jsonReader(
-						A2(
-							_elm_lang$core$Json_Decode$at,
-							_elm_lang$core$Native_List.fromArray(
-								['schema']),
-							_elm_lang$core$Json_Decode$value)),
-					_lukewestby$elm_http_builder$HttpBuilder$stringReader,
-					A3(
-						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
-						'Authorization',
-						_user$project$Main$buildAuthHeader(apiConfig.clientSecretKey),
-						_lukewestby$elm_http_builder$HttpBuilder$get(
-							A2(
-								_elm_lang$core$Basics_ops['++'],
-								apiConfig.apiHost,
-								A2(_elm_lang$core$Basics_ops['++'], '/services/', id))))));
-		});
+	var _user$project$Main$fetchSchema = function (id) {
+		return A3(
+			_user$project$Main$fetch,
+			A2(_elm_lang$core$Basics_ops['++'], '/services/', id),
+			_user$project$Main$FetchSchemaSuccess,
+			A2(
+				_elm_lang$core$Json_Decode$at,
+				_elm_lang$core$Native_List.fromArray(
+					['schema']),
+				_elm_lang$core$Json_Decode$value));
+	};
 	var _user$project$Main$FetchSchema = function (a) {
 		return {ctor: 'FetchSchema', _0: a};
 	};
@@ -10647,27 +10650,15 @@
 	var _user$project$Main$FetchServicesSuccess = function (a) {
 		return {ctor: 'FetchServicesSuccess', _0: a};
 	};
-	var _user$project$Main$fetchServices = function (apiConfig) {
-		return _elm_lang$core$String$isEmpty(apiConfig.clientSecretKey) ? _elm_lang$core$Platform_Cmd$none : A3(
-			_elm_lang$core$Task$perform,
-			_user$project$Main$ResponseError,
-			_user$project$Main$FetchServicesSuccess,
-			A3(
-				_lukewestby$elm_http_builder$HttpBuilder$send,
-				_lukewestby$elm_http_builder$HttpBuilder$jsonReader(
-					A2(
-						_elm_lang$core$Json_Decode$at,
-						_elm_lang$core$Native_List.fromArray(
-							['data']),
-						_elm_lang$core$Json_Decode$list(_user$project$Main$decodeService))),
-				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
-				A3(
-					_lukewestby$elm_http_builder$HttpBuilder$withHeader,
-					'Authorization',
-					_user$project$Main$buildAuthHeader(apiConfig.clientSecretKey),
-					_lukewestby$elm_http_builder$HttpBuilder$get(
-						A2(_elm_lang$core$Basics_ops['++'], apiConfig.apiHost, '/services')))));
-	};
+	var _user$project$Main$fetchServices = A3(
+		_user$project$Main$fetch,
+		'/services',
+		_user$project$Main$FetchServicesSuccess,
+		A2(
+			_elm_lang$core$Json_Decode$at,
+			_elm_lang$core$Native_List.fromArray(
+				['data']),
+			_elm_lang$core$Json_Decode$list(_user$project$Main$decodeService)));
 	var _user$project$Main$init = function (apiConfig) {
 		var cfg = A2(
 			_elm_lang$core$Maybe$withDefault,
@@ -10762,7 +10753,7 @@
 							{serviceId: _p12, error: ''}),
 						_elm_lang$core$Native_List.fromArray(
 							[
-								A2(_user$project$Main$fetchSchema, model.apiConfig, _p12)
+								A2(_user$project$Main$fetchSchema, _p12, model.apiConfig)
 							]));
 				case 'FetchSchemaSuccess':
 					var updatedSchema = A2(
