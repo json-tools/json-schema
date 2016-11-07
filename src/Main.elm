@@ -93,32 +93,34 @@ buildAuthHeader clientSecretKey =
 
 
 fetchServices : ServiceApiConfig -> Cmd Msg
-fetchServices apiConfig =
+fetchServices =
+    fetch
+        "/services"
+        FetchServicesSuccess
+        (Decode.at [ "data" ] <| Decode.list decodeService)
+
+
+fetchSchema : Id -> ServiceApiConfig -> Cmd Msg
+fetchSchema id =
+    fetch
+        ("/services/" ++ id)
+        FetchSchemaSuccess
+        (Decode.at [ "schema" ] Decode.value)
+
+fetch : String -> (HttpBuilder.Response a -> Msg) -> Decoder a -> ServiceApiConfig -> Cmd Msg
+fetch url msg decoder apiConfig =
     if String.isEmpty apiConfig.clientSecretKey then
         Cmd.none
     else
         Task.perform
             ResponseError
-            FetchServicesSuccess
-            (HttpBuilder.get (apiConfig.apiHost ++ "/services")
+            msg
+            (HttpBuilder.get (apiConfig.apiHost ++ url)
                 |> HttpBuilder.withHeader "Authorization" (buildAuthHeader apiConfig.clientSecretKey)
                 |> HttpBuilder.send
-                    (HttpBuilder.jsonReader <| Decode.at [ "data" ] <| Decode.list decodeService)
+                    (HttpBuilder.jsonReader decoder)
                     (HttpBuilder.stringReader)
             )
-
-
-fetchSchema : ServiceApiConfig -> Id -> Cmd Msg
-fetchSchema apiConfig id =
-    Task.perform
-        ResponseError
-        FetchSchemaSuccess
-        (HttpBuilder.get (apiConfig.apiHost ++ "/services/" ++ id)
-            |> HttpBuilder.withHeader "Authorization" (buildAuthHeader apiConfig.clientSecretKey)
-            |> HttpBuilder.send
-                (HttpBuilder.jsonReader <| Decode.at [ "schema" ] Decode.value)
-                (HttpBuilder.stringReader)
-        )
 
 
 submitJob : ServiceApiConfig -> Id -> Value -> Cmd Msg
@@ -238,7 +240,7 @@ update msg model =
             { model | services = Just data } ! []
 
         FetchSchema id ->
-            { model | serviceId = id, error = "" } ! [ fetchSchema model.apiConfig id ]
+            { model | serviceId = id, error = "" } ! [ fetchSchema id model.apiConfig ]
 
         FetchSchemaSuccess { data } ->
             let
