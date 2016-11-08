@@ -391,8 +391,8 @@ getValue schema path inputData =
 
 
 withDefaultFor : Schema -> Maybe Value -> Value
-withDefaultFor schema a =
-    (Maybe.withDefault (defaultFor schema) a)
+withDefaultFor schema =
+    Maybe.withDefault <| defaultFor schema
 
 mapProperties : Properties -> ( ( String, Schema ) -> a) -> List a
 mapProperties (Properties props) fn =
