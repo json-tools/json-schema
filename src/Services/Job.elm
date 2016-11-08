@@ -1,4 +1,4 @@
-module Services.Job exposing (create)
+module Services.Job exposing (create, JobCreationError, JobCreationError(..))
 
 import HttpBuilder exposing (Response, Error)
 import Json.Decode as Decode exposing (Decoder, (:=))
@@ -10,25 +10,33 @@ import Util exposing (buildAuthHeader)
 import String
 import Dict
 
-create : ServiceApiConfig -> String -> Value -> Task (Error ValidationErrors) (Response Job)
+type JobCreationError
+    = ValidationError ValidationErrors
+    | HttpError (HttpBuilder.Error (List String))
+
+create : ServiceApiConfig -> String -> Value -> Task JobCreationError (Response Job)
 create apiConfig serviceId inputData =
-    (HttpBuilder.post (apiConfig.apiHost ++ "/jobs")
-        |> HttpBuilder.withHeader "Authorization"
-            (buildAuthHeader apiConfig.clientSecretKey)
-        |> HttpBuilder.withJsonBody
-            (Encode.object
+    let
+        requestBody =
+            Encode.object
                 [ ( "service_id", Encode.string serviceId )
                 , ( "input", inputData )
                 ]
-            )
-        |> HttpBuilder.send
-            (HttpBuilder.jsonReader decodeJob)
-            (HttpBuilder.jsonReader <|
-                Decode.at [ "details", "input" ] <|
-                    Decode.list Decode.string
-            )
-    )
-        |> Task.mapError (\err ->
+
+        sendRequest =
+            HttpBuilder.post (apiConfig.apiHost ++ "/jobs")
+                |> HttpBuilder.withHeader "Authorization"
+                    (buildAuthHeader apiConfig.clientSecretKey)
+                |> HttpBuilder.withJsonBody requestBody
+                |> HttpBuilder.send
+                    (HttpBuilder.jsonReader decodeJob)
+                    (HttpBuilder.jsonReader decodeResponseError)
+
+        decodeResponseError =
+            Decode.at [ "details", "input" ] <|
+                Decode.list Decode.string
+
+        transformError err =
             case err of
                 HttpBuilder.BadResponse resp ->
                     let
@@ -48,14 +56,14 @@ create apiConfig serviceId inputData =
                         add str =
                             Dict.insert (key str) (val str)
 
-                        newData =
+                        validationErrors =
                             List.foldl add Dict.empty resp.data
                     in
-                        Task.fail (HttpBuilder.BadResponse { resp | data = newData } )
+                        Task.mapError ValidationError (Task.fail validationErrors)
 
-                _ ->
-                    err
-            )
+                x -> Task.mapError HttpError (Task.fail x)
+    in
+        sendRequest `Task.onError` transformError
 
 
 
@@ -67,5 +75,5 @@ decodeJob =
         ("state" := Decode.string)
         ("input" := Decode.value)
         ("output" := Decode.value)
-        -- |: ("errors" := Decode.value)
+        -- ("errors" := Decode.value)
 

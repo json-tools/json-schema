@@ -2,7 +2,6 @@ port module Main exposing (..)
 
 import Models exposing (..)
 import Types exposing (..)
-import HttpBuilder
 import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.App exposing (programWithFlags)
 import Html.Events exposing (onClick, onSubmit, onInput)
@@ -164,11 +163,11 @@ update msg model =
 
         SubmitJobError err ->
             case err of
-                HttpBuilder.BadResponse { data } ->
-                    { model | validationErrors = data } ! []
+                JobSvc.ValidationError errors ->
+                    { model | validationErrors = errors } ! []
 
-                _ ->
-                    { model | error = toString err } ! []
+                e ->
+                    { model | error = toString e } ! []
 
 
 

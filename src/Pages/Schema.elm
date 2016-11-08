@@ -91,7 +91,7 @@ renderSelect context options prop required path =
     options
         |> List.map (\opt -> Html.option [] [ text opt ])
         |> Html.select
-            [ Html.Events.onInput (\s -> UpdateProperty path <| Encode.string s)
+            [ Html.Events.onInput (\s -> UpdateProperty context path <| Encode.string s)
             , Attrs.value <| JS.getString context.root path context.data
             ]
 
@@ -156,7 +156,7 @@ renderArray context property required path =
                 List.map renderItem <|
                     List.map toString [0..(length - 1)]
             , span
-                [ onClick (UpdateProperty (path ++ [ toString length ]) (JS.defaultFor property))
+                [ onClick (UpdateProperty context (path ++ [ toString length ]) (JS.defaultFor property))
                 , style buttonStyle
                 ]
                 [ text "Add item" ]
@@ -217,7 +217,7 @@ renderInput context property required path =
                     ""
 
         update s =
-            UpdateProperty path
+            UpdateProperty context path
                 (case property.type_ of
                     "integer" ->
                         Encode.int (Result.withDefault 0 (String.toInt s))
