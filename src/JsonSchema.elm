@@ -149,7 +149,7 @@ convert rootSchema =
         clarifyType node =
             let
                 checkEnum node =
-                    case Debug.log "checkEnum" node.enum of
+                    case node.enum of
                         Nothing -> checkItems node
                         Just enum -> { node | type_ = "string" }
 

@@ -1,22 +1,24 @@
 port module Main exposing (..)
 
-import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, (:=))
-import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault, lazy)
-import Json.Encode as Encode exposing (Value)
+import Models exposing (..)
+import Types exposing (..)
+import Json.Encode as Encode
 import HttpBuilder
 import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.App exposing (programWithFlags)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
-import Base64
 import Task
 import Dict
 import Set
 import String
-import JsonSchema as JS exposing (Schema)
+import JsonSchema as JS
+import Services.Job as JobSvc
+import Services.ServiceDescriptor as ServiceDescriptorSvc
+import Messages exposing (Msg, Msg(..))
 
 
-main : Program (Maybe ServiceApiConfig)
+main : Program (Maybe PersistedData)
 main =
     programWithFlags
         { init = init
@@ -26,15 +28,11 @@ main =
         }
 
 
-port storeConfig : ServiceApiConfig -> Cmd msg
+port storeConfig : PersistedData -> Cmd msg
 
 
 
 -- MODEL
-
-
-type alias Id =
-    String
 
 
 type alias Model =
@@ -60,109 +58,20 @@ type alias Context =
     }
 
 
-type alias ServiceApiConfig =
-    { apiHost : String
-    , clientSecretKey : String
-    }
-
-
-type alias ServiceDescriptor =
-    { id : Id
-    , name : String
-    , type' : String
-    }
-
-
 type alias ValidationErrors =
     Dict.Dict (List String) String
 
 
-type alias Job =
-    { id : Id
-    , state : String
-    }
-
-
-buildAuthHeader : String -> String
-buildAuthHeader clientSecretKey =
-    clientSecretKey
-        ++ ":"
-        |> Base64.encode
-        |> Result.withDefault ""
-        |> (++) "Basic "
-
-
-fetchServices : ServiceApiConfig -> Cmd Msg
-fetchServices =
-    fetch
-        "/services"
-        FetchServicesSuccess
-        (Decode.at [ "data" ] <| Decode.list decodeService)
-
-
-fetchSchema : Id -> ServiceApiConfig -> Cmd Msg
-fetchSchema id =
-    fetch
-        ("/services/" ++ id)
-        FetchSchemaSuccess
-        (Decode.at [ "schema" ] Decode.value)
-
-fetch : String -> (HttpBuilder.Response a -> Msg) -> Decoder a -> ServiceApiConfig -> Cmd Msg
-fetch url msg decoder apiConfig =
-    if String.isEmpty apiConfig.clientSecretKey then
-        Cmd.none
-    else
-        Task.perform
-            ResponseError
-            msg
-            (HttpBuilder.get (apiConfig.apiHost ++ url)
-                |> HttpBuilder.withHeader "Authorization" (buildAuthHeader apiConfig.clientSecretKey)
-                |> HttpBuilder.send
-                    (HttpBuilder.jsonReader decoder)
-                    (HttpBuilder.stringReader)
-            )
-
-
-submitJob : ServiceApiConfig -> Id -> Value -> Cmd Msg
-submitJob apiConfig serviceId inputData =
-    Task.perform
-        SubmitJobError
-        SubmitJobSuccess
-        (HttpBuilder.post (apiConfig.apiHost ++ "/jobs")
-            |> HttpBuilder.withHeader "Authorization"
-                (buildAuthHeader apiConfig.clientSecretKey)
-            |> HttpBuilder.withJsonBody
-                (Encode.object
-                    [ ( "service_id", Encode.string serviceId )
-                    , ( "input", inputData )
-                    ]
-                )
-            |> HttpBuilder.send
-                (HttpBuilder.jsonReader decodeJob)
-                (HttpBuilder.jsonReader (Decode.at [ "details", "input" ] (Decode.list Decode.string)))
-        )
-
-
-decodeJob : Decoder Job
-decodeJob =
-    succeed Job
-        |: ("id" := string)
-        |: ("state" := string)
-
-
-decodeService : Decoder ServiceDescriptor
-decodeService =
-    succeed ServiceDescriptor
-        |: ("id" := string)
-        |: ("name" := string)
-        |: ("type" := string)
-
-
-init : Maybe ServiceApiConfig -> ( Model, Cmd Msg )
-init apiConfig =
+init : Maybe PersistedData -> ( Model, Cmd Msg )
+init persistedData =
     let
         cfg =
-            apiConfig |> Maybe.withDefault (ServiceApiConfig "http://localhost:3000" "")
+            case persistedData of
+                Nothing ->
+                    ServiceApiConfig "http://localhost:3000" ""
+
+                Just pd ->
+                    pd.serviceApi
     in
         Model
             -- list services
@@ -184,29 +93,26 @@ init apiConfig =
             ! [ fetchServices cfg ]
 
 
+fetchServices : ServiceApiConfig -> Cmd Msg
+fetchServices cfg =
+    Task.perform ResponseError FetchServicesSuccess <|
+        ServiceDescriptorSvc.list cfg
+
+
+fetchService : Id -> ServiceApiConfig -> Cmd Msg
+fetchService id cfg =
+    Task.perform ResponseError FetchServiceSuccess <|
+        ServiceDescriptorSvc.get id cfg
+
+
 
 -- UPDATE
 
 
-type Msg
-    = NoOp
-    | SetClientSecretKey String
-    | SetApiHost String
-    | FetchServices
-    | FetchServicesSuccess (HttpBuilder.Response (List ServiceDescriptor))
-    | FetchSchema Id
-    | FetchSchemaSuccess (HttpBuilder.Response Value)
-    | UpdateProperty (List String) Value
-    | SubmitJob
-    | SubmitJobError (HttpBuilder.Error (List String))
-    | SubmitJobSuccess (HttpBuilder.Response Job)
-    | ResponseError (HttpBuilder.Error String)
-
-
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case Debug.log "update" msg of
-        -- case msg of
+    --case Debug.log "update" msg of
+    case msg of
         NoOp ->
             model ! []
 
@@ -217,8 +123,10 @@ update msg model =
 
                 updated =
                     updateConfig model.apiConfig
+
             in
-                { model | apiConfig = updated } ! [ storeConfig updated ]
+                { model | apiConfig = updated } ! [ storeConfig (PersistedData updated)
+ ]
 
         SetApiHost c ->
             let
@@ -227,8 +135,9 @@ update msg model =
 
                 updated =
                     updateConfig model.apiConfig
+
             in
-                { model | apiConfig = updated } ! [ storeConfig updated ]
+                { model | apiConfig = updated } ! [ storeConfig (PersistedData updated) ]
 
         FetchServices ->
             { model | error = "" } ! [ fetchServices model.apiConfig ]
@@ -239,17 +148,16 @@ update msg model =
         FetchServicesSuccess { data } ->
             { model | services = Just data } ! []
 
-        FetchSchema id ->
-            { model | serviceId = id, error = "" } ! [ fetchSchema id model.apiConfig ]
+        FetchService id ->
+            { model | serviceId = id, error = "" } ! [ fetchService id model.apiConfig ]
 
-        FetchSchemaSuccess { data } ->
-            let
-                updatedSchema =
-                    Debug.log "updated schema" <|
-                        Result.withDefault JS.empty <|
-                            JS.fromValue data
-            in
-                { model | schema = Just updatedSchema } ! []
+        FetchServiceSuccess { data } ->
+            case JS.convert data.schema of
+                Ok s ->
+                    { model | schema = Just s } ! []
+
+                Err err ->
+                    { model | error = err } ! []
 
         UpdateProperty path val ->
             let
@@ -272,7 +180,10 @@ update msg model =
         SubmitJob ->
             case model.input of
                 Just input ->
-                    { model | error = "" } ! [ submitJob model.apiConfig model.serviceId input ]
+                    { model | error = "" }
+                        ! [ Task.perform SubmitJobError SubmitJobSuccess <|
+                                JobSvc.create model.apiConfig model.serviceId input
+                          ]
 
                 Nothing ->
                     model ! []
@@ -296,12 +207,13 @@ update msg model =
                                 |> List.tail
                                 |> Maybe.withDefault []
                                 |> String.join " "
+
+                        add str =
+                            Dict.insert (key str) (val str)
                     in
                         { model
                             | validationErrors =
-                                List.foldl (\str -> Dict.insert (key str) (val str))
-                                    Dict.empty
-                                    data
+                                List.foldl add Dict.empty data
                         }
                             ! []
 
@@ -330,7 +242,7 @@ boxStyle =
     , ( "border-radius", "2px" )
     , ( "padding", "10px" )
     , ( "margin", "10px" )
-    , ( "font-family", "iosevka, firacode, menlo, monospace" )
+    , ( "font-family", "iosevka, fira code, menlo, monospace" )
     , ( "font-size", "14px" )
     , ( "background-color", "rgba(0, 0, 0, 0.02)" )
     ]
@@ -674,7 +586,7 @@ renderServices services id =
         renderService svc =
             span
                 [ style <| (++) entityRowStyle <| entityStyle <| svc.id == id
-                , onClick (FetchSchema svc.id)
+                , onClick (FetchService svc.id)
                 ]
                 [ text svc.name ]
     in
