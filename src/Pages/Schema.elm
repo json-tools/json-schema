@@ -1,7 +1,7 @@
-module Pages.Schema exposing (render, Path)
+module Pages.Schema exposing (render, Path, Msg, update)
 
 import Types exposing (..)
-import Models exposing (Context, ValidationErrors)
+import Models exposing (Context, ValidationErrors, Job, ServiceDescriptor)
 import Json.Encode as Encode
 import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.Events exposing (onClick, onSubmit, onInput)
@@ -10,13 +10,59 @@ import Dict
 import Set
 import String
 import JsonSchema as JS
-import Messages exposing (Msg, Msg(..))
 import Layout exposing (boxStyle)
+import Services.Job as JobSvc exposing (JobCreationError)
+import HttpBuilder
+import Task
 
 
 type alias Path =
     List String
 
+type Msg
+    = UpdateProperty Context Path Value
+    | SubmitJob
+    | SubmitJobError JobCreationError
+    | SubmitJobSuccess (HttpBuilder.Response Job)
+
+type alias Model =
+    { services : Maybe (List ServiceDescriptor)
+    , error : String
+    , validationErrors : ValidationErrors
+    , apiConfig : ServiceApiConfig
+    , schema : Maybe Schema
+    , input : Maybe Value
+    , serviceId : Id
+    , job : Maybe Job
+    }
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        UpdateProperty ctx path val ->
+            { model | input = Just <| JS.setValue ctx.root path val ctx.data } ! []
+
+        SubmitJob ->
+            case model.input of
+                Just input ->
+                    { model | error = "" }
+                        ! [ Task.perform SubmitJobError SubmitJobSuccess <|
+                                JobSvc.create model.apiConfig model.serviceId input
+                          ]
+
+                Nothing ->
+                    model ! []
+
+        SubmitJobSuccess { data } ->
+            { model | job = Just data } ! []
+
+        SubmitJobError err ->
+            case err of
+                JobSvc.ValidationError errors ->
+                    { model | validationErrors = errors } ! []
+
+                e ->
+                    { model | error = toString e } ! []
 
 render : Context -> Schema -> Html.Html Msg
 render context schema =

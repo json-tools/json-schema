@@ -9,7 +9,6 @@ import Html.Attributes as Attrs exposing (style)
 import Task
 import Dict
 import JsonSchema as JS
-import Services.Job as JobSvc
 import Services.ServiceDescriptor as ServiceDescriptorSvc
 import Messages exposing (Msg, Msg(..))
 import Pages.Settings
@@ -44,8 +43,6 @@ type alias Model =
     , serviceId : Id
     , job : Maybe Job
     }
-
-
 
 
 init : Maybe PersistedData -> ( Model, Cmd Msg )
@@ -102,27 +99,25 @@ update msg model =
         NoOp ->
             model ! []
 
-        SetClientSecretKey c ->
+        PagesSettingsMsg msg ->
             let
-                updateConfig config =
-                    { config | clientSecretKey = c }
-
-                updated =
-                    updateConfig model.apiConfig
+                ( settings, isConfigured ) =
+                    Pages.Settings.update msg model.apiConfig
             in
-                { model | apiConfig = updated }
-                    ! [ storeConfig (PersistedData updated)
+                { model | apiConfig = settings }
+                    ! [ storeConfig (PersistedData settings)
+                      , if isConfigured then
+                            fetchServices settings
+                        else
+                            Cmd.none
                       ]
 
-        SetApiHost c ->
+        PagesSchemaMsg msg ->
             let
-                updateConfig config =
-                    { config | apiHost = c }
-
-                updated =
-                    updateConfig model.apiConfig
+                ( model, cmd ) =
+                    Pages.Schema.update msg model
             in
-                { model | apiConfig = updated } ! [ storeConfig (PersistedData updated) ]
+                ( model, Cmd.map PagesSchemaMsg cmd )
 
         FetchServices ->
             { model | error = "" } ! [ fetchServices model.apiConfig ]
@@ -144,30 +139,7 @@ update msg model =
                 Err err ->
                     { model | error = err } ! []
 
-        UpdateProperty ctx path val ->
-            { model | input = Just <| JS.setValue ctx.root path val ctx.data } ! []
 
-        SubmitJob ->
-            case model.input of
-                Just input ->
-                    { model | error = "" }
-                        ! [ Task.perform SubmitJobError SubmitJobSuccess <|
-                                JobSvc.create model.apiConfig model.serviceId input
-                          ]
-
-                Nothing ->
-                    model ! []
-
-        SubmitJobSuccess { data } ->
-            { model | job = Just data } ! []
-
-        SubmitJobError err ->
-            case err of
-                JobSvc.ValidationError errors ->
-                    { model | validationErrors = errors } ! []
-
-                e ->
-                    { model | error = toString e } ! []
 
 
 
@@ -199,7 +171,7 @@ view : Model -> Html.Html Msg
 view model =
     let
         credentials =
-            Pages.Settings.render model.apiConfig
+            Html.App.map PagesSettingsMsg <| Pages.Settings.render model.apiConfig
 
         services =
             case model.services of
@@ -222,7 +194,7 @@ view model =
                                 (Maybe.withDefault (JS.defaultFor schema) model.input)
                                 model.validationErrors
                     in
-                        Pages.Schema.render context schema
+                        Html.App.map PagesSchemaMsg <| Pages.Schema.render context schema
 
         job =
             case model.job of
@@ -252,8 +224,18 @@ renderServices services id =
             [ ( "margin-right", "10px" )
             , ( "display", "inline-block" )
             , ( "font-weight", "bold" )
-            , ( "background", if isActive then "black" else "lightgrey")
-            , ( "color", if isActive then "lightyellow" else "black")
+            , ( "background"
+              , if isActive then
+                    "black"
+                else
+                    "lightgrey"
+              )
+            , ( "color"
+              , if isActive then
+                    "lightyellow"
+                else
+                    "black"
+              )
             ]
 
         renderService svc =
