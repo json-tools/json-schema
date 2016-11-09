@@ -3,7 +3,7 @@ module Services.Job exposing (create, JobCreationError, JobCreationError(..))
 import HttpBuilder exposing (Response, Error)
 import Json.Decode as Decode exposing (Decoder, (:=))
 import Json.Encode as Encode
-import Types exposing (ServiceApiConfig, Id, Value)
+import Types exposing (ClientSettings, Id, Value)
 import Models exposing (Job, ValidationErrors)
 import Task exposing (Task)
 import Util exposing (buildAuthHeader)
@@ -14,8 +14,8 @@ type JobCreationError
     = ValidationError ValidationErrors
     | HttpError (HttpBuilder.Error (List String))
 
-create : ServiceApiConfig -> String -> Value -> Task JobCreationError (Response Job)
-create apiConfig serviceId inputData =
+create : ClientSettings -> String -> Value -> Task JobCreationError (Response Job)
+create clientSettings serviceId inputData =
     let
         requestBody =
             Encode.object
@@ -24,9 +24,9 @@ create apiConfig serviceId inputData =
                 ]
 
         sendRequest =
-            HttpBuilder.post (apiConfig.apiHost ++ "/jobs")
+            HttpBuilder.post (clientSettings.service ++ "/jobs")
                 |> HttpBuilder.withHeader "Authorization"
-                    (buildAuthHeader apiConfig.clientSecretKey)
+                    (buildAuthHeader clientSettings.secretKey)
                 |> HttpBuilder.withJsonBody requestBody
                 |> HttpBuilder.send
                     (HttpBuilder.jsonReader decodeJob)

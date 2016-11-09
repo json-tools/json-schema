@@ -1,12 +1,17 @@
 'use strict';
 
 require('./index.html');
-var Elm = require('./Main');
+const Elm = require('./Main');
 
-var storedState = localStorage.getItem('client-app-persisted-data');
-var apiConfig = storedState ? JSON.parse(storedState) : null;
-var clientApp = Elm.Main.fullscreen(apiConfig);
+const storedState = localStorage.getItem('client-app-persisted-data-v3');
+const appState = storedState ? JSON.parse(storedState) : null;
 
-clientApp.ports.storeConfig.subscribe(function(state) {
-    localStorage.setItem('client-app-persisted-data', JSON.stringify(state));
-});
+function init(state) {
+    const clientApp = Elm.Main.fullscreen(appState);
+
+    clientApp.ports.storeConfig.subscribe(function(state) {
+        localStorage.setItem('client-app-persisted-data-v3', JSON.stringify(state));
+    });
+}
+
+init(appState);

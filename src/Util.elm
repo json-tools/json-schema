@@ -3,18 +3,18 @@ module Util exposing (fetch, buildAuthHeader)
 import HttpBuilder exposing (Error, Response)
 import Task exposing (Task)
 import Base64
-import Types exposing (ServiceApiConfig)
+import Types exposing (ClientSettings)
 import Json.Decode exposing (Decoder)
 
 
-fetch : String -> Decoder a -> ServiceApiConfig -> Task (Error String) (Response a)
-fetch url decoder apiConfig =
+fetch : String -> Decoder a -> ClientSettings -> Task (Error String) (Response a)
+fetch url decoder clientSettings =
     let
         auth =
-            buildAuthHeader apiConfig.clientSecretKey
+            buildAuthHeader clientSettings.secretKey
 
         resource =
-            apiConfig.apiHost ++ url
+            clientSettings.service ++ url
 
         successReader =
             HttpBuilder.jsonReader decoder
@@ -23,10 +23,9 @@ fetch url decoder apiConfig =
             |> HttpBuilder.withHeader "Authorization" auth
             |> HttpBuilder.send successReader HttpBuilder.stringReader
 
-
 buildAuthHeader : String -> String
-buildAuthHeader clientSecretKey =
-    clientSecretKey
+buildAuthHeader secretKey =
+    secretKey
         ++ ":"
         |> Base64.encode
         |> Result.withDefault ""

@@ -8,8 +8,10 @@ import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
 import Task
 import Dict
+import String
 import JsonSchema as JS
 import Services.ServiceDescriptor as ServiceDescriptorSvc
+import Services.Otp as OtpSvc
 import Messages exposing (Msg, Msg(..))
 import Pages.Settings
 import Pages.Schema
@@ -37,11 +39,12 @@ type alias Model =
     { services : Maybe (List ServiceDescriptor)
     , error : String
     , validationErrors : ValidationErrors
-    , apiConfig : ServiceApiConfig
+    , clientSettings : ClientSettings
     , schema : Maybe Schema
     , input : Maybe Value
     , serviceId : Id
     , job : Maybe Job
+    , otp : Maybe Otp
     }
 
 
@@ -51,10 +54,13 @@ init persistedData =
         cfg =
             case persistedData of
                 Nothing ->
-                    ServiceApiConfig "http://localhost:3000" ""
+                    ClientSettings
+                        "http://localhost:3000"
+                        "https://localhost:5000"
+                        ""
 
                 Just pd ->
-                    pd.serviceApi
+                    pd.clientSettings
     in
         Model
             -- list services
@@ -63,7 +69,7 @@ init persistedData =
             ""
             -- validationErrors
             Dict.empty
-            -- apiConfig
+            -- clientSettings
             cfg
             -- schema
             Nothing
@@ -73,16 +79,18 @@ init persistedData =
             ""
             -- job
             Nothing
+            -- otp
+            Nothing
             ! [ fetchServices cfg ]
 
 
-fetchServices : ServiceApiConfig -> Cmd Msg
+fetchServices : ClientSettings -> Cmd Msg
 fetchServices cfg =
     Task.perform ResponseError FetchServicesSuccess <|
         ServiceDescriptorSvc.list cfg
 
 
-fetchService : Id -> ServiceApiConfig -> Cmd Msg
+fetchService : Id -> ClientSettings -> Cmd Msg
 fetchService id cfg =
     Task.perform ResponseError FetchServiceSuccess <|
         ServiceDescriptorSvc.get id cfg
@@ -101,16 +109,10 @@ update msg model =
 
         PagesSettingsMsg msg ->
             let
-                ( settings, isConfigured ) =
-                    Pages.Settings.update msg model.apiConfig
+                settings =
+                    Pages.Settings.update msg model.clientSettings
             in
-                { model | apiConfig = settings }
-                    ! [ storeConfig (PersistedData settings)
-                      , if isConfigured then
-                            fetchServices settings
-                        else
-                            Cmd.none
-                      ]
+                { model | clientSettings = settings } ! []
 
         PagesSchemaMsg msg ->
             let
@@ -120,7 +122,7 @@ update msg model =
                 ( model, Cmd.map PagesSchemaMsg cmd )
 
         FetchServices ->
-            { model | error = "" } ! [ fetchServices model.apiConfig ]
+            { model | error = "" } ! [ fetchServices model.clientSettings ]
 
         ResponseError err ->
             { model | error = toString err } ! []
@@ -129,7 +131,7 @@ update msg model =
             { model | services = Just data } ! []
 
         FetchService id ->
-            { model | serviceId = id, error = "" } ! [ fetchService id model.apiConfig ]
+            { model | serviceId = id, error = "" } ! [ fetchService id model.clientSettings ]
 
         FetchServiceSuccess { data } ->
             case JS.convert data.schema of
@@ -138,6 +140,12 @@ update msg model =
 
                 Err err ->
                     { model | error = err } ! []
+
+        CreateOtp ->
+            model ! [ Task.perform ResponseError CreateOtpSuccess <| OtpSvc.create model.clientSettings ]
+
+        CreateOtpSuccess { data } ->
+            { model | otp = Just data } ! []
 
 
 
@@ -171,15 +179,24 @@ view : Model -> Html.Html Msg
 view model =
     let
         credentials =
-            Html.App.map PagesSettingsMsg <| Pages.Settings.render model.apiConfig
+            Html.App.map PagesSettingsMsg <| Pages.Settings.render model.clientSettings
 
         services =
-            case model.services of
-                Nothing ->
-                    text ""
+            div [ style boxStyle ]
+                [ button
+                    [ Attrs.disabled
+                        (String.isEmpty model.clientSettings.secretKey)
+                    , onClick FetchServices
+                    ]
+                    [ text "Fetch services" ]
+                , (case model.services of
+                    Nothing ->
+                        text ""
 
-                Just svcs ->
-                    renderServices svcs model.serviceId
+                    Just svcs ->
+                        renderServices svcs model.serviceId
+                )
+                ]
 
         schema =
             case model.schema of
@@ -196,6 +213,17 @@ view model =
                     in
                         Html.App.map PagesSchemaMsg <| Pages.Schema.render context schema
 
+        otp =
+            let
+                otpId =
+                    case model.otp of
+                        Nothing -> text ""
+                        Just otp -> text otp.id
+            in
+                div [ style boxStyle ]
+                    [ button [ onClick CreateOtp ] [ text "Create OTP" ]
+                    , otpId ]
+
         job =
             case model.job of
                 Nothing ->
@@ -210,6 +238,7 @@ view model =
     in
         div []
             [ credentials
+            , otp
             , services
             , schema
             , job
@@ -245,5 +274,4 @@ renderServices services id =
                 ]
                 [ text svc.name ]
     in
-        div [ style boxStyle ]
-            [ div [] <| List.map renderService services ]
+        div [] <| List.map renderService services

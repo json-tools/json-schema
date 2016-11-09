@@ -1,7 +1,7 @@
 module Pages.Schema exposing (render, Path, Msg, update)
 
 import Types exposing (..)
-import Models exposing (Context, ValidationErrors, Job, ServiceDescriptor)
+import Models exposing (Context, ValidationErrors, Job, ServiceDescriptor, Otp)
 import Json.Encode as Encode
 import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.Events exposing (onClick, onSubmit, onInput)
@@ -29,11 +29,12 @@ type alias Model =
     { services : Maybe (List ServiceDescriptor)
     , error : String
     , validationErrors : ValidationErrors
-    , apiConfig : ServiceApiConfig
+    , clientSettings : ClientSettings
     , schema : Maybe Schema
     , input : Maybe Value
     , serviceId : Id
     , job : Maybe Job
+    , otp : Maybe Otp
     }
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -47,7 +48,7 @@ update msg model =
                 Just input ->
                     { model | error = "" }
                         ! [ Task.perform SubmitJobError SubmitJobSuccess <|
-                                JobSvc.create model.apiConfig model.serviceId input
+                                JobSvc.create model.clientSettings model.serviceId input
                           ]
 
                 Nothing ->

@@ -1,18 +1,20 @@
 module Messages exposing (Msg, Msg(..))
 
 import Types exposing (Id, Value)
-import Models exposing (Job, ServiceDescriptor, Context)
+import Models exposing (Job, ServiceDescriptor, Context, Otp)
 import Pages.Settings
 import Pages.Schema
-import HttpBuilder
+import HttpBuilder exposing (Response, Error)
 
 type Msg
     = NoOp
     | PagesSettingsMsg Pages.Settings.Msg
     | PagesSchemaMsg Pages.Schema.Msg
     | FetchServices
-    | FetchServicesSuccess (HttpBuilder.Response (List ServiceDescriptor))
+    | FetchServicesSuccess (Response (List ServiceDescriptor))
     | FetchService Id
-    | FetchServiceSuccess (HttpBuilder.Response ServiceDescriptor)
-    | ResponseError (HttpBuilder.Error String)
+    | FetchServiceSuccess (Response ServiceDescriptor)
+    | ResponseError (Error String)
+    | CreateOtp
+    | CreateOtpSuccess (Response Otp)
 

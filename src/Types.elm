@@ -4,14 +4,15 @@ import JsonSchema
 import Json.Decode
 
 
-type alias ServiceApiConfig =
-    { apiHost : String
-    , clientSecretKey : String
+type alias ClientSettings =
+    { service : String
+    , vault : String
+    , secretKey : String
     }
 
 
 type alias PersistedData =
-    { serviceApi : ServiceApiConfig
+    { clientSettings : ClientSettings
     }
 
 
