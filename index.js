@@ -54,6 +54,12 @@
 	    clientSettings: null
 	};
 
+	if (appState.clientSettings) {
+	    if (typeof appState.clientSettings.guide === 'undefined') {
+	        appState.clientSettings.guide = true;
+	    }
+	}
+
 	function init(state) {
 	    const clientApp = Elm.Main.fullscreen(appState);
 
@@ -10983,9 +10989,9 @@
 			{ctor: '_Tuple2', _0: 'background-color', _1: 'rgba(0, 0, 0, 0.02)'}
 		]);
 
-	var _user$project$Types$ClientSettings = F3(
-		function (a, b, c) {
-			return {service: a, vault: b, secretKey: c};
+	var _user$project$Types$ClientSettings = F4(
+		function (a, b, c, d) {
+			return {service: a, vault: b, secretKey: c, guide: d};
 		});
 	var _user$project$Types$PersistedData = function (a) {
 		return {clientSettings: a};
@@ -11081,9 +11087,97 @@
 				_lukewestby$elm_http_builder$HttpBuilder$post(resource)));
 	};
 
-	var _user$project$Pages_Settings$auth = '\n## Authentication\n\nAll API services require authentication via Basic HTTP auth over HTTPS.\nUnauthorised requests will result in 401 Unauthorized.\nAll requests using the HTTP protocol will fail with 403 Forbidden status code.\n';
-	var _user$project$Pages_Settings$vault = '\n## Secure Vault\n\nPCI Compliant secure storage which allows to store PAN.\nFollowing endpoints open for public use:\n\n- create OTP `POST /otp`\n- store PAN `POST /pan {otp}`\n- issue fake PAN `POST /pan/fake`\n';
-	var _user$project$Pages_Settings$service = '\n## Service API\n\nThis API provides automation-related endpoints:\n\n- list services `GET /services` -> List Service\n- get schema for specific service `GET /service/:id` -> Service\n- create automation job `POST /jobs` -> Job\n- poll state of specific job `GET /jobs/:id` -> Job\n';
+	var _user$project$Services_Pan$createFake = F2(
+		function (panId, clientSettings) {
+			var decodePan = A2(
+				_elm_lang$core$Json_Decode$at,
+				_elm_lang$core$Native_List.fromArray(
+					['pan']),
+				_elm_lang$core$Json_Decode$string);
+			var body = _elm_lang$core$Json_Encode$object(
+				_elm_lang$core$Native_List.fromArray(
+					[
+						{
+						ctor: '_Tuple2',
+						_0: 'pan_id',
+						_1: _elm_lang$core$Json_Encode$string(panId)
+					}
+					]));
+			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
+			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan');
+			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
+			return A3(
+				_lukewestby$elm_http_builder$HttpBuilder$send,
+				successReader,
+				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+				A2(
+					_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
+					body,
+					A3(
+						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+						'Authorization',
+						auth,
+						_lukewestby$elm_http_builder$HttpBuilder$post(resource))));
+		});
+	var _user$project$Services_Pan$create = F3(
+		function (otp, pan, clientSettings) {
+			var decodePan = A3(
+				_elm_lang$core$Json_Decode$object2,
+				_user$project$Models$Pan,
+				A2(_elm_lang$core$Json_Decode_ops[':='], 'id', _elm_lang$core$Json_Decode$string),
+				A2(_elm_lang$core$Json_Decode_ops[':='], 'key', _elm_lang$core$Json_Decode$string));
+			var body = _elm_lang$core$Json_Encode$object(
+				_elm_lang$core$Native_List.fromArray(
+					[
+						{
+						ctor: '_Tuple2',
+						_0: 'otp',
+						_1: _elm_lang$core$Json_Encode$string(otp.id)
+					},
+						{
+						ctor: '_Tuple2',
+						_0: 'pan',
+						_1: _elm_lang$core$Json_Encode$string(pan)
+					}
+					]));
+			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
+			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan');
+			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
+			return A3(
+				_lukewestby$elm_http_builder$HttpBuilder$send,
+				successReader,
+				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+				A2(
+					_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
+					body,
+					A3(
+						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+						'Authorization',
+						auth,
+						_lukewestby$elm_http_builder$HttpBuilder$post(resource))));
+		});
+
+	var _user$project$Pages_Settings$auth = function (guide) {
+		return guide ? A2(
+			_evancz$elm_markdown$Markdown$toHtml,
+			_elm_lang$core$Native_List.fromArray(
+				[]),
+			'\n## Authentication\n\nAll API services require authentication via Basic HTTP auth over HTTPS.\nUnauthorised requests will result in 401 Unauthorized.\nAll requests using the HTTP protocol will fail with 403 Forbidden status code.\n') : _elm_lang$html$Html$text('Client secret key:');
+	};
+	var _user$project$Pages_Settings$vault = function (guide) {
+		return guide ? A2(
+			_evancz$elm_markdown$Markdown$toHtml,
+			_elm_lang$core$Native_List.fromArray(
+				[]),
+			'\n## Secure Vault\n\nPCI Compliant secure storage which allows to store PAN.\nFollowing endpoints open for public use:\n\n- create OTP `POST /otp`\n- store PAN `POST /pan {otp}`\n- issue fake PAN `POST /pan/fake`\n') : _elm_lang$html$Html$text('Secure Vault url:');
+	};
+	var _user$project$Pages_Settings$service = function (guide) {
+		return guide ? A2(
+			_evancz$elm_markdown$Markdown$toHtml,
+			_elm_lang$core$Native_List.fromArray(
+				[]),
+			'\n## Service API\n\nThis API provides automation-related endpoints:\n\n- list services `GET /services` -> List Service\n- get schema for specific service `GET /service/:id` -> Service\n- create automation job `POST /jobs` -> Job\n- poll state of specific job `GET /jobs/:id` -> Job\n') : _elm_lang$html$Html$text('Service API url:');
+	};
 	var _user$project$Pages_Settings$update = F2(
 		function (msg, model) {
 			var _p0 = msg;
@@ -11096,12 +11190,19 @@
 					return _elm_lang$core$Native_Utils.update(
 						model,
 						{service: _p0._0});
-				default:
+				case 'SetVaultApiUrl':
 					return _elm_lang$core$Native_Utils.update(
 						model,
 						{vault: _p0._0});
+				default:
+					return _elm_lang$core$Native_Utils.update(
+						model,
+						{
+							guide: _elm_lang$core$Basics$not(model.guide)
+						});
 			}
 		});
+	var _user$project$Pages_Settings$ToggleGuide = {ctor: 'ToggleGuide'};
 	var _user$project$Pages_Settings$SetVaultApiUrl = function (a) {
 		return {ctor: 'SetVaultApiUrl', _0: a};
 	};
@@ -11139,10 +11240,33 @@
 					_elm_lang$core$Native_List.fromArray(
 						[
 							A2(
-							_evancz$elm_markdown$Markdown$toHtml,
+							_elm_lang$html$Html$label,
 							_elm_lang$core$Native_List.fromArray(
 								[]),
-							_user$project$Pages_Settings$service),
+							_elm_lang$core$Native_List.fromArray(
+								[
+									A2(
+									_elm_lang$html$Html$input,
+									_elm_lang$core$Native_List.fromArray(
+										[
+											_elm_lang$html$Html_Attributes$type$('checkbox'),
+											_elm_lang$html$Html_Attributes$checked(clientSettings.guide),
+											_elm_lang$html$Html_Events$onClick(_user$project$Pages_Settings$ToggleGuide)
+										]),
+									_elm_lang$core$Native_List.fromArray(
+										[])),
+									_elm_lang$html$Html$text(' Guide mode')
+								]))
+						])),
+					A2(
+					_elm_lang$html$Html$div,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
+						]),
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_user$project$Pages_Settings$service(clientSettings.guide),
 							A2(
 							_elm_lang$html$Html$input,
 							_elm_lang$core$Native_List.fromArray(
@@ -11166,11 +11290,7 @@
 						]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							A2(
-							_evancz$elm_markdown$Markdown$toHtml,
-							_elm_lang$core$Native_List.fromArray(
-								[]),
-							_user$project$Pages_Settings$vault),
+							_user$project$Pages_Settings$vault(clientSettings.guide),
 							A2(
 							_elm_lang$html$Html$input,
 							_elm_lang$core$Native_List.fromArray(
@@ -11194,11 +11314,7 @@
 						]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							A2(
-							_evancz$elm_markdown$Markdown$toHtml,
-							_elm_lang$core$Native_List.fromArray(
-								[]),
-							_user$project$Pages_Settings$auth),
+							_user$project$Pages_Settings$auth(clientSettings.guide),
 							A2(
 							_elm_lang$html$Html$input,
 							_elm_lang$core$Native_List.fromArray(
@@ -11322,7 +11438,11 @@
 								return function (h) {
 									return function (i) {
 										return function (j) {
-											return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j};
+											return function (k) {
+												return function (l) {
+													return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j, pan: k, fakePan: l};
+												};
+											};
 										};
 									};
 								};
@@ -11771,6 +11891,14 @@
 					]));
 		});
 
+	var _user$project$Messages$CreateFakePanSuccess = function (a) {
+		return {ctor: 'CreateFakePanSuccess', _0: a};
+	};
+	var _user$project$Messages$CreateFakePan = {ctor: 'CreateFakePan'};
+	var _user$project$Messages$CreatePanSuccess = function (a) {
+		return {ctor: 'CreatePanSuccess', _0: a};
+	};
+	var _user$project$Messages$CreatePan = {ctor: 'CreatePan'};
 	var _user$project$Messages$CreateOtpSuccess = function (a) {
 		return {ctor: 'CreateOtpSuccess', _0: a};
 	};
@@ -12039,24 +12167,27 @@
 						[]));
 			}
 		});
-	var _user$project$Main$viewLink = F2(
-		function (page, description) {
-			return A2(
-				_elm_lang$html$Html$a,
+	var _user$project$Main$viewLink = F3(
+		function (currentPage, page, description) {
+			var txt = _elm_lang$core$Native_List.fromArray(
+				[
+					_elm_lang$html$Html$text(description)
+				]);
+			var linkStyle = _elm_lang$html$Html_Attributes$style(
 				_elm_lang$core$Native_List.fromArray(
 					[
-						_elm_lang$html$Html_Attributes$style(
-						_elm_lang$core$Native_List.fromArray(
-							[
-								{ctor: '_Tuple2', _0: 'padding', _1: '0 20px'}
-							])),
+						{ctor: '_Tuple2', _0: 'padding', _1: '0 20px'}
+					]));
+			var block = _elm_lang$core$Native_Utils.eq(currentPage, page) ? _elm_lang$html$Html$span(
+				_elm_lang$core$Native_List.fromArray(
+					[linkStyle])) : _elm_lang$html$Html$a(
+				_elm_lang$core$Native_List.fromArray(
+					[
+						linkStyle,
 						_elm_lang$html$Html_Attributes$href(
 						_user$project$Main$toHash(page))
-					]),
-				_elm_lang$core$Native_List.fromArray(
-					[
-						_elm_lang$html$Html$text(description)
 					]));
+			return block(txt);
 		});
 	var _user$project$Main$view = function (model) {
 		return A2(
@@ -12073,15 +12204,22 @@
 						]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							A2(_user$project$Main$viewLink, _user$project$Pages$Home, 'Home'),
-							A2(_user$project$Main$viewLink, _user$project$Pages$Settings, 'Settings'),
-							A2(_user$project$Main$viewLink, _user$project$Pages$SecureVault, 'Secure Vault'),
-							A2(_user$project$Main$viewLink, _user$project$Pages$ServiceApi, 'Service API')
+							A3(_user$project$Main$viewLink, model.page, _user$project$Pages$Home, 'Home'),
+							A3(_user$project$Main$viewLink, model.page, _user$project$Pages$Settings, 'Settings'),
+							A3(_user$project$Main$viewLink, model.page, _user$project$Pages$SecureVault, 'Secure Vault'),
+							A3(_user$project$Main$viewLink, model.page, _user$project$Pages$ServiceApi, 'Service API')
 						])),
 					A2(
 					_elm_lang$html$Html$hr,
 					_elm_lang$core$Native_List.fromArray(
-						[]),
+						[
+							_elm_lang$html$Html_Attributes$style(
+							_elm_lang$core$Native_List.fromArray(
+								[
+									{ctor: '_Tuple2', _0: 'border', _1: '0'},
+									{ctor: '_Tuple2', _0: 'border-bottom', _1: '1px solid #ddd'}
+								]))
+						]),
 					_elm_lang$core$Native_List.fromArray(
 						[])),
 					A2(
@@ -12107,12 +12245,28 @@
 										_user$project$Pages_Settings$render(model.clientSettings))
 									]);
 							case 'SecureVault':
-								var otpId = function () {
-									var _p8 = model.otp;
+								var fakePan = function () {
+									var _p8 = model.fakePan;
 									if (_p8.ctor === 'Nothing') {
 										return _elm_lang$html$Html$text('');
 									} else {
-										return _elm_lang$html$Html$text(_p8._0.id);
+										return _elm_lang$html$Html$text(_p8._0);
+									}
+								}();
+								var panId = function () {
+									var _p9 = model.pan;
+									if (_p9.ctor === 'Nothing') {
+										return _elm_lang$html$Html$text('');
+									} else {
+										return _elm_lang$html$Html$text(_p9._0.id);
+									}
+								}();
+								var otpId = function () {
+									var _p10 = model.otp;
+									if (_p10.ctor === 'Nothing') {
+										return _elm_lang$html$Html$text('');
+									} else {
+										return _elm_lang$html$Html$text(_p10._0.id);
 									}
 								}();
 								return _elm_lang$core$Native_List.fromArray(
@@ -12135,7 +12289,29 @@
 													[
 														_elm_lang$html$Html$text('Create OTP')
 													])),
-												otpId
+												otpId,
+												A2(
+												_elm_lang$html$Html$button,
+												_elm_lang$core$Native_List.fromArray(
+													[
+														_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreatePan)
+													]),
+												_elm_lang$core$Native_List.fromArray(
+													[
+														_elm_lang$html$Html$text('Create PAN')
+													])),
+												panId,
+												A2(
+												_elm_lang$html$Html$button,
+												_elm_lang$core$Native_List.fromArray(
+													[
+														_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreateFakePan)
+													]),
+												_elm_lang$core$Native_List.fromArray(
+													[
+														_elm_lang$html$Html$text('Create Fake PAN')
+													])),
+												fakePan
 											]))
 									]);
 							default:
@@ -12151,13 +12327,13 @@
 		'storeConfig',
 		function (v) {
 			return {
-				clientSettings: (v.clientSettings.ctor === 'Nothing') ? null : {service: v.clientSettings._0.service, vault: v.clientSettings._0.vault, secretKey: v.clientSettings._0.secretKey}
+				clientSettings: (v.clientSettings.ctor === 'Nothing') ? null : {service: v.clientSettings._0.service, vault: v.clientSettings._0.vault, secretKey: v.clientSettings._0.secretKey, guide: v.clientSettings._0.guide}
 			};
 		});
 	var _user$project$Main$update = F2(
 		function (msg, model) {
-			var _p9 = msg;
-			switch (_p9.ctor) {
+			var _p11 = msg;
+			switch (_p11.ctor) {
 				case 'NoOp':
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
@@ -12165,7 +12341,7 @@
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'PagesSettingsMsg':
-					var settings = A2(_user$project$Pages_Settings$update, _p9._0, model.clientSettings);
+					var settings = A2(_user$project$Pages_Settings$update, _p11._0, model.clientSettings);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -12178,9 +12354,9 @@
 									_elm_lang$core$Maybe$Just(settings)))
 							]));
 				case 'PagesSchemaMsg':
-					var _p10 = A2(_user$project$Pages_Schema$update, _p9._0, model);
-					var model = _p10._0;
-					var cmd = _p10._1;
+					var _p12 = A2(_user$project$Pages_Schema$update, _p11._0, model);
+					var model = _p12._0;
+					var cmd = _p12._1;
 					return {
 						ctor: '_Tuple2',
 						_0: model,
@@ -12202,7 +12378,7 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								error: _elm_lang$core$Basics$toString(_p9._0)
+								error: _elm_lang$core$Basics$toString(_p11._0)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
@@ -12212,30 +12388,30 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								services: _elm_lang$core$Maybe$Just(_p9._0.data)
+								services: _elm_lang$core$Maybe$Just(_p11._0.data)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'FetchService':
-					var _p11 = _p9._0;
+					var _p13 = _p11._0;
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
-							{serviceId: _p11, error: ''}),
+							{serviceId: _p13, error: ''}),
 						_elm_lang$core$Native_List.fromArray(
 							[
-								A2(_user$project$Main$fetchService, _p11, model.clientSettings)
+								A2(_user$project$Main$fetchService, _p13, model.clientSettings)
 							]));
 				case 'FetchServiceSuccess':
-					var _p12 = _user$project$JsonSchema$convert(_p9._0.data.schema);
-					if (_p12.ctor === 'Ok') {
+					var _p14 = _user$project$JsonSchema$convert(_p11._0.data.schema);
+					if (_p14.ctor === 'Ok') {
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
 								{
-									schema: _elm_lang$core$Maybe$Just(_p12._0)
+									schema: _elm_lang$core$Maybe$Just(_p14._0)
 								}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
@@ -12244,7 +12420,7 @@
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
-								{error: _p12._0}),
+								{error: _p14._0}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
 					}
@@ -12260,13 +12436,60 @@
 								_user$project$Messages$CreateOtpSuccess,
 								_user$project$Services_Otp$create(model.clientSettings))
 							]));
+				case 'CreateOtpSuccess':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								otp: _elm_lang$core$Maybe$Just(_p11._0.data)
+							}),
+						_elm_lang$core$Native_List.fromArray(
+							[]));
+				case 'CreatePan':
+					var _p15 = model.otp;
+					if (_p15.ctor === 'Nothing') {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[]));
+					} else {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									A3(
+									_elm_lang$core$Task$perform,
+									_user$project$Messages$ResponseError,
+									_user$project$Messages$CreatePanSuccess,
+									A3(_user$project$Services_Pan$create, _p15._0, '4111111111111111', model.clientSettings))
+								]));
+					}
+				case 'CreatePanSuccess':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								pan: _elm_lang$core$Maybe$Just(_p11._0.data)
+							}),
+						_elm_lang$core$Native_List.fromArray(
+							[]));
+				case 'CreateFakePan':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						model,
+						_elm_lang$core$Native_List.fromArray(
+							[]));
 				default:
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								otp: _elm_lang$core$Maybe$Just(_p9._0.data)
+								fakePan: _elm_lang$core$Maybe$Just(_p11._0.data)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
@@ -12282,7 +12505,11 @@
 								return function (h) {
 									return function (i) {
 										return function (j) {
-											return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j};
+											return function (k) {
+												return function (l) {
+													return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j, pan: k, fakePan: l};
+												};
+											};
 										};
 									};
 								};
@@ -12295,19 +12522,19 @@
 	};
 	var _user$project$Main$init = F2(
 		function (persistedData, result) {
-			var defaultSettings = A3(_user$project$Types$ClientSettings, 'http://localhost:3000', 'https://localhost:5000', '');
+			var defaultSettings = A4(_user$project$Types$ClientSettings, 'http://localhost:3000', 'https://localhost:5000', '', false);
 			var cfg = function () {
-				var _p13 = persistedData.clientSettings;
-				if (_p13.ctor === 'Nothing') {
+				var _p16 = persistedData.clientSettings;
+				if (_p16.ctor === 'Nothing') {
 					return defaultSettings;
 				} else {
-					return _p13._0;
+					return _p16._0;
 				}
 			}();
 			return A2(
 				_user$project$Main$urlUpdate,
 				result,
-				_user$project$Main$Model(_user$project$Pages$Settings)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Dict$empty)(cfg)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing));
+				_user$project$Main$Model(_user$project$Pages$Settings)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Dict$empty)(cfg)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing));
 		});
 	var _user$project$Main$main = {
 		main: A2(
@@ -12328,18 +12555,23 @@
 							_elm_lang$core$Maybe$Just,
 							A2(
 								_elm_lang$core$Json_Decode$andThen,
-								A2(_elm_lang$core$Json_Decode_ops[':='], 'secretKey', _elm_lang$core$Json_Decode$string),
-								function (secretKey) {
+								A2(_elm_lang$core$Json_Decode_ops[':='], 'guide', _elm_lang$core$Json_Decode$bool),
+								function (guide) {
 									return A2(
 										_elm_lang$core$Json_Decode$andThen,
-										A2(_elm_lang$core$Json_Decode_ops[':='], 'service', _elm_lang$core$Json_Decode$string),
-										function (service) {
+										A2(_elm_lang$core$Json_Decode_ops[':='], 'secretKey', _elm_lang$core$Json_Decode$string),
+										function (secretKey) {
 											return A2(
 												_elm_lang$core$Json_Decode$andThen,
-												A2(_elm_lang$core$Json_Decode_ops[':='], 'vault', _elm_lang$core$Json_Decode$string),
-												function (vault) {
-													return _elm_lang$core$Json_Decode$succeed(
-														{secretKey: secretKey, service: service, vault: vault});
+												A2(_elm_lang$core$Json_Decode_ops[':='], 'service', _elm_lang$core$Json_Decode$string),
+												function (service) {
+													return A2(
+														_elm_lang$core$Json_Decode$andThen,
+														A2(_elm_lang$core$Json_Decode_ops[':='], 'vault', _elm_lang$core$Json_Decode$string),
+														function (vault) {
+															return _elm_lang$core$Json_Decode$succeed(
+																{guide: guide, secretKey: secretKey, service: service, vault: vault});
+														});
 												});
 										});
 								}))
