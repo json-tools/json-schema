@@ -11099,7 +11099,7 @@
 					[
 						{
 						ctor: '_Tuple2',
-						_0: 'pan_id',
+						_0: 'panId',
 						_1: _elm_lang$core$Json_Encode$string(panId)
 					}
 					]));
