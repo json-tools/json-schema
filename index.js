@@ -50,7 +50,9 @@
 	const Elm = __webpack_require__(2);
 
 	const storedState = localStorage.getItem('client-app-persisted-data-v3');
-	const appState = storedState ? JSON.parse(storedState) : null;
+	const appState = storedState ? JSON.parse(storedState) : {
+	    clientSettings: null
+	};
 
 	function init(state) {
 	    const clientApp = Elm.Main.fullscreen(appState);
@@ -6638,6 +6640,188 @@
 	var _elm_community$json_extra$Json_Decode_Extra_ops = _elm_community$json_extra$Json_Decode_Extra_ops || {};
 	_elm_community$json_extra$Json_Decode_Extra_ops['|:'] = _elm_community$json_extra$Json_Decode_Extra$apply;
 
+	var _elm_lang$core$Process$kill = _elm_lang$core$Native_Scheduler.kill;
+	var _elm_lang$core$Process$sleep = _elm_lang$core$Native_Scheduler.sleep;
+	var _elm_lang$core$Process$spawn = _elm_lang$core$Native_Scheduler.spawn;
+
+	var _elm_lang$dom$Native_Dom = function() {
+
+	function on(node)
+	{
+		return function(eventName, decoder, toTask)
+		{
+			return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback) {
+
+				function performTask(event)
+				{
+					var result = A2(_elm_lang$core$Json_Decode$decodeValue, decoder, event);
+					if (result.ctor === 'Ok')
+					{
+						_elm_lang$core$Native_Scheduler.rawSpawn(toTask(result._0));
+					}
+				}
+
+				node.addEventListener(eventName, performTask);
+
+				return function()
+				{
+					node.removeEventListener(eventName, performTask);
+				};
+			});
+		};
+	}
+
+	var rAF = typeof requestAnimationFrame !== 'undefined'
+		? requestAnimationFrame
+		: function(callback) { callback(); };
+
+	function withNode(id, doStuff)
+	{
+		return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+		{
+			rAF(function()
+			{
+				var node = document.getElementById(id);
+				if (node === null)
+				{
+					callback(_elm_lang$core$Native_Scheduler.fail({ ctor: 'NotFound', _0: id }));
+					return;
+				}
+				callback(_elm_lang$core$Native_Scheduler.succeed(doStuff(node)));
+			});
+		});
+	}
+
+
+	// FOCUS
+
+	function focus(id)
+	{
+		return withNode(id, function(node) {
+			node.focus();
+			return _elm_lang$core$Native_Utils.Tuple0;
+		});
+	}
+
+	function blur(id)
+	{
+		return withNode(id, function(node) {
+			node.blur();
+			return _elm_lang$core$Native_Utils.Tuple0;
+		});
+	}
+
+
+	// SCROLLING
+
+	function getScrollTop(id)
+	{
+		return withNode(id, function(node) {
+			return node.scrollTop;
+		});
+	}
+
+	function setScrollTop(id, desiredScrollTop)
+	{
+		return withNode(id, function(node) {
+			node.scrollTop = desiredScrollTop;
+			return _elm_lang$core$Native_Utils.Tuple0;
+		});
+	}
+
+	function toBottom(id)
+	{
+		return withNode(id, function(node) {
+			node.scrollTop = node.scrollHeight;
+			return _elm_lang$core$Native_Utils.Tuple0;
+		});
+	}
+
+	function getScrollLeft(id)
+	{
+		return withNode(id, function(node) {
+			return node.scrollLeft;
+		});
+	}
+
+	function setScrollLeft(id, desiredScrollLeft)
+	{
+		return withNode(id, function(node) {
+			node.scrollLeft = desiredScrollLeft;
+			return _elm_lang$core$Native_Utils.Tuple0;
+		});
+	}
+
+	function toRight(id)
+	{
+		return withNode(id, function(node) {
+			node.scrollLeft = node.scrollWidth;
+			return _elm_lang$core$Native_Utils.Tuple0;
+		});
+	}
+
+
+	// SIZE
+
+	function width(options, id)
+	{
+		return withNode(id, function(node) {
+			switch (options.ctor)
+			{
+				case 'Content':
+					return node.scrollWidth;
+				case 'VisibleContent':
+					return node.clientWidth;
+				case 'VisibleContentWithBorders':
+					return node.offsetWidth;
+				case 'VisibleContentWithBordersAndMargins':
+					var rect = node.getBoundingClientRect();
+					return rect.right - rect.left;
+			}
+		});
+	}
+
+	function height(options, id)
+	{
+		return withNode(id, function(node) {
+			switch (options.ctor)
+			{
+				case 'Content':
+					return node.scrollHeight;
+				case 'VisibleContent':
+					return node.clientHeight;
+				case 'VisibleContentWithBorders':
+					return node.offsetHeight;
+				case 'VisibleContentWithBordersAndMargins':
+					var rect = node.getBoundingClientRect();
+					return rect.bottom - rect.top;
+			}
+		});
+	}
+
+	return {
+		onDocument: F3(on(document)),
+		onWindow: F3(on(window)),
+
+		focus: focus,
+		blur: blur,
+
+		getScrollTop: getScrollTop,
+		setScrollTop: F2(setScrollTop),
+		getScrollLeft: getScrollLeft,
+		setScrollLeft: F2(setScrollLeft),
+		toBottom: toBottom,
+		toRight: toRight,
+
+		height: F2(height),
+		width: F2(width)
+	};
+
+	}();
+
+	var _elm_lang$dom$Dom_LowLevel$onWindow = _elm_lang$dom$Native_Dom.onWindow;
+	var _elm_lang$dom$Dom_LowLevel$onDocument = _elm_lang$dom$Native_Dom.onDocument;
+
 	//import Native.Json //
 
 	var _elm_lang$virtual_dom$Native_VirtualDom = function() {
@@ -8718,6 +8902,353 @@
 			return {stopPropagation: a, preventDefault: b};
 		});
 
+	var _elm_lang$navigation$Native_Navigation = function() {
+
+	function go(n)
+	{
+		return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+		{
+			if (n !== 0)
+			{
+				history.go(n);
+			}
+			callback(_elm_lang$core$Native_Scheduler.succeed(_elm_lang$core$Native_Utils.Tuple0));
+		});
+	}
+
+	function pushState(url)
+	{
+		return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+		{
+			history.pushState({}, '', url);
+			callback(_elm_lang$core$Native_Scheduler.succeed(getLocation()));
+		});
+	}
+
+	function replaceState(url)
+	{
+		return _elm_lang$core$Native_Scheduler.nativeBinding(function(callback)
+		{
+			history.replaceState({}, '', url);
+			callback(_elm_lang$core$Native_Scheduler.succeed(getLocation()));
+		});
+	}
+
+	function getLocation()
+	{
+		var location = document.location;
+
+		return {
+			href: location.href,
+			host: location.host,
+			hostname: location.hostname,
+			protocol: location.protocol,
+			origin: location.origin,
+			port_: location.port,
+			pathname: location.pathname,
+			search: location.search,
+			hash: location.hash,
+			username: location.username,
+			password: location.password
+		};
+	}
+
+
+	return {
+		go: go,
+		pushState: pushState,
+		replaceState: replaceState,
+		getLocation: getLocation
+	};
+
+	}();
+
+	var _elm_lang$navigation$Navigation$replaceState = _elm_lang$navigation$Native_Navigation.replaceState;
+	var _elm_lang$navigation$Navigation$pushState = _elm_lang$navigation$Native_Navigation.pushState;
+	var _elm_lang$navigation$Navigation$go = _elm_lang$navigation$Native_Navigation.go;
+	var _elm_lang$navigation$Navigation$spawnPopState = function (router) {
+		return _elm_lang$core$Process$spawn(
+			A3(
+				_elm_lang$dom$Dom_LowLevel$onWindow,
+				'popstate',
+				_elm_lang$core$Json_Decode$value,
+				function (_p0) {
+					return A2(
+						_elm_lang$core$Platform$sendToSelf,
+						router,
+						_elm_lang$navigation$Native_Navigation.getLocation(
+							{ctor: '_Tuple0'}));
+				}));
+	};
+	var _elm_lang$navigation$Navigation_ops = _elm_lang$navigation$Navigation_ops || {};
+	_elm_lang$navigation$Navigation_ops['&>'] = F2(
+		function (task1, task2) {
+			return A2(
+				_elm_lang$core$Task$andThen,
+				task1,
+				function (_p1) {
+					return task2;
+				});
+		});
+	var _elm_lang$navigation$Navigation$notify = F3(
+		function (router, subs, location) {
+			var send = function (_p2) {
+				var _p3 = _p2;
+				return A2(
+					_elm_lang$core$Platform$sendToApp,
+					router,
+					_p3._0(location));
+			};
+			return A2(
+				_elm_lang$navigation$Navigation_ops['&>'],
+				_elm_lang$core$Task$sequence(
+					A2(_elm_lang$core$List$map, send, subs)),
+				_elm_lang$core$Task$succeed(
+					{ctor: '_Tuple0'}));
+		});
+	var _elm_lang$navigation$Navigation$onSelfMsg = F3(
+		function (router, location, state) {
+			return A2(
+				_elm_lang$navigation$Navigation_ops['&>'],
+				A3(_elm_lang$navigation$Navigation$notify, router, state.subs, location),
+				_elm_lang$core$Task$succeed(state));
+		});
+	var _elm_lang$navigation$Navigation$cmdHelp = F3(
+		function (router, subs, cmd) {
+			var _p4 = cmd;
+			switch (_p4.ctor) {
+				case 'Jump':
+					return _elm_lang$navigation$Navigation$go(_p4._0);
+				case 'New':
+					return A2(
+						_elm_lang$core$Task$andThen,
+						_elm_lang$navigation$Navigation$pushState(_p4._0),
+						A2(_elm_lang$navigation$Navigation$notify, router, subs));
+				default:
+					return A2(
+						_elm_lang$core$Task$andThen,
+						_elm_lang$navigation$Navigation$replaceState(_p4._0),
+						A2(_elm_lang$navigation$Navigation$notify, router, subs));
+			}
+		});
+	var _elm_lang$navigation$Navigation$updateHelp = F2(
+		function (func, _p5) {
+			var _p6 = _p5;
+			return {
+				ctor: '_Tuple2',
+				_0: _p6._0,
+				_1: A2(_elm_lang$core$Platform_Cmd$map, func, _p6._1)
+			};
+		});
+	var _elm_lang$navigation$Navigation$subscription = _elm_lang$core$Native_Platform.leaf('Navigation');
+	var _elm_lang$navigation$Navigation$command = _elm_lang$core$Native_Platform.leaf('Navigation');
+	var _elm_lang$navigation$Navigation$Location = function (a) {
+		return function (b) {
+			return function (c) {
+				return function (d) {
+					return function (e) {
+						return function (f) {
+							return function (g) {
+								return function (h) {
+									return function (i) {
+										return function (j) {
+											return function (k) {
+												return {href: a, host: b, hostname: c, protocol: d, origin: e, port_: f, pathname: g, search: h, hash: i, username: j, password: k};
+											};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
+	var _elm_lang$navigation$Navigation$State = F2(
+		function (a, b) {
+			return {subs: a, process: b};
+		});
+	var _elm_lang$navigation$Navigation$init = _elm_lang$core$Task$succeed(
+		A2(
+			_elm_lang$navigation$Navigation$State,
+			_elm_lang$core$Native_List.fromArray(
+				[]),
+			_elm_lang$core$Maybe$Nothing));
+	var _elm_lang$navigation$Navigation$onEffects = F4(
+		function (router, cmds, subs, _p7) {
+			var _p8 = _p7;
+			var _p10 = _p8.process;
+			var stepState = function () {
+				var _p9 = {ctor: '_Tuple2', _0: subs, _1: _p10};
+				_v4_2:
+				do {
+					if (_p9._0.ctor === '[]') {
+						if (_p9._1.ctor === 'Just') {
+							return A2(
+								_elm_lang$navigation$Navigation_ops['&>'],
+								_elm_lang$core$Process$kill(_p9._1._0),
+								_elm_lang$core$Task$succeed(
+									A2(_elm_lang$navigation$Navigation$State, subs, _elm_lang$core$Maybe$Nothing)));
+						} else {
+							break _v4_2;
+						}
+					} else {
+						if (_p9._1.ctor === 'Nothing') {
+							return A2(
+								_elm_lang$core$Task$andThen,
+								_elm_lang$navigation$Navigation$spawnPopState(router),
+								function (pid) {
+									return _elm_lang$core$Task$succeed(
+										A2(
+											_elm_lang$navigation$Navigation$State,
+											subs,
+											_elm_lang$core$Maybe$Just(pid)));
+								});
+						} else {
+							break _v4_2;
+						}
+					}
+				} while(false);
+				return _elm_lang$core$Task$succeed(
+					A2(_elm_lang$navigation$Navigation$State, subs, _p10));
+			}();
+			return A2(
+				_elm_lang$navigation$Navigation_ops['&>'],
+				_elm_lang$core$Task$sequence(
+					A2(
+						_elm_lang$core$List$map,
+						A2(_elm_lang$navigation$Navigation$cmdHelp, router, subs),
+						cmds)),
+				stepState);
+		});
+	var _elm_lang$navigation$Navigation$UserMsg = function (a) {
+		return {ctor: 'UserMsg', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$Change = function (a) {
+		return {ctor: 'Change', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$Parser = function (a) {
+		return {ctor: 'Parser', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$makeParser = _elm_lang$navigation$Navigation$Parser;
+	var _elm_lang$navigation$Navigation$Modify = function (a) {
+		return {ctor: 'Modify', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$modifyUrl = function (url) {
+		return _elm_lang$navigation$Navigation$command(
+			_elm_lang$navigation$Navigation$Modify(url));
+	};
+	var _elm_lang$navigation$Navigation$New = function (a) {
+		return {ctor: 'New', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$newUrl = function (url) {
+		return _elm_lang$navigation$Navigation$command(
+			_elm_lang$navigation$Navigation$New(url));
+	};
+	var _elm_lang$navigation$Navigation$Jump = function (a) {
+		return {ctor: 'Jump', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$back = function (n) {
+		return _elm_lang$navigation$Navigation$command(
+			_elm_lang$navigation$Navigation$Jump(0 - n));
+	};
+	var _elm_lang$navigation$Navigation$forward = function (n) {
+		return _elm_lang$navigation$Navigation$command(
+			_elm_lang$navigation$Navigation$Jump(n));
+	};
+	var _elm_lang$navigation$Navigation$cmdMap = F2(
+		function (_p11, myCmd) {
+			var _p12 = myCmd;
+			switch (_p12.ctor) {
+				case 'Jump':
+					return _elm_lang$navigation$Navigation$Jump(_p12._0);
+				case 'New':
+					return _elm_lang$navigation$Navigation$New(_p12._0);
+				default:
+					return _elm_lang$navigation$Navigation$Modify(_p12._0);
+			}
+		});
+	var _elm_lang$navigation$Navigation$Monitor = function (a) {
+		return {ctor: 'Monitor', _0: a};
+	};
+	var _elm_lang$navigation$Navigation$programWithFlags = F2(
+		function (_p13, stuff) {
+			var _p14 = _p13;
+			var _p16 = _p14._0;
+			var location = _elm_lang$navigation$Native_Navigation.getLocation(
+				{ctor: '_Tuple0'});
+			var init = function (flags) {
+				return A2(
+					_elm_lang$navigation$Navigation$updateHelp,
+					_elm_lang$navigation$Navigation$UserMsg,
+					A2(
+						stuff.init,
+						flags,
+						_p16(location)));
+			};
+			var view = function (model) {
+				return A2(
+					_elm_lang$html$Html_App$map,
+					_elm_lang$navigation$Navigation$UserMsg,
+					stuff.view(model));
+			};
+			var subs = function (model) {
+				return _elm_lang$core$Platform_Sub$batch(
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$navigation$Navigation$subscription(
+							_elm_lang$navigation$Navigation$Monitor(_elm_lang$navigation$Navigation$Change)),
+							A2(
+							_elm_lang$core$Platform_Sub$map,
+							_elm_lang$navigation$Navigation$UserMsg,
+							stuff.subscriptions(model))
+						]));
+			};
+			var update = F2(
+				function (msg, model) {
+					return A2(
+						_elm_lang$navigation$Navigation$updateHelp,
+						_elm_lang$navigation$Navigation$UserMsg,
+						function () {
+							var _p15 = msg;
+							if (_p15.ctor === 'Change') {
+								return A2(
+									stuff.urlUpdate,
+									_p16(_p15._0),
+									model);
+							} else {
+								return A2(stuff.update, _p15._0, model);
+							}
+						}());
+				});
+			return _elm_lang$html$Html_App$programWithFlags(
+				{init: init, view: view, update: update, subscriptions: subs});
+		});
+	var _elm_lang$navigation$Navigation$program = F2(
+		function (parser, stuff) {
+			return A2(
+				_elm_lang$navigation$Navigation$programWithFlags,
+				parser,
+				_elm_lang$core$Native_Utils.update(
+					stuff,
+					{
+						init: function (_p17) {
+							return stuff.init;
+						}
+					}));
+		});
+	var _elm_lang$navigation$Navigation$subMap = F2(
+		function (func, _p18) {
+			var _p19 = _p18;
+			return _elm_lang$navigation$Navigation$Monitor(
+				function (_p20) {
+					return func(
+						_p19._0(_p20));
+				});
+		});
+	_elm_lang$core$Native_Platform.effectManagers['Navigation'] = {pkg: 'elm-lang/navigation', init: _elm_lang$navigation$Navigation$init, onEffects: _elm_lang$navigation$Navigation$onEffects, onSelfMsg: _elm_lang$navigation$Navigation$onSelfMsg, tag: 'fx', cmdMap: _elm_lang$navigation$Navigation$cmdMap, subMap: _elm_lang$navigation$Navigation$subMap};
+
 	//import Dict, List, Maybe, Native.Scheduler //
 
 	var _evancz$elm_http$Native_Http = function() {
@@ -9074,6 +9605,323 @@
 				_evancz$elm_http$Http$fromJson,
 				decoder,
 				A2(_evancz$elm_http$Http$send, _evancz$elm_http$Http$defaultSettings, request));
+		});
+
+	var _evancz$elm_markdown$Native_Markdown = function() {
+
+
+	// VIRTUAL-DOM WIDGETS
+
+	function toHtml(options, factList, rawMarkdown)
+	{
+		var model = {
+			options: options,
+			markdown: rawMarkdown
+		};
+		return _elm_lang$virtual_dom$Native_VirtualDom.custom(factList, model, implementation);
+	}
+
+
+	// WIDGET IMPLEMENTATION
+
+	var implementation = {
+		render: render,
+		diff: diff
+	};
+
+	function render(model)
+	{
+		var html = marked(model.markdown, formatOptions(model.options));
+		var div = document.createElement('div');
+		div.innerHTML = html;
+		return div;
+	}
+
+	function diff(a, b)
+	{
+		
+		if (a.model.markdown === b.model.markdown && a.model.options === b.model.options)
+		{
+			return null;
+		}
+
+		return {
+			applyPatch: applyPatch,
+			data: marked(b.model.markdown, formatOptions(b.model.options))
+		};
+	}
+
+	function applyPatch(domNode, data)
+	{
+		domNode.innerHTML = data;
+		return domNode;
+	}
+
+
+	// ACTUAL MARKDOWN PARSER
+
+	var marked = function() {
+		// catch the `marked` object regardless of the outer environment.
+		// (ex. a CommonJS module compatible environment.)
+		// note that this depends on marked's implementation of environment detection.
+		var module = {};
+		var exports = module.exports = {};
+
+		/**
+		 * marked - a markdown parser
+		 * Copyright (c) 2011-2014, Christopher Jeffrey. (MIT Licensed)
+		 * https://github.com/chjj/marked
+		 */
+		(function(){var block={newline:/^\n+/,code:/^( {4}[^\n]+\n*)+/,fences:noop,hr:/^( *[-*_]){3,} *(?:\n+|$)/,heading:/^ *(#{1,6}) *([^\n]+?) *#* *(?:\n+|$)/,nptable:noop,lheading:/^([^\n]+)\n *(=|-){2,} *(?:\n+|$)/,blockquote:/^( *>[^\n]+(\n(?!def)[^\n]+)*\n*)+/,list:/^( *)(bull) [\s\S]+?(?:hr|def|\n{2,}(?! )(?!\1bull )\n*|\s*$)/,html:/^ *(?:comment|closed|closing) *(?:\n{2,}|\s*$)/,def:/^ *\[([^\]]+)\]: *<?([^\s>]+)>?(?: +["(]([^\n]+)[")])? *(?:\n+|$)/,table:noop,paragraph:/^((?:[^\n]+\n?(?!hr|heading|lheading|blockquote|tag|def))+)\n*/,text:/^[^\n]+/};block.bullet=/(?:[*+-]|\d+\.)/;block.item=/^( *)(bull) [^\n]*(?:\n(?!\1bull )[^\n]*)*/;block.item=replace(block.item,"gm")(/bull/g,block.bullet)();block.list=replace(block.list)(/bull/g,block.bullet)("hr","\\n+(?=\\1?(?:[-*_] *){3,}(?:\\n+|$))")("def","\\n+(?="+block.def.source+")")();block.blockquote=replace(block.blockquote)("def",block.def)();block._tag="(?!(?:"+"a|em|strong|small|s|cite|q|dfn|abbr|data|time|code"+"|var|samp|kbd|sub|sup|i|b|u|mark|ruby|rt|rp|bdi|bdo"+"|span|br|wbr|ins|del|img)\\b)\\w+(?!:/|[^\\w\\s@]*@)\\b";block.html=replace(block.html)("comment",/<!--[\s\S]*?-->/)("closed",/<(tag)[\s\S]+?<\/\1>/)("closing",/<tag(?:"[^"]*"|'[^']*'|[^'">])*?>/)(/tag/g,block._tag)();block.paragraph=replace(block.paragraph)("hr",block.hr)("heading",block.heading)("lheading",block.lheading)("blockquote",block.blockquote)("tag","<"+block._tag)("def",block.def)();block.normal=merge({},block);block.gfm=merge({},block.normal,{fences:/^ *(`{3,}|~{3,}) *(\S+)? *\n([\s\S]+?)\s*\1 *(?:\n+|$)/,paragraph:/^/});block.gfm.paragraph=replace(block.paragraph)("(?!","(?!"+block.gfm.fences.source.replace("\\1","\\2")+"|"+block.list.source.replace("\\1","\\3")+"|")();block.tables=merge({},block.gfm,{nptable:/^ *(\S.*\|.*)\n *([-:]+ *\|[-| :]*)\n((?:.*\|.*(?:\n|$))*)\n*/,table:/^ *\|(.+)\n *\|( *[-:]+[-| :]*)\n((?: *\|.*(?:\n|$))*)\n*/});function Lexer(options){this.tokens=[];this.tokens.links={};this.options=options||marked.defaults;this.rules=block.normal;if(this.options.gfm){if(this.options.tables){this.rules=block.tables}else{this.rules=block.gfm}}}Lexer.rules=block;Lexer.lex=function(src,options){var lexer=new Lexer(options);return lexer.lex(src)};Lexer.prototype.lex=function(src){src=src.replace(/\r\n|\r/g,"\n").replace(/\t/g,"    ").replace(/\u00a0/g," ").replace(/\u2424/g,"\n");return this.token(src,true)};Lexer.prototype.token=function(src,top,bq){var src=src.replace(/^ +$/gm,""),next,loose,cap,bull,b,item,space,i,l;while(src){if(cap=this.rules.newline.exec(src)){src=src.substring(cap[0].length);if(cap[0].length>1){this.tokens.push({type:"space"})}}if(cap=this.rules.code.exec(src)){src=src.substring(cap[0].length);cap=cap[0].replace(/^ {4}/gm,"");this.tokens.push({type:"code",text:!this.options.pedantic?cap.replace(/\n+$/,""):cap});continue}if(cap=this.rules.fences.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:"code",lang:cap[2],text:cap[3]});continue}if(cap=this.rules.heading.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:"heading",depth:cap[1].length,text:cap[2]});continue}if(top&&(cap=this.rules.nptable.exec(src))){src=src.substring(cap[0].length);item={type:"table",header:cap[1].replace(/^ *| *\| *$/g,"").split(/ *\| */),align:cap[2].replace(/^ *|\| *$/g,"").split(/ *\| */),cells:cap[3].replace(/\n$/,"").split("\n")};for(i=0;i<item.align.length;i++){if(/^ *-+: *$/.test(item.align[i])){item.align[i]="right"}else if(/^ *:-+: *$/.test(item.align[i])){item.align[i]="center"}else if(/^ *:-+ *$/.test(item.align[i])){item.align[i]="left"}else{item.align[i]=null}}for(i=0;i<item.cells.length;i++){item.cells[i]=item.cells[i].split(/ *\| */)}this.tokens.push(item);continue}if(cap=this.rules.lheading.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:"heading",depth:cap[2]==="="?1:2,text:cap[1]});continue}if(cap=this.rules.hr.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:"hr"});continue}if(cap=this.rules.blockquote.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:"blockquote_start"});cap=cap[0].replace(/^ *> ?/gm,"");this.token(cap,top,true);this.tokens.push({type:"blockquote_end"});continue}if(cap=this.rules.list.exec(src)){src=src.substring(cap[0].length);bull=cap[2];this.tokens.push({type:"list_start",ordered:bull.length>1});cap=cap[0].match(this.rules.item);next=false;l=cap.length;i=0;for(;i<l;i++){item=cap[i];space=item.length;item=item.replace(/^ *([*+-]|\d+\.) +/,"");if(~item.indexOf("\n ")){space-=item.length;item=!this.options.pedantic?item.replace(new RegExp("^ {1,"+space+"}","gm"),""):item.replace(/^ {1,4}/gm,"")}if(this.options.smartLists&&i!==l-1){b=block.bullet.exec(cap[i+1])[0];if(bull!==b&&!(bull.length>1&&b.length>1)){src=cap.slice(i+1).join("\n")+src;i=l-1}}loose=next||/\n\n(?!\s*$)/.test(item);if(i!==l-1){next=item.charAt(item.length-1)==="\n";if(!loose)loose=next}this.tokens.push({type:loose?"loose_item_start":"list_item_start"});this.token(item,false,bq);this.tokens.push({type:"list_item_end"})}this.tokens.push({type:"list_end"});continue}if(cap=this.rules.html.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:this.options.sanitize?"paragraph":"html",pre:cap[1]==="pre"||cap[1]==="script"||cap[1]==="style",text:cap[0]});continue}if(!bq&&top&&(cap=this.rules.def.exec(src))){src=src.substring(cap[0].length);this.tokens.links[cap[1].toLowerCase()]={href:cap[2],title:cap[3]};continue}if(top&&(cap=this.rules.table.exec(src))){src=src.substring(cap[0].length);item={type:"table",header:cap[1].replace(/^ *| *\| *$/g,"").split(/ *\| */),align:cap[2].replace(/^ *|\| *$/g,"").split(/ *\| */),cells:cap[3].replace(/(?: *\| *)?\n$/,"").split("\n")};for(i=0;i<item.align.length;i++){if(/^ *-+: *$/.test(item.align[i])){item.align[i]="right"}else if(/^ *:-+: *$/.test(item.align[i])){item.align[i]="center"}else if(/^ *:-+ *$/.test(item.align[i])){item.align[i]="left"}else{item.align[i]=null}}for(i=0;i<item.cells.length;i++){item.cells[i]=item.cells[i].replace(/^ *\| *| *\| *$/g,"").split(/ *\| */)}this.tokens.push(item);continue}if(top&&(cap=this.rules.paragraph.exec(src))){src=src.substring(cap[0].length);this.tokens.push({type:"paragraph",text:cap[1].charAt(cap[1].length-1)==="\n"?cap[1].slice(0,-1):cap[1]});continue}if(cap=this.rules.text.exec(src)){src=src.substring(cap[0].length);this.tokens.push({type:"text",text:cap[0]});continue}if(src){throw new Error("Infinite loop on byte: "+src.charCodeAt(0))}}return this.tokens};var inline={escape:/^\\([\\`*{}\[\]()#+\-.!_>])/,autolink:/^<([^ >]+(@|:\/)[^ >]+)>/,url:noop,tag:/^<!--[\s\S]*?-->|^<\/?\w+(?:"[^"]*"|'[^']*'|[^'">])*?>/,link:/^!?\[(inside)\]\(href\)/,reflink:/^!?\[(inside)\]\s*\[([^\]]*)\]/,nolink:/^!?\[((?:\[[^\]]*\]|[^\[\]])*)\]/,strong:/^__([\s\S]+?)__(?!_)|^\*\*([\s\S]+?)\*\*(?!\*)/,em:/^\b_((?:__|[\s\S])+?)_\b|^\*((?:\*\*|[\s\S])+?)\*(?!\*)/,code:/^(`+)\s*([\s\S]*?[^`])\s*\1(?!`)/,br:/^ {2,}\n(?!\s*$)/,del:noop,text:/^[\s\S]+?(?=[\\<!\[_*`]| {2,}\n|$)/};inline._inside=/(?:\[[^\]]*\]|[^\[\]]|\](?=[^\[]*\]))*/;inline._href=/\s*<?([\s\S]*?)>?(?:\s+['"]([\s\S]*?)['"])?\s*/;inline.link=replace(inline.link)("inside",inline._inside)("href",inline._href)();inline.reflink=replace(inline.reflink)("inside",inline._inside)();inline.normal=merge({},inline);inline.pedantic=merge({},inline.normal,{strong:/^__(?=\S)([\s\S]*?\S)__(?!_)|^\*\*(?=\S)([\s\S]*?\S)\*\*(?!\*)/,em:/^_(?=\S)([\s\S]*?\S)_(?!_)|^\*(?=\S)([\s\S]*?\S)\*(?!\*)/});inline.gfm=merge({},inline.normal,{escape:replace(inline.escape)("])","~|])")(),url:/^(https?:\/\/[^\s<]+[^<.,:;"')\]\s])/,del:/^~~(?=\S)([\s\S]*?\S)~~/,text:replace(inline.text)("]|","~]|")("|","|https?://|")()});inline.breaks=merge({},inline.gfm,{br:replace(inline.br)("{2,}","*")(),text:replace(inline.gfm.text)("{2,}","*")()});function InlineLexer(links,options){this.options=options||marked.defaults;this.links=links;this.rules=inline.normal;this.renderer=this.options.renderer||new Renderer;this.renderer.options=this.options;if(!this.links){throw new Error("Tokens array requires a `links` property.")}if(this.options.gfm){if(this.options.breaks){this.rules=inline.breaks}else{this.rules=inline.gfm}}else if(this.options.pedantic){this.rules=inline.pedantic}}InlineLexer.rules=inline;InlineLexer.output=function(src,links,options){var inline=new InlineLexer(links,options);return inline.output(src)};InlineLexer.prototype.output=function(src){var out="",link,text,href,cap;while(src){if(cap=this.rules.escape.exec(src)){src=src.substring(cap[0].length);out+=cap[1];continue}if(cap=this.rules.autolink.exec(src)){src=src.substring(cap[0].length);if(cap[2]==="@"){text=cap[1].charAt(6)===":"?this.mangle(cap[1].substring(7)):this.mangle(cap[1]);href=this.mangle("mailto:")+text}else{text=escape(cap[1]);href=text}out+=this.renderer.link(href,null,text);continue}if(!this.inLink&&(cap=this.rules.url.exec(src))){src=src.substring(cap[0].length);text=escape(cap[1]);href=text;out+=this.renderer.link(href,null,text);continue}if(cap=this.rules.tag.exec(src)){if(!this.inLink&&/^<a /i.test(cap[0])){this.inLink=true}else if(this.inLink&&/^<\/a>/i.test(cap[0])){this.inLink=false}src=src.substring(cap[0].length);out+=this.options.sanitize?escape(cap[0]):cap[0];continue}if(cap=this.rules.link.exec(src)){src=src.substring(cap[0].length);this.inLink=true;out+=this.outputLink(cap,{href:cap[2],title:cap[3]});this.inLink=false;continue}if((cap=this.rules.reflink.exec(src))||(cap=this.rules.nolink.exec(src))){src=src.substring(cap[0].length);link=(cap[2]||cap[1]).replace(/\s+/g," ");link=this.links[link.toLowerCase()];if(!link||!link.href){out+=cap[0].charAt(0);src=cap[0].substring(1)+src;continue}this.inLink=true;out+=this.outputLink(cap,link);this.inLink=false;continue}if(cap=this.rules.strong.exec(src)){src=src.substring(cap[0].length);out+=this.renderer.strong(this.output(cap[2]||cap[1]));continue}if(cap=this.rules.em.exec(src)){src=src.substring(cap[0].length);out+=this.renderer.em(this.output(cap[2]||cap[1]));continue}if(cap=this.rules.code.exec(src)){src=src.substring(cap[0].length);out+=this.renderer.codespan(escape(cap[2],true));continue}if(cap=this.rules.br.exec(src)){src=src.substring(cap[0].length);out+=this.renderer.br();continue}if(cap=this.rules.del.exec(src)){src=src.substring(cap[0].length);out+=this.renderer.del(this.output(cap[1]));continue}if(cap=this.rules.text.exec(src)){src=src.substring(cap[0].length);out+=escape(this.smartypants(cap[0]));continue}if(src){throw new Error("Infinite loop on byte: "+src.charCodeAt(0))}}return out};InlineLexer.prototype.outputLink=function(cap,link){var href=escape(link.href),title=link.title?escape(link.title):null;return cap[0].charAt(0)!=="!"?this.renderer.link(href,title,this.output(cap[1])):this.renderer.image(href,title,escape(cap[1]))};InlineLexer.prototype.smartypants=function(text){if(!this.options.smartypants)return text;return text.replace(/--/g,"—").replace(/(^|[-\u2014/(\[{"\s])'/g,"$1‘").replace(/'/g,"’").replace(/(^|[-\u2014/(\[{\u2018\s])"/g,"$1“").replace(/"/g,"”").replace(/\.{3}/g,"…")};InlineLexer.prototype.mangle=function(text){var out="",l=text.length,i=0,ch;for(;i<l;i++){ch=text.charCodeAt(i);if(Math.random()>.5){ch="x"+ch.toString(16)}out+="&#"+ch+";"}return out};function Renderer(options){this.options=options||{}}Renderer.prototype.code=function(code,lang,escaped){if(this.options.highlight){var out=this.options.highlight(code,lang);if(out!=null&&out!==code){escaped=true;code=out}}if(!lang){return"<pre><code>"+(escaped?code:escape(code,true))+"\n</code></pre>"}return'<pre><code class="'+this.options.langPrefix+escape(lang,true)+'">'+(escaped?code:escape(code,true))+"\n</code></pre>\n"};Renderer.prototype.blockquote=function(quote){return"<blockquote>\n"+quote+"</blockquote>\n"};Renderer.prototype.html=function(html){return html};Renderer.prototype.heading=function(text,level,raw){return"<h"+level+' id="'+this.options.headerPrefix+raw.toLowerCase().replace(/[^\w]+/g,"-")+'">'+text+"</h"+level+">\n"};Renderer.prototype.hr=function(){return this.options.xhtml?"<hr/>\n":"<hr>\n"};Renderer.prototype.list=function(body,ordered){var type=ordered?"ol":"ul";return"<"+type+">\n"+body+"</"+type+">\n"};Renderer.prototype.listitem=function(text){return"<li>"+text+"</li>\n"};Renderer.prototype.paragraph=function(text){return"<p>"+text+"</p>\n"};Renderer.prototype.table=function(header,body){return"<table>\n"+"<thead>\n"+header+"</thead>\n"+"<tbody>\n"+body+"</tbody>\n"+"</table>\n"};Renderer.prototype.tablerow=function(content){return"<tr>\n"+content+"</tr>\n"};Renderer.prototype.tablecell=function(content,flags){var type=flags.header?"th":"td";var tag=flags.align?"<"+type+' style="text-align:'+flags.align+'">':"<"+type+">";return tag+content+"</"+type+">\n"};Renderer.prototype.strong=function(text){return"<strong>"+text+"</strong>"};Renderer.prototype.em=function(text){return"<em>"+text+"</em>"};Renderer.prototype.codespan=function(text){return"<code>"+text+"</code>"};Renderer.prototype.br=function(){return this.options.xhtml?"<br/>":"<br>"};Renderer.prototype.del=function(text){return"<del>"+text+"</del>"};Renderer.prototype.link=function(href,title,text){if(this.options.sanitize){try{var prot=decodeURIComponent(unescape(href)).replace(/[^\w:]/g,"").toLowerCase()}catch(e){return""}if(prot.indexOf("javascript:")===0){return""}}var out='<a href="'+href+'"';if(title){out+=' title="'+title+'"'}out+=">"+text+"</a>";return out};Renderer.prototype.image=function(href,title,text){var out='<img src="'+href+'" alt="'+text+'"';if(title){out+=' title="'+title+'"'}out+=this.options.xhtml?"/>":">";return out};function Parser(options){this.tokens=[];this.token=null;this.options=options||marked.defaults;this.options.renderer=this.options.renderer||new Renderer;this.renderer=this.options.renderer;this.renderer.options=this.options}Parser.parse=function(src,options,renderer){var parser=new Parser(options,renderer);return parser.parse(src)};Parser.prototype.parse=function(src){this.inline=new InlineLexer(src.links,this.options,this.renderer);this.tokens=src.reverse();var out="";while(this.next()){out+=this.tok()}return out};Parser.prototype.next=function(){return this.token=this.tokens.pop()};Parser.prototype.peek=function(){return this.tokens[this.tokens.length-1]||0};Parser.prototype.parseText=function(){var body=this.token.text;while(this.peek().type==="text"){body+="\n"+this.next().text}return this.inline.output(body)};Parser.prototype.tok=function(){switch(this.token.type){case"space":{return""}case"hr":{return this.renderer.hr()}case"heading":{return this.renderer.heading(this.inline.output(this.token.text),this.token.depth,this.token.text)}case"code":{return this.renderer.code(this.token.text,this.token.lang,this.token.escaped)}case"table":{var header="",body="",i,row,cell,flags,j;cell="";for(i=0;i<this.token.header.length;i++){flags={header:true,align:this.token.align[i]};cell+=this.renderer.tablecell(this.inline.output(this.token.header[i]),{header:true,align:this.token.align[i]})}header+=this.renderer.tablerow(cell);for(i=0;i<this.token.cells.length;i++){row=this.token.cells[i];cell="";for(j=0;j<row.length;j++){cell+=this.renderer.tablecell(this.inline.output(row[j]),{header:false,align:this.token.align[j]})}body+=this.renderer.tablerow(cell)}return this.renderer.table(header,body)}case"blockquote_start":{var body="";while(this.next().type!=="blockquote_end"){body+=this.tok()}return this.renderer.blockquote(body)}case"list_start":{var body="",ordered=this.token.ordered;while(this.next().type!=="list_end"){body+=this.tok()}return this.renderer.list(body,ordered)}case"list_item_start":{var body="";while(this.next().type!=="list_item_end"){body+=this.token.type==="text"?this.parseText():this.tok()}return this.renderer.listitem(body)}case"loose_item_start":{var body="";while(this.next().type!=="list_item_end"){body+=this.tok()}return this.renderer.listitem(body)}case"html":{var html=!this.token.pre&&!this.options.pedantic?this.inline.output(this.token.text):this.token.text;return this.renderer.html(html)}case"paragraph":{return this.renderer.paragraph(this.inline.output(this.token.text))}case"text":{return this.renderer.paragraph(this.parseText())}}};function escape(html,encode){return html.replace(!encode?/&(?!#?\w+;)/g:/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;")}function unescape(html){return html.replace(/&([#\w]+);/g,function(_,n){n=n.toLowerCase();if(n==="colon")return":";if(n.charAt(0)==="#"){return n.charAt(1)==="x"?String.fromCharCode(parseInt(n.substring(2),16)):String.fromCharCode(+n.substring(1))}return""})}function replace(regex,opt){regex=regex.source;opt=opt||"";return function self(name,val){if(!name)return new RegExp(regex,opt);val=val.source||val;val=val.replace(/(^|[^\[])\^/g,"$1");regex=regex.replace(name,val);return self}}function noop(){}noop.exec=noop;function merge(obj){var i=1,target,key;for(;i<arguments.length;i++){target=arguments[i];for(key in target){if(Object.prototype.hasOwnProperty.call(target,key)){obj[key]=target[key]}}}return obj}function marked(src,opt,callback){if(callback||typeof opt==="function"){if(!callback){callback=opt;opt=null}opt=merge({},marked.defaults,opt||{});var highlight=opt.highlight,tokens,pending,i=0;try{tokens=Lexer.lex(src,opt)}catch(e){return callback(e)}pending=tokens.length;var done=function(err){if(err){opt.highlight=highlight;return callback(err)}var out;try{out=Parser.parse(tokens,opt)}catch(e){err=e}opt.highlight=highlight;return err?callback(err):callback(null,out)};if(!highlight||highlight.length<3){return done()}delete opt.highlight;if(!pending)return done();for(;i<tokens.length;i++){(function(token){if(token.type!=="code"){return--pending||done()}return highlight(token.text,token.lang,function(err,code){if(err)return done(err);if(code==null||code===token.text){return--pending||done()}token.text=code;token.escaped=true;--pending||done()})})(tokens[i])}return}try{if(opt)opt=merge({},marked.defaults,opt);return Parser.parse(Lexer.lex(src,opt),opt)}catch(e){e.message+="\nPlease report this to https://github.com/chjj/marked.";if((opt||marked.defaults).silent){return"<p>An error occured:</p><pre>"+escape(e.message+"",true)+"</pre>"}throw e}}marked.options=marked.setOptions=function(opt){merge(marked.defaults,opt);return marked};marked.defaults={gfm:true,tables:true,breaks:false,pedantic:false,sanitize:false,smartLists:false,silent:false,highlight:null,langPrefix:"lang-",smartypants:false,headerPrefix:"",renderer:new Renderer,xhtml:false};marked.Parser=Parser;marked.parser=Parser.parse;marked.Renderer=Renderer;marked.Lexer=Lexer;marked.lexer=Lexer.lex;marked.InlineLexer=InlineLexer;marked.inlineLexer=InlineLexer.output;marked.parse=marked;if(typeof module!=="undefined"&&typeof exports==="object"){module.exports=marked}else if(typeof define==="function"&&define.amd){define(function(){return marked})}else{this.marked=marked}}).call(function(){return this||(typeof window!=="undefined"?window:global)}());
+
+		return module.exports;
+	}();
+
+
+	// FORMAT OPTIONS FOR MARKED IMPLEMENTATION
+
+	function formatOptions(options)
+	{
+		function toHighlight(code, lang)
+		{
+			if (!lang && options.defaultHighlighting.ctor === 'Just')
+			{
+				lang = options.defaultHighlighting._0;
+			}
+
+			if (typeof hljs !== 'undefined' && lang && hljs.listLanguages().indexOf(lang) >= 0)
+			{
+				return hljs.highlight(lang, code, true).value;
+			}
+
+			return code;
+		}
+
+		var gfm = options.githubFlavored;
+		if (gfm.ctor === 'Just')
+		{
+			return {
+				highlight: toHighlight,
+				gfm: true,
+				tables: gfm._0.tables,
+				breaks: gfm._0.breaks,
+				sanitize: options.sanitize,
+				smartypants: options.smartypants
+			};
+		}
+
+		return {
+			highlight: toHighlight,
+			gfm: false,
+			tables: false,
+			breaks: false,
+			sanitize: options.sanitize,
+			smartypants: options.smartypants
+		};
+	}
+
+
+	// EXPORTS
+
+	return {
+		toHtml: F3(toHtml)
+	};
+
+	}();
+
+	var _evancz$elm_markdown$Markdown$toHtmlWith = _evancz$elm_markdown$Native_Markdown.toHtml;
+	var _evancz$elm_markdown$Markdown$defaultOptions = {
+		githubFlavored: _elm_lang$core$Maybe$Just(
+			{tables: false, breaks: false}),
+		defaultHighlighting: _elm_lang$core$Maybe$Nothing,
+		sanitize: false,
+		smartypants: false
+	};
+	var _evancz$elm_markdown$Markdown$toHtml = F2(
+		function (attrs, string) {
+			return A3(_evancz$elm_markdown$Native_Markdown.toHtml, _evancz$elm_markdown$Markdown$defaultOptions, attrs, string);
+		});
+	var _evancz$elm_markdown$Markdown$Options = F4(
+		function (a, b, c, d) {
+			return {githubFlavored: a, defaultHighlighting: b, sanitize: c, smartypants: d};
+		});
+
+	var _evancz$url_parser$UrlParser$oneOfHelp = F3(
+		function (choices, chunks, formatter) {
+			oneOfHelp:
+			while (true) {
+				var _p0 = choices;
+				if (_p0.ctor === '[]') {
+					return _elm_lang$core$Result$Err('Tried many parsers, but none of them worked!');
+				} else {
+					var _p1 = A2(_p0._0._0, chunks, formatter);
+					if (_p1.ctor === 'Err') {
+						var _v2 = _p0._1,
+							_v3 = chunks,
+							_v4 = formatter;
+						choices = _v2;
+						chunks = _v3;
+						formatter = _v4;
+						continue oneOfHelp;
+					} else {
+						return _elm_lang$core$Result$Ok(_p1._0);
+					}
+				}
+			}
+		});
+	var _evancz$url_parser$UrlParser$Chunks = F2(
+		function (a, b) {
+			return {seen: a, rest: b};
+		});
+	var _evancz$url_parser$UrlParser$parse = F3(
+		function (input, _p2, url) {
+			var _p3 = _p2;
+			var _p4 = A2(
+				_p3._0,
+				A2(
+					_evancz$url_parser$UrlParser$Chunks,
+					_elm_lang$core$Native_List.fromArray(
+						[]),
+					A2(_elm_lang$core$String$split, '/', url)),
+				input);
+			if (_p4.ctor === 'Err') {
+				return _elm_lang$core$Result$Err(_p4._0);
+			} else {
+				var _p7 = _p4._0._1;
+				var _p6 = _p4._0._0.rest;
+				var _p5 = _p6;
+				if (_p5.ctor === '[]') {
+					return _elm_lang$core$Result$Ok(_p7);
+				} else {
+					if ((_p5._0 === '') && (_p5._1.ctor === '[]')) {
+						return _elm_lang$core$Result$Ok(_p7);
+					} else {
+						return _elm_lang$core$Result$Err(
+							A2(
+								_elm_lang$core$Basics_ops['++'],
+								'The parser worked, but /',
+								A2(
+									_elm_lang$core$Basics_ops['++'],
+									A2(_elm_lang$core$String$join, '/', _p6),
+									' was left over.')));
+					}
+				}
+			}
+		});
+	var _evancz$url_parser$UrlParser$Parser = function (a) {
+		return {ctor: 'Parser', _0: a};
+	};
+	var _evancz$url_parser$UrlParser$s = function (str) {
+		return _evancz$url_parser$UrlParser$Parser(
+			F2(
+				function (_p8, result) {
+					var _p9 = _p8;
+					var _p12 = _p9.rest;
+					var _p10 = _p12;
+					if (_p10.ctor === '[]') {
+						return _elm_lang$core$Result$Err(
+							A2(_elm_lang$core$Basics_ops['++'], 'Got to the end of the URL but wanted /', str));
+					} else {
+						var _p11 = _p10._0;
+						return _elm_lang$core$Native_Utils.eq(_p11, str) ? _elm_lang$core$Result$Ok(
+							{
+								ctor: '_Tuple2',
+								_0: A2(
+									_evancz$url_parser$UrlParser$Chunks,
+									A2(_elm_lang$core$List_ops['::'], _p11, _p9.seen),
+									_p10._1),
+								_1: result
+							}) : _elm_lang$core$Result$Err(
+							A2(
+								_elm_lang$core$Basics_ops['++'],
+								'Wanted /',
+								A2(
+									_elm_lang$core$Basics_ops['++'],
+									str,
+									A2(
+										_elm_lang$core$Basics_ops['++'],
+										' but got /',
+										A2(_elm_lang$core$String$join, '/', _p12)))));
+					}
+				}));
+	};
+	var _evancz$url_parser$UrlParser$custom = F2(
+		function (tipe, stringToSomething) {
+			return _evancz$url_parser$UrlParser$Parser(
+				F2(
+					function (_p13, func) {
+						var _p14 = _p13;
+						var _p15 = _p14.rest;
+						if (_p15.ctor === '[]') {
+							return _elm_lang$core$Result$Err(
+								A2(_elm_lang$core$Basics_ops['++'], 'Got to the end of the URL but wanted /', tipe));
+						} else {
+							var _p17 = _p15._0;
+							var _p16 = stringToSomething(_p17);
+							if (_p16.ctor === 'Ok') {
+								return _elm_lang$core$Result$Ok(
+									{
+										ctor: '_Tuple2',
+										_0: A2(
+											_evancz$url_parser$UrlParser$Chunks,
+											A2(_elm_lang$core$List_ops['::'], _p17, _p14.seen),
+											_p15._1),
+										_1: func(_p16._0)
+									});
+							} else {
+								return _elm_lang$core$Result$Err(
+									A2(
+										_elm_lang$core$Basics_ops['++'],
+										'Parsing `',
+										A2(
+											_elm_lang$core$Basics_ops['++'],
+											_p17,
+											A2(_elm_lang$core$Basics_ops['++'], '` went wrong: ', _p16._0))));
+							}
+						}
+					}));
+		});
+	var _evancz$url_parser$UrlParser$string = A2(_evancz$url_parser$UrlParser$custom, 'STRING', _elm_lang$core$Result$Ok);
+	var _evancz$url_parser$UrlParser$int = A2(_evancz$url_parser$UrlParser$custom, 'NUMBER', _elm_lang$core$String$toInt);
+	var _evancz$url_parser$UrlParser_ops = _evancz$url_parser$UrlParser_ops || {};
+	_evancz$url_parser$UrlParser_ops['</>'] = F2(
+		function (_p19, _p18) {
+			var _p20 = _p19;
+			var _p21 = _p18;
+			return _evancz$url_parser$UrlParser$Parser(
+				F2(
+					function (chunks, func) {
+						return A2(
+							_elm_lang$core$Result$andThen,
+							A2(_p20._0, chunks, func),
+							function (_p22) {
+								var _p23 = _p22;
+								return A2(_p21._0, _p23._0, _p23._1);
+							});
+					}));
+		});
+	var _evancz$url_parser$UrlParser$oneOf = function (choices) {
+		return _evancz$url_parser$UrlParser$Parser(
+			_evancz$url_parser$UrlParser$oneOfHelp(choices));
+	};
+	var _evancz$url_parser$UrlParser$format = F2(
+		function (input, _p24) {
+			var _p25 = _p24;
+			return _evancz$url_parser$UrlParser$Parser(
+				F2(
+					function (chunks, func) {
+						var _p26 = A2(_p25._0, chunks, input);
+						if (_p26.ctor === 'Err') {
+							return _elm_lang$core$Result$Err(_p26._0);
+						} else {
+							return _elm_lang$core$Result$Ok(
+								{
+									ctor: '_Tuple2',
+									_0: _p26._0._0,
+									_1: func(_p26._0._1)
+								});
+						}
+					}));
 		});
 
 	var _lukewestby$elm_http_builder$HttpBuilder$appendQuery = F3(
@@ -10233,6 +11081,9 @@
 				_lukewestby$elm_http_builder$HttpBuilder$post(resource)));
 	};
 
+	var _user$project$Pages_Settings$auth = '\n## Authentication\n\nAll API services require authentication via Basic HTTP auth over HTTPS.\nUnauthorised requests will result in 401 Unauthorized.\nAll requests using the HTTP protocol will fail with 403 Forbidden status code.\n';
+	var _user$project$Pages_Settings$vault = '\n## Secure Vault\n\nPCI Compliant secure storage which allows to store PAN.\nFollowing endpoints open for public use:\n\n- create OTP `POST /otp`\n- store PAN `POST /pan {otp}`\n- issue fake PAN `POST /pan/fake`\n';
+	var _user$project$Pages_Settings$service = '\n## Service API\n\nThis API provides automation-related endpoints:\n\n- list services `GET /services` -> List Service\n- get schema for specific service `GET /service/:id` -> Service\n- create automation job `POST /jobs` -> Job\n- poll state of specific job `GET /jobs/:id` -> Job\n';
 	var _user$project$Pages_Settings$update = F2(
 		function (msg, model) {
 			var _p0 = msg;
@@ -10276,82 +11127,92 @@
 		return A2(
 			_elm_lang$html$Html$div,
 			_elm_lang$core$Native_List.fromArray(
-				[
-					_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
-				]),
+				[]),
 			_elm_lang$core$Native_List.fromArray(
 				[
 					A2(
 					_elm_lang$html$Html$div,
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html_Attributes$style(labelStyle)
+							_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
 						]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html$text('Service API url')
+							A2(
+							_evancz$elm_markdown$Markdown$toHtml,
+							_elm_lang$core$Native_List.fromArray(
+								[]),
+							_user$project$Pages_Settings$service),
+							A2(
+							_elm_lang$html$Html$input,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									_elm_lang$html$Html_Attributes$value(clientSettings.service),
+									_elm_lang$html$Html_Attributes$autocomplete(true),
+									_elm_lang$html$Html_Attributes$placeholder('Service API url'),
+									_elm_lang$html$Html_Attributes$name('api-host'),
+									_elm_lang$html$Html_Attributes$type$('url'),
+									_elm_lang$html$Html_Events$onInput(_user$project$Pages_Settings$SetServiceApiUrl),
+									_elm_lang$html$Html_Attributes$style(inputStyle)
+								]),
+							_elm_lang$core$Native_List.fromArray(
+								[]))
 						])),
-					A2(
-					_elm_lang$html$Html$input,
-					_elm_lang$core$Native_List.fromArray(
-						[
-							_elm_lang$html$Html_Attributes$value(clientSettings.service),
-							_elm_lang$html$Html_Attributes$autocomplete(true),
-							_elm_lang$html$Html_Attributes$placeholder('Service API url'),
-							_elm_lang$html$Html_Attributes$name('api-host'),
-							_elm_lang$html$Html_Attributes$type$('url'),
-							_elm_lang$html$Html_Events$onInput(_user$project$Pages_Settings$SetServiceApiUrl),
-							_elm_lang$html$Html_Attributes$style(inputStyle)
-						]),
-					_elm_lang$core$Native_List.fromArray(
-						[])),
 					A2(
 					_elm_lang$html$Html$div,
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html_Attributes$style(labelStyle)
+							_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
 						]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html$text('Vault API (frontend) url')
+							A2(
+							_evancz$elm_markdown$Markdown$toHtml,
+							_elm_lang$core$Native_List.fromArray(
+								[]),
+							_user$project$Pages_Settings$vault),
+							A2(
+							_elm_lang$html$Html$input,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									_elm_lang$html$Html_Attributes$value(clientSettings.vault),
+									_elm_lang$html$Html_Attributes$autocomplete(true),
+									_elm_lang$html$Html_Attributes$placeholder('Vault API url'),
+									_elm_lang$html$Html_Attributes$name('vault url'),
+									_elm_lang$html$Html_Attributes$type$('url'),
+									_elm_lang$html$Html_Events$onInput(_user$project$Pages_Settings$SetVaultApiUrl),
+									_elm_lang$html$Html_Attributes$style(inputStyle)
+								]),
+							_elm_lang$core$Native_List.fromArray(
+								[]))
 						])),
-					A2(
-					_elm_lang$html$Html$input,
-					_elm_lang$core$Native_List.fromArray(
-						[
-							_elm_lang$html$Html_Attributes$value(clientSettings.vault),
-							_elm_lang$html$Html_Attributes$autocomplete(true),
-							_elm_lang$html$Html_Attributes$placeholder('Vault API url'),
-							_elm_lang$html$Html_Attributes$name('vault url'),
-							_elm_lang$html$Html_Attributes$type$('url'),
-							_elm_lang$html$Html_Events$onInput(_user$project$Pages_Settings$SetVaultApiUrl),
-							_elm_lang$html$Html_Attributes$style(inputStyle)
-						]),
-					_elm_lang$core$Native_List.fromArray(
-						[])),
 					A2(
 					_elm_lang$html$Html$div,
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html_Attributes$style(labelStyle)
+							_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
 						]),
 					_elm_lang$core$Native_List.fromArray(
 						[
-							_elm_lang$html$Html$text('Client secret key')
-						])),
-					A2(
-					_elm_lang$html$Html$input,
-					_elm_lang$core$Native_List.fromArray(
-						[
-							_elm_lang$html$Html_Attributes$value(clientSettings.secretKey),
-							_elm_lang$html$Html_Attributes$autocomplete(false),
-							_elm_lang$html$Html_Attributes$placeholder('Client secret key (go grab it from db)'),
-							_elm_lang$html$Html_Attributes$name('client-secret-key'),
-							_elm_lang$html$Html_Events$onInput(_user$project$Pages_Settings$SetClientSecretKey),
-							_elm_lang$html$Html_Attributes$style(inputStyle)
-						]),
-					_elm_lang$core$Native_List.fromArray(
-						[]))
+							A2(
+							_evancz$elm_markdown$Markdown$toHtml,
+							_elm_lang$core$Native_List.fromArray(
+								[]),
+							_user$project$Pages_Settings$auth),
+							A2(
+							_elm_lang$html$Html$input,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									_elm_lang$html$Html_Attributes$value(clientSettings.secretKey),
+									_elm_lang$html$Html_Attributes$autocomplete(false),
+									_elm_lang$html$Html_Attributes$placeholder('Client secret key (go grab it from db)'),
+									_elm_lang$html$Html_Attributes$name('client-secret-key'),
+									_elm_lang$html$Html_Events$onInput(_user$project$Pages_Settings$SetClientSecretKey),
+									_elm_lang$html$Html_Attributes$style(inputStyle)
+								]),
+							_elm_lang$core$Native_List.fromArray(
+								[]))
+						]))
 				]));
 	};
 
@@ -10446,10 +11307,32 @@
 			return A2(_elm_lang$core$Task$onError, sendRequest, transformError);
 		});
 
-	var _user$project$Pages_Schema$Model = F9(
-		function (a, b, c, d, e, f, g, h, i) {
-			return {services: a, error: b, validationErrors: c, clientSettings: d, schema: e, input: f, serviceId: g, job: h, otp: i};
-		});
+	var _user$project$Pages$ServiceApi = {ctor: 'ServiceApi'};
+	var _user$project$Pages$SecureVault = {ctor: 'SecureVault'};
+	var _user$project$Pages$Settings = {ctor: 'Settings'};
+	var _user$project$Pages$Home = {ctor: 'Home'};
+
+	var _user$project$Pages_Schema$Model = function (a) {
+		return function (b) {
+			return function (c) {
+				return function (d) {
+					return function (e) {
+						return function (f) {
+							return function (g) {
+								return function (h) {
+									return function (i) {
+										return function (j) {
+											return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
+			};
+		};
+	};
 	var _user$project$Pages_Schema$SubmitJobSuccess = function (a) {
 		return {ctor: 'SubmitJobSuccess', _0: a};
 	};
@@ -10913,6 +11796,17 @@
 	};
 	var _user$project$Messages$NoOp = {ctor: 'NoOp'};
 
+	var _user$project$Main$centerStyle = function (direction) {
+		return _elm_lang$html$Html_Attributes$style(
+			_elm_lang$core$Native_List.fromArray(
+				[
+					{ctor: '_Tuple2', _0: 'display', _1: 'flex'},
+					{ctor: '_Tuple2', _0: 'flex-direction', _1: direction},
+					{ctor: '_Tuple2', _0: 'align-items', _1: 'center'},
+					{ctor: '_Tuple2', _0: 'justify-content', _1: 'center'},
+					{ctor: '_Tuple2', _0: 'padding', _1: '20px 0'}
+				]));
+	};
 	var _user$project$Main$entityRowStyle = _elm_lang$core$Native_List.fromArray(
 		[
 			{ctor: '_Tuple2', _0: 'padding', _1: '5px'},
@@ -10969,7 +11863,7 @@
 					[]),
 				A2(_elm_lang$core$List$map, renderService, services));
 		});
-	var _user$project$Main$view = function (model) {
+	var _user$project$Main$all = function (model) {
 		var job = function () {
 			var _p0 = model.job;
 			if (_p0.ctor === 'Nothing') {
@@ -11004,54 +11898,24 @@
 						]));
 			}
 		}();
-		var otp = function () {
-			var otpId = function () {
-				var _p2 = model.otp;
-				if (_p2.ctor === 'Nothing') {
-					return _elm_lang$html$Html$text('');
-				} else {
-					return _elm_lang$html$Html$text(_p2._0.id);
-				}
-			}();
-			return A2(
-				_elm_lang$html$Html$div,
-				_elm_lang$core$Native_List.fromArray(
-					[
-						_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
-					]),
-				_elm_lang$core$Native_List.fromArray(
-					[
-						A2(
-						_elm_lang$html$Html$button,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreateOtp)
-							]),
-						_elm_lang$core$Native_List.fromArray(
-							[
-								_elm_lang$html$Html$text('Create OTP')
-							])),
-						otpId
-					]));
-		}();
 		var schema = function () {
-			var _p3 = model.schema;
-			if (_p3.ctor === 'Nothing') {
+			var _p2 = model.schema;
+			if (_p2.ctor === 'Nothing') {
 				return _elm_lang$html$Html$text('');
 			} else {
-				var _p4 = _p3._0;
+				var _p3 = _p2._0;
 				var context = A3(
 					_user$project$Models$Context,
-					_p4,
+					_p3,
 					A2(
 						_elm_lang$core$Maybe$withDefault,
-						_user$project$JsonSchema$defaultFor(_p4),
+						_user$project$JsonSchema$defaultFor(_p3),
 						model.input),
 					model.validationErrors);
 				return A2(
 					_elm_lang$html$Html_App$map,
 					_user$project$Messages$PagesSchemaMsg,
-					A2(_user$project$Pages_Schema$render, context, _p4));
+					A2(_user$project$Pages_Schema$render, context, _p3));
 			}
 		}();
 		var services = A2(
@@ -11075,26 +11939,20 @@
 							_elm_lang$html$Html$text('Fetch services')
 						])),
 					function () {
-					var _p5 = model.services;
-					if (_p5.ctor === 'Nothing') {
+					var _p4 = model.services;
+					if (_p4.ctor === 'Nothing') {
 						return _elm_lang$html$Html$text('');
 					} else {
-						return A2(_user$project$Main$renderServices, _p5._0, model.serviceId);
+						return A2(_user$project$Main$renderServices, _p4._0, model.serviceId);
 					}
 				}()
 				]));
-		var credentials = A2(
-			_elm_lang$html$Html_App$map,
-			_user$project$Messages$PagesSettingsMsg,
-			_user$project$Pages_Settings$render(model.clientSettings));
 		return A2(
 			_elm_lang$html$Html$div,
 			_elm_lang$core$Native_List.fromArray(
 				[]),
 			_elm_lang$core$Native_List.fromArray(
 				[
-					credentials,
-					otp,
 					services,
 					schema,
 					job,
@@ -11121,10 +11979,185 @@
 			_user$project$Messages$FetchServicesSuccess,
 			_user$project$Services_ServiceDescriptor$list(cfg));
 	};
+	var _user$project$Main$pageParser = _evancz$url_parser$UrlParser$oneOf(
+		_elm_lang$core$Native_List.fromArray(
+			[
+				A2(
+				_evancz$url_parser$UrlParser$format,
+				_user$project$Pages$Home,
+				_evancz$url_parser$UrlParser$s('home')),
+				A2(
+				_evancz$url_parser$UrlParser$format,
+				_user$project$Pages$Settings,
+				_evancz$url_parser$UrlParser$s('settings')),
+				A2(
+				_evancz$url_parser$UrlParser$format,
+				_user$project$Pages$SecureVault,
+				_evancz$url_parser$UrlParser$s('secure-vault')),
+				A2(
+				_evancz$url_parser$UrlParser$format,
+				_user$project$Pages$ServiceApi,
+				_evancz$url_parser$UrlParser$s('service-api'))
+			]));
+	var _user$project$Main$hashParser = function (location) {
+		return A3(
+			_evancz$url_parser$UrlParser$parse,
+			_elm_lang$core$Basics$identity,
+			_user$project$Main$pageParser,
+			A2(_elm_lang$core$String$dropLeft, 1, location.hash));
+	};
+	var _user$project$Main$toHash = function (page) {
+		var _p5 = page;
+		switch (_p5.ctor) {
+			case 'Home':
+				return '#home';
+			case 'Settings':
+				return '#settings';
+			case 'SecureVault':
+				return '#secure-vault';
+			default:
+				return '#service-api';
+		}
+	};
+	var _user$project$Main$urlUpdate = F2(
+		function (result, model) {
+			var _p6 = A2(_elm_lang$core$Debug$log, 'result', result);
+			if (_p6.ctor === 'Err') {
+				return {
+					ctor: '_Tuple2',
+					_0: model,
+					_1: _elm_lang$navigation$Navigation$modifyUrl(
+						_user$project$Main$toHash(model.page))
+				};
+			} else {
+				return A2(
+					_elm_lang$core$Platform_Cmd_ops['!'],
+					_elm_lang$core$Native_Utils.update(
+						model,
+						{page: _p6._0}),
+					_elm_lang$core$Native_List.fromArray(
+						[]));
+			}
+		});
+	var _user$project$Main$viewLink = F2(
+		function (page, description) {
+			return A2(
+				_elm_lang$html$Html$a,
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html_Attributes$style(
+						_elm_lang$core$Native_List.fromArray(
+							[
+								{ctor: '_Tuple2', _0: 'padding', _1: '0 20px'}
+							])),
+						_elm_lang$html$Html_Attributes$href(
+						_user$project$Main$toHash(page))
+					]),
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html$text(description)
+					]));
+		});
+	var _user$project$Main$view = function (model) {
+		return A2(
+			_elm_lang$html$Html$div,
+			_elm_lang$core$Native_List.fromArray(
+				[]),
+			_elm_lang$core$Native_List.fromArray(
+				[
+					A2(
+					_elm_lang$html$Html$div,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_user$project$Main$centerStyle('row')
+						]),
+					_elm_lang$core$Native_List.fromArray(
+						[
+							A2(_user$project$Main$viewLink, _user$project$Pages$Home, 'Home'),
+							A2(_user$project$Main$viewLink, _user$project$Pages$Settings, 'Settings'),
+							A2(_user$project$Main$viewLink, _user$project$Pages$SecureVault, 'Secure Vault'),
+							A2(_user$project$Main$viewLink, _user$project$Pages$ServiceApi, 'Service API')
+						])),
+					A2(
+					_elm_lang$html$Html$hr,
+					_elm_lang$core$Native_List.fromArray(
+						[]),
+					_elm_lang$core$Native_List.fromArray(
+						[])),
+					A2(
+					_elm_lang$html$Html$div,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_user$project$Main$centerStyle('column')
+						]),
+					function () {
+						var _p7 = model.page;
+						switch (_p7.ctor) {
+							case 'Home':
+								return _elm_lang$core$Native_List.fromArray(
+									[
+										_elm_lang$html$Html$text('Welcome to Automation Cloud Test Client')
+									]);
+							case 'Settings':
+								return _elm_lang$core$Native_List.fromArray(
+									[
+										A2(
+										_elm_lang$html$Html_App$map,
+										_user$project$Messages$PagesSettingsMsg,
+										_user$project$Pages_Settings$render(model.clientSettings))
+									]);
+							case 'SecureVault':
+								var otpId = function () {
+									var _p8 = model.otp;
+									if (_p8.ctor === 'Nothing') {
+										return _elm_lang$html$Html$text('');
+									} else {
+										return _elm_lang$html$Html$text(_p8._0.id);
+									}
+								}();
+								return _elm_lang$core$Native_List.fromArray(
+									[
+										A2(
+										_elm_lang$html$Html$div,
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
+											]),
+										_elm_lang$core$Native_List.fromArray(
+											[
+												A2(
+												_elm_lang$html$Html$button,
+												_elm_lang$core$Native_List.fromArray(
+													[
+														_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreateOtp)
+													]),
+												_elm_lang$core$Native_List.fromArray(
+													[
+														_elm_lang$html$Html$text('Create OTP')
+													])),
+												otpId
+											]))
+									]);
+							default:
+								return _elm_lang$core$Native_List.fromArray(
+									[
+										_user$project$Main$all(model)
+									]);
+						}
+					}())
+				]));
+	};
+	var _user$project$Main$storeConfig = _elm_lang$core$Native_Platform.outgoingPort(
+		'storeConfig',
+		function (v) {
+			return {
+				clientSettings: (v.clientSettings.ctor === 'Nothing') ? null : {service: v.clientSettings._0.service, vault: v.clientSettings._0.vault, secretKey: v.clientSettings._0.secretKey}
+			};
+		});
 	var _user$project$Main$update = F2(
 		function (msg, model) {
-			var _p6 = msg;
-			switch (_p6.ctor) {
+			var _p9 = msg;
+			switch (_p9.ctor) {
 				case 'NoOp':
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
@@ -11132,18 +12165,22 @@
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'PagesSettingsMsg':
-					var settings = A2(_user$project$Pages_Settings$update, _p6._0, model.clientSettings);
+					var settings = A2(_user$project$Pages_Settings$update, _p9._0, model.clientSettings);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{clientSettings: settings}),
 						_elm_lang$core$Native_List.fromArray(
-							[]));
+							[
+								_user$project$Main$storeConfig(
+								_user$project$Types$PersistedData(
+									_elm_lang$core$Maybe$Just(settings)))
+							]));
 				case 'PagesSchemaMsg':
-					var _p7 = A2(_user$project$Pages_Schema$update, _p6._0, model);
-					var model = _p7._0;
-					var cmd = _p7._1;
+					var _p10 = A2(_user$project$Pages_Schema$update, _p9._0, model);
+					var model = _p10._0;
+					var cmd = _p10._1;
 					return {
 						ctor: '_Tuple2',
 						_0: model,
@@ -11165,7 +12202,7 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								error: _elm_lang$core$Basics$toString(_p6._0)
+								error: _elm_lang$core$Basics$toString(_p9._0)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
@@ -11175,30 +12212,30 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								services: _elm_lang$core$Maybe$Just(_p6._0.data)
+								services: _elm_lang$core$Maybe$Just(_p9._0.data)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'FetchService':
-					var _p8 = _p6._0;
+					var _p11 = _p9._0;
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
-							{serviceId: _p8, error: ''}),
+							{serviceId: _p11, error: ''}),
 						_elm_lang$core$Native_List.fromArray(
 							[
-								A2(_user$project$Main$fetchService, _p8, model.clientSettings)
+								A2(_user$project$Main$fetchService, _p11, model.clientSettings)
 							]));
 				case 'FetchServiceSuccess':
-					var _p9 = _user$project$JsonSchema$convert(_p6._0.data.schema);
-					if (_p9.ctor === 'Ok') {
+					var _p12 = _user$project$JsonSchema$convert(_p9._0.data.schema);
+					if (_p12.ctor === 'Ok') {
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
 								{
-									schema: _elm_lang$core$Maybe$Just(_p9._0)
+									schema: _elm_lang$core$Maybe$Just(_p12._0)
 								}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
@@ -11207,7 +12244,7 @@
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
-								{error: _p9._0}),
+								{error: _p12._0}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
 					}
@@ -11229,55 +12266,66 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								otp: _elm_lang$core$Maybe$Just(_p6._0.data)
+								otp: _elm_lang$core$Maybe$Just(_p9._0.data)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 			}
 		});
-	var _user$project$Main$storeConfig = _elm_lang$core$Native_Platform.outgoingPort(
-		'storeConfig',
-		function (v) {
-			return {
-				clientSettings: {service: v.clientSettings.service, vault: v.clientSettings.vault, secretKey: v.clientSettings.secretKey}
+	var _user$project$Main$Model = function (a) {
+		return function (b) {
+			return function (c) {
+				return function (d) {
+					return function (e) {
+						return function (f) {
+							return function (g) {
+								return function (h) {
+									return function (i) {
+										return function (j) {
+											return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j};
+										};
+									};
+								};
+							};
+						};
+					};
+				};
 			};
-		});
-	var _user$project$Main$Model = F9(
-		function (a, b, c, d, e, f, g, h, i) {
-			return {services: a, error: b, validationErrors: c, clientSettings: d, schema: e, input: f, serviceId: g, job: h, otp: i};
-		});
-	var _user$project$Main$init = function (persistedData) {
-		var cfg = function () {
-			var _p10 = persistedData;
-			if (_p10.ctor === 'Nothing') {
-				return A3(_user$project$Types$ClientSettings, 'http://localhost:3000', 'https://localhost:5000', '');
-			} else {
-				return _p10._0.clientSettings;
-			}
-		}();
-		return A2(
-			_elm_lang$core$Platform_Cmd_ops['!'],
-			A9(_user$project$Main$Model, _elm_lang$core$Maybe$Nothing, '', _elm_lang$core$Dict$empty, cfg, _elm_lang$core$Maybe$Nothing, _elm_lang$core$Maybe$Nothing, '', _elm_lang$core$Maybe$Nothing, _elm_lang$core$Maybe$Nothing),
-			_elm_lang$core$Native_List.fromArray(
-				[
-					_user$project$Main$fetchServices(cfg)
-				]));
+		};
 	};
+	var _user$project$Main$init = F2(
+		function (persistedData, result) {
+			var defaultSettings = A3(_user$project$Types$ClientSettings, 'http://localhost:3000', 'https://localhost:5000', '');
+			var cfg = function () {
+				var _p13 = persistedData.clientSettings;
+				if (_p13.ctor === 'Nothing') {
+					return defaultSettings;
+				} else {
+					return _p13._0;
+				}
+			}();
+			return A2(
+				_user$project$Main$urlUpdate,
+				result,
+				_user$project$Main$Model(_user$project$Pages$Settings)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Dict$empty)(cfg)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing));
+		});
 	var _user$project$Main$main = {
-		main: _elm_lang$html$Html_App$programWithFlags(
-			{init: _user$project$Main$init, view: _user$project$Main$view, update: _user$project$Main$update, subscriptions: _user$project$Main$subscriptions}),
-		flags: _elm_lang$core$Json_Decode$oneOf(
-			_elm_lang$core$Native_List.fromArray(
-				[
-					_elm_lang$core$Json_Decode$null(_elm_lang$core$Maybe$Nothing),
-					A2(
-					_elm_lang$core$Json_Decode$map,
-					_elm_lang$core$Maybe$Just,
-					A2(
-						_elm_lang$core$Json_Decode$andThen,
-						A2(
-							_elm_lang$core$Json_Decode_ops[':='],
-							'clientSettings',
+		main: A2(
+			_elm_lang$navigation$Navigation$programWithFlags,
+			_elm_lang$navigation$Navigation$makeParser(_user$project$Main$hashParser),
+			{init: _user$project$Main$init, view: _user$project$Main$view, update: _user$project$Main$update, urlUpdate: _user$project$Main$urlUpdate, subscriptions: _user$project$Main$subscriptions}),
+		flags: A2(
+			_elm_lang$core$Json_Decode$andThen,
+			A2(
+				_elm_lang$core$Json_Decode_ops[':='],
+				'clientSettings',
+				_elm_lang$core$Json_Decode$oneOf(
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$core$Json_Decode$null(_elm_lang$core$Maybe$Nothing),
+							A2(
+							_elm_lang$core$Json_Decode$map,
+							_elm_lang$core$Maybe$Just,
 							A2(
 								_elm_lang$core$Json_Decode$andThen,
 								A2(_elm_lang$core$Json_Decode_ops[':='], 'secretKey', _elm_lang$core$Json_Decode$string),
@@ -11294,12 +12342,12 @@
 														{secretKey: secretKey, service: service, vault: vault});
 												});
 										});
-								})),
-						function (clientSettings) {
-							return _elm_lang$core$Json_Decode$succeed(
-								{clientSettings: clientSettings});
-						}))
-				]))
+								}))
+						]))),
+			function (clientSettings) {
+				return _elm_lang$core$Json_Decode$succeed(
+					{clientSettings: clientSettings});
+			})
 	};
 
 	var Elm = {};
