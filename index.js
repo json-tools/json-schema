@@ -11068,95 +11068,6 @@
 				['data']),
 			_elm_lang$core$Json_Decode$list(_user$project$Services_ServiceDescriptor$decodeService)));
 
-	var _user$project$Services_Otp$decodeOtp = A2(
-		_elm_lang$core$Json_Decode$object1,
-		_user$project$Models$Otp,
-		A2(_elm_lang$core$Json_Decode_ops[':='], 'id', _elm_lang$core$Json_Decode$string));
-	var _user$project$Services_Otp$create = function (clientSettings) {
-		var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(_user$project$Services_Otp$decodeOtp);
-		var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/otp');
-		var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
-		return A3(
-			_lukewestby$elm_http_builder$HttpBuilder$send,
-			successReader,
-			_lukewestby$elm_http_builder$HttpBuilder$stringReader,
-			A3(
-				_lukewestby$elm_http_builder$HttpBuilder$withHeader,
-				'Authorization',
-				auth,
-				_lukewestby$elm_http_builder$HttpBuilder$post(resource)));
-	};
-
-	var _user$project$Services_Pan$createFake = F2(
-		function (panId, clientSettings) {
-			var decodePan = A2(
-				_elm_lang$core$Json_Decode$at,
-				_elm_lang$core$Native_List.fromArray(
-					['pan']),
-				_elm_lang$core$Json_Decode$string);
-			var body = _elm_lang$core$Json_Encode$object(
-				_elm_lang$core$Native_List.fromArray(
-					[
-						{
-						ctor: '_Tuple2',
-						_0: 'panId',
-						_1: _elm_lang$core$Json_Encode$string(panId)
-					}
-					]));
-			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
-			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan/fake');
-			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
-			return A3(
-				_lukewestby$elm_http_builder$HttpBuilder$send,
-				successReader,
-				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
-				A2(
-					_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
-					body,
-					A3(
-						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
-						'Authorization',
-						auth,
-						_lukewestby$elm_http_builder$HttpBuilder$post(resource))));
-		});
-	var _user$project$Services_Pan$create = F3(
-		function (otp, pan, clientSettings) {
-			var decodePan = A3(
-				_elm_lang$core$Json_Decode$object2,
-				_user$project$Models$Pan,
-				A2(_elm_lang$core$Json_Decode_ops[':='], 'id', _elm_lang$core$Json_Decode$string),
-				A2(_elm_lang$core$Json_Decode_ops[':='], 'key', _elm_lang$core$Json_Decode$string));
-			var body = _elm_lang$core$Json_Encode$object(
-				_elm_lang$core$Native_List.fromArray(
-					[
-						{
-						ctor: '_Tuple2',
-						_0: 'otp',
-						_1: _elm_lang$core$Json_Encode$string(otp.id)
-					},
-						{
-						ctor: '_Tuple2',
-						_0: 'pan',
-						_1: _elm_lang$core$Json_Encode$string(pan)
-					}
-					]));
-			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
-			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan');
-			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
-			return A3(
-				_lukewestby$elm_http_builder$HttpBuilder$send,
-				successReader,
-				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
-				A2(
-					_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
-					body,
-					A3(
-						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
-						'Authorization',
-						auth,
-						_lukewestby$elm_http_builder$HttpBuilder$post(resource))));
-		});
-
 	var _user$project$Pages_Settings$auth = function (guide) {
 		return guide ? A2(
 			_evancz$elm_markdown$Markdown$toHtml,
@@ -11423,6 +11334,376 @@
 			return A2(_elm_lang$core$Task$onError, sendRequest, transformError);
 		});
 
+	var _user$project$Services_Otp$decodeOtp = A2(
+		_elm_lang$core$Json_Decode$object1,
+		_user$project$Models$Otp,
+		A2(_elm_lang$core$Json_Decode_ops[':='], 'id', _elm_lang$core$Json_Decode$string));
+	var _user$project$Services_Otp$create = function (clientSettings) {
+		var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(_user$project$Services_Otp$decodeOtp);
+		var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/otp');
+		var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
+		return A3(
+			_lukewestby$elm_http_builder$HttpBuilder$send,
+			successReader,
+			_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+			A3(
+				_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+				'Authorization',
+				auth,
+				_lukewestby$elm_http_builder$HttpBuilder$post(resource)));
+	};
+
+	var _user$project$Services_Pan$createFake = F2(
+		function (panId, clientSettings) {
+			var decodePan = A2(
+				_elm_lang$core$Json_Decode$at,
+				_elm_lang$core$Native_List.fromArray(
+					['pan']),
+				_elm_lang$core$Json_Decode$string);
+			var body = _elm_lang$core$Json_Encode$object(
+				_elm_lang$core$Native_List.fromArray(
+					[
+						{
+						ctor: '_Tuple2',
+						_0: 'panId',
+						_1: _elm_lang$core$Json_Encode$string(panId)
+					}
+					]));
+			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
+			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan/fake');
+			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
+			return A3(
+				_lukewestby$elm_http_builder$HttpBuilder$send,
+				successReader,
+				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+				A2(
+					_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
+					body,
+					A3(
+						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+						'Authorization',
+						auth,
+						_lukewestby$elm_http_builder$HttpBuilder$post(resource))));
+		});
+	var _user$project$Services_Pan$create = F3(
+		function (otp, pan, clientSettings) {
+			var decodePan = A3(
+				_elm_lang$core$Json_Decode$object2,
+				_user$project$Models$Pan,
+				A2(_elm_lang$core$Json_Decode_ops[':='], 'id', _elm_lang$core$Json_Decode$string),
+				A2(_elm_lang$core$Json_Decode_ops[':='], 'key', _elm_lang$core$Json_Decode$string));
+			var body = _elm_lang$core$Json_Encode$object(
+				_elm_lang$core$Native_List.fromArray(
+					[
+						{
+						ctor: '_Tuple2',
+						_0: 'otp',
+						_1: _elm_lang$core$Json_Encode$string(otp.id)
+					},
+						{
+						ctor: '_Tuple2',
+						_0: 'pan',
+						_1: _elm_lang$core$Json_Encode$string(pan)
+					}
+					]));
+			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
+			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan');
+			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
+			return A3(
+				_lukewestby$elm_http_builder$HttpBuilder$send,
+				successReader,
+				_lukewestby$elm_http_builder$HttpBuilder$stringReader,
+				A2(
+					_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
+					body,
+					A3(
+						_lukewestby$elm_http_builder$HttpBuilder$withHeader,
+						'Authorization',
+						auth,
+						_lukewestby$elm_http_builder$HttpBuilder$post(resource))));
+		});
+
+	var _user$project$Pages_Vault$Model = F4(
+		function (a, b, c, d) {
+			return {otp: a, pan: b, fakePan: c, error: d};
+		});
+	var _user$project$Pages_Vault$init = A4(_user$project$Pages_Vault$Model, _elm_lang$core$Maybe$Nothing, _elm_lang$core$Maybe$Nothing, _elm_lang$core$Maybe$Nothing, '');
+	var _user$project$Pages_Vault$CreateFakePanSuccess = function (a) {
+		return {ctor: 'CreateFakePanSuccess', _0: a};
+	};
+	var _user$project$Pages_Vault$CreateFakePan = {ctor: 'CreateFakePan'};
+	var _user$project$Pages_Vault$CreatePanSuccess = function (a) {
+		return {ctor: 'CreatePanSuccess', _0: a};
+	};
+	var _user$project$Pages_Vault$CreatePan = {ctor: 'CreatePan'};
+	var _user$project$Pages_Vault$CreateOtpSuccess = function (a) {
+		return {ctor: 'CreateOtpSuccess', _0: a};
+	};
+	var _user$project$Pages_Vault$CreateOtp = {ctor: 'CreateOtp'};
+	var _user$project$Pages_Vault$render = F2(
+		function (model, _p0) {
+			var _p1 = _p0;
+			var fakePan = function () {
+				var _p2 = model.fakePan;
+				if (_p2.ctor === 'Nothing') {
+					return _elm_lang$html$Html$text('');
+				} else {
+					return _elm_lang$html$Html$text(_p2._0);
+				}
+			}();
+			var decryptionKey = function () {
+				var _p3 = model.pan;
+				if (_p3.ctor === 'Nothing') {
+					return _elm_lang$html$Html$text('');
+				} else {
+					return _elm_lang$html$Html$text(_p3._0.key);
+				}
+			}();
+			var panId = function () {
+				var _p4 = model.pan;
+				if (_p4.ctor === 'Nothing') {
+					return _elm_lang$html$Html$text('');
+				} else {
+					return _elm_lang$html$Html$text(_p4._0.id);
+				}
+			}();
+			var otpId = function () {
+				var _p5 = model.otp;
+				if (_p5.ctor === 'Nothing') {
+					return '';
+				} else {
+					return _p5._0.id;
+				}
+			}();
+			return A2(
+				_elm_lang$html$Html$div,
+				_elm_lang$core$Native_List.fromArray(
+					[]),
+				_elm_lang$core$Native_List.fromArray(
+					[
+						A2(
+						_elm_lang$html$Html$div,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('1. Request one-time password to authenticate next request'),
+								A2(
+								_elm_lang$html$Html$div,
+								_elm_lang$core$Native_List.fromArray(
+									[]),
+								_elm_lang$core$Native_List.fromArray(
+									[
+										A2(
+										_elm_lang$html$Html$button,
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html_Events$onClick(_user$project$Pages_Vault$CreateOtp)
+											]),
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html$text('Create OTP')
+											]))
+									]))
+							])),
+						A2(
+						_elm_lang$html$Html$div,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('2. Save PAN'),
+								A2(
+								_elm_lang$html$Html$div,
+								_elm_lang$core$Native_List.fromArray(
+									[]),
+								_elm_lang$core$Native_List.fromArray(
+									[
+										A2(
+										_elm_lang$html$Html$pre,
+										_elm_lang$core$Native_List.fromArray(
+											[]),
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html$text(
+												A2(
+													_elm_lang$core$Basics_ops['++'],
+													'POST ',
+													A2(
+														_elm_lang$core$Basics_ops['++'],
+														_p1.vault,
+														A2(
+															_elm_lang$core$Basics_ops['++'],
+															'/pan\n{ otp: \'',
+															A2(_elm_lang$core$Basics_ops['++'], otpId, '\' }')))))
+											]))
+									])),
+								A2(
+								_elm_lang$html$Html$div,
+								_elm_lang$core$Native_List.fromArray(
+									[]),
+								_elm_lang$core$Native_List.fromArray(
+									[
+										A2(
+										_elm_lang$html$Html$button,
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html_Events$onClick(_user$project$Pages_Vault$CreatePan)
+											]),
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html$text('Create PAN')
+											]))
+									])),
+								_elm_lang$html$Html$text('card id: '),
+								panId,
+								A2(
+								_elm_lang$html$Html$br,
+								_elm_lang$core$Native_List.fromArray(
+									[]),
+								_elm_lang$core$Native_List.fromArray(
+									[])),
+								_elm_lang$html$Html$text('decryption key: '),
+								decryptionKey
+							])),
+						A2(
+						_elm_lang$html$Html$div,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('3. Issue fake card'),
+								A2(
+								_elm_lang$html$Html$div,
+								_elm_lang$core$Native_List.fromArray(
+									[]),
+								_elm_lang$core$Native_List.fromArray(
+									[
+										A2(
+										_elm_lang$html$Html$button,
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html_Events$onClick(_user$project$Pages_Vault$CreateFakePan)
+											]),
+										_elm_lang$core$Native_List.fromArray(
+											[
+												_elm_lang$html$Html$text('Create Fake PAN')
+											]))
+									])),
+								fakePan
+							]))
+					]));
+		});
+	var _user$project$Pages_Vault$ResponseError = function (a) {
+		return {ctor: 'ResponseError', _0: a};
+	};
+	var _user$project$Pages_Vault$update = F3(
+		function (msg, model, clientSettings) {
+			var _p6 = msg;
+			switch (_p6.ctor) {
+				case 'ResponseError':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								error: _elm_lang$core$Basics$toString(_p6._0)
+							}),
+						_elm_lang$core$Native_List.fromArray(
+							[]));
+				case 'CreateOtp':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						model,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								A3(
+								_elm_lang$core$Task$perform,
+								_user$project$Pages_Vault$ResponseError,
+								_user$project$Pages_Vault$CreateOtpSuccess,
+								_user$project$Services_Otp$create(clientSettings))
+							]));
+				case 'CreateOtpSuccess':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								otp: _elm_lang$core$Maybe$Just(_p6._0.data)
+							}),
+						_elm_lang$core$Native_List.fromArray(
+							[]));
+				case 'CreatePan':
+					var _p7 = model.otp;
+					if (_p7.ctor === 'Nothing') {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[]));
+					} else {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									A3(
+									_elm_lang$core$Task$perform,
+									_user$project$Pages_Vault$ResponseError,
+									_user$project$Pages_Vault$CreatePanSuccess,
+									A3(_user$project$Services_Pan$create, _p7._0, '4111111111111111', clientSettings))
+								]));
+					}
+				case 'CreatePanSuccess':
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								pan: _elm_lang$core$Maybe$Just(_p6._0.data)
+							}),
+						_elm_lang$core$Native_List.fromArray(
+							[]));
+				case 'CreateFakePan':
+					var _p8 = model.pan;
+					if (_p8.ctor === 'Nothing') {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[]));
+					} else {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									A3(
+									_elm_lang$core$Task$perform,
+									_user$project$Pages_Vault$ResponseError,
+									_user$project$Pages_Vault$CreateFakePanSuccess,
+									A2(_user$project$Services_Pan$createFake, _p8._0.id, clientSettings))
+								]));
+					}
+				default:
+					return A2(
+						_elm_lang$core$Platform_Cmd_ops['!'],
+						_elm_lang$core$Native_Utils.update(
+							model,
+							{
+								fakePan: _elm_lang$core$Maybe$Just(_p6._0.data)
+							}),
+						_elm_lang$core$Native_List.fromArray(
+							[]));
+			}
+		});
+
 	var _user$project$Pages$ServiceApi = {ctor: 'ServiceApi'};
 	var _user$project$Pages$SecureVault = {ctor: 'SecureVault'};
 	var _user$project$Pages$Settings = {ctor: 'Settings'};
@@ -11438,11 +11719,7 @@
 								return function (h) {
 									return function (i) {
 										return function (j) {
-											return function (k) {
-												return function (l) {
-													return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j, pan: k, fakePan: l};
-												};
-											};
+											return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, vault: j};
 										};
 									};
 								};
@@ -11891,18 +12168,6 @@
 					]));
 		});
 
-	var _user$project$Messages$CreateFakePanSuccess = function (a) {
-		return {ctor: 'CreateFakePanSuccess', _0: a};
-	};
-	var _user$project$Messages$CreateFakePan = {ctor: 'CreateFakePan'};
-	var _user$project$Messages$CreatePanSuccess = function (a) {
-		return {ctor: 'CreatePanSuccess', _0: a};
-	};
-	var _user$project$Messages$CreatePan = {ctor: 'CreatePan'};
-	var _user$project$Messages$CreateOtpSuccess = function (a) {
-		return {ctor: 'CreateOtpSuccess', _0: a};
-	};
-	var _user$project$Messages$CreateOtp = {ctor: 'CreateOtp'};
 	var _user$project$Messages$ResponseError = function (a) {
 		return {ctor: 'ResponseError', _0: a};
 	};
@@ -11916,6 +12181,9 @@
 		return {ctor: 'FetchServicesSuccess', _0: a};
 	};
 	var _user$project$Messages$FetchServices = {ctor: 'FetchServices'};
+	var _user$project$Messages$PagesVaultMsg = function (a) {
+		return {ctor: 'PagesVaultMsg', _0: a};
+	};
 	var _user$project$Messages$PagesSchemaMsg = function (a) {
 		return {ctor: 'PagesSchemaMsg', _0: a};
 	};
@@ -12245,74 +12513,12 @@
 										_user$project$Pages_Settings$render(model.clientSettings))
 									]);
 							case 'SecureVault':
-								var fakePan = function () {
-									var _p8 = model.fakePan;
-									if (_p8.ctor === 'Nothing') {
-										return _elm_lang$html$Html$text('');
-									} else {
-										return _elm_lang$html$Html$text(_p8._0);
-									}
-								}();
-								var panId = function () {
-									var _p9 = model.pan;
-									if (_p9.ctor === 'Nothing') {
-										return _elm_lang$html$Html$text('');
-									} else {
-										return _elm_lang$html$Html$text(_p9._0.id);
-									}
-								}();
-								var otpId = function () {
-									var _p10 = model.otp;
-									if (_p10.ctor === 'Nothing') {
-										return _elm_lang$html$Html$text('');
-									} else {
-										return _elm_lang$html$Html$text(_p10._0.id);
-									}
-								}();
 								return _elm_lang$core$Native_List.fromArray(
 									[
 										A2(
-										_elm_lang$html$Html$div,
-										_elm_lang$core$Native_List.fromArray(
-											[
-												_elm_lang$html$Html_Attributes$style(_user$project$Layout$boxStyle)
-											]),
-										_elm_lang$core$Native_List.fromArray(
-											[
-												A2(
-												_elm_lang$html$Html$button,
-												_elm_lang$core$Native_List.fromArray(
-													[
-														_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreateOtp)
-													]),
-												_elm_lang$core$Native_List.fromArray(
-													[
-														_elm_lang$html$Html$text('Create OTP')
-													])),
-												otpId,
-												A2(
-												_elm_lang$html$Html$button,
-												_elm_lang$core$Native_List.fromArray(
-													[
-														_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreatePan)
-													]),
-												_elm_lang$core$Native_List.fromArray(
-													[
-														_elm_lang$html$Html$text('Create PAN')
-													])),
-												panId,
-												A2(
-												_elm_lang$html$Html$button,
-												_elm_lang$core$Native_List.fromArray(
-													[
-														_elm_lang$html$Html_Events$onClick(_user$project$Messages$CreateFakePan)
-													]),
-												_elm_lang$core$Native_List.fromArray(
-													[
-														_elm_lang$html$Html$text('Create Fake PAN')
-													])),
-												fakePan
-											]))
+										_elm_lang$html$Html_App$map,
+										_user$project$Messages$PagesVaultMsg,
+										A2(_user$project$Pages_Vault$render, model.vault, model.clientSettings))
 									]);
 							default:
 								return _elm_lang$core$Native_List.fromArray(
@@ -12332,8 +12538,8 @@
 		});
 	var _user$project$Main$update = F2(
 		function (msg, model) {
-			var _p11 = msg;
-			switch (_p11.ctor) {
+			var _p8 = msg;
+			switch (_p8.ctor) {
 				case 'NoOp':
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
@@ -12341,7 +12547,7 @@
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'PagesSettingsMsg':
-					var settings = A2(_user$project$Pages_Settings$update, _p11._0, model.clientSettings);
+					var settings = A2(_user$project$Pages_Settings$update, _p8._0, model.clientSettings);
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
@@ -12354,13 +12560,24 @@
 									_elm_lang$core$Maybe$Just(settings)))
 							]));
 				case 'PagesSchemaMsg':
-					var _p12 = A2(_user$project$Pages_Schema$update, _p11._0, model);
-					var model = _p12._0;
-					var cmd = _p12._1;
+					var _p9 = A2(_user$project$Pages_Schema$update, _p8._0, model);
+					var model = _p9._0;
+					var cmd = _p9._1;
 					return {
 						ctor: '_Tuple2',
 						_0: model,
 						_1: A2(_elm_lang$core$Platform_Cmd$map, _user$project$Messages$PagesSchemaMsg, cmd)
+					};
+				case 'PagesVaultMsg':
+					var _p10 = A3(_user$project$Pages_Vault$update, _p8._0, model.vault, model.clientSettings);
+					var vault = _p10._0;
+					var cmd = _p10._1;
+					return {
+						ctor: '_Tuple2',
+						_0: _elm_lang$core$Native_Utils.update(
+							model,
+							{vault: vault}),
+						_1: A2(_elm_lang$core$Platform_Cmd$map, _user$project$Messages$PagesVaultMsg, cmd)
 					};
 				case 'FetchServices':
 					return A2(
@@ -12378,7 +12595,7 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								error: _elm_lang$core$Basics$toString(_p11._0)
+								error: _elm_lang$core$Basics$toString(_p8._0)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
@@ -12388,30 +12605,30 @@
 						_elm_lang$core$Native_Utils.update(
 							model,
 							{
-								services: _elm_lang$core$Maybe$Just(_p11._0.data)
+								services: _elm_lang$core$Maybe$Just(_p8._0.data)
 							}),
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'FetchService':
-					var _p13 = _p11._0;
+					var _p11 = _p8._0;
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
 						_elm_lang$core$Native_Utils.update(
 							model,
-							{serviceId: _p13, error: ''}),
+							{serviceId: _p11, error: ''}),
 						_elm_lang$core$Native_List.fromArray(
 							[
-								A2(_user$project$Main$fetchService, _p13, model.clientSettings)
+								A2(_user$project$Main$fetchService, _p11, model.clientSettings)
 							]));
-				case 'FetchServiceSuccess':
-					var _p14 = _user$project$JsonSchema$convert(_p11._0.data.schema);
-					if (_p14.ctor === 'Ok') {
+				default:
+					var _p12 = _user$project$JsonSchema$convert(_p8._0.data.schema);
+					if (_p12.ctor === 'Ok') {
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
 								{
-									schema: _elm_lang$core$Maybe$Just(_p14._0)
+									schema: _elm_lang$core$Maybe$Just(_p12._0)
 								}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
@@ -12420,94 +12637,10 @@
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
-								{error: _p14._0}),
+								{error: _p12._0}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
 					}
-				case 'CreateOtp':
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						model,
-						_elm_lang$core$Native_List.fromArray(
-							[
-								A3(
-								_elm_lang$core$Task$perform,
-								_user$project$Messages$ResponseError,
-								_user$project$Messages$CreateOtpSuccess,
-								_user$project$Services_Otp$create(model.clientSettings))
-							]));
-				case 'CreateOtpSuccess':
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							model,
-							{
-								otp: _elm_lang$core$Maybe$Just(_p11._0.data)
-							}),
-						_elm_lang$core$Native_List.fromArray(
-							[]));
-				case 'CreatePan':
-					var _p15 = model.otp;
-					if (_p15.ctor === 'Nothing') {
-						return A2(
-							_elm_lang$core$Platform_Cmd_ops['!'],
-							model,
-							_elm_lang$core$Native_List.fromArray(
-								[]));
-					} else {
-						return A2(
-							_elm_lang$core$Platform_Cmd_ops['!'],
-							model,
-							_elm_lang$core$Native_List.fromArray(
-								[
-									A3(
-									_elm_lang$core$Task$perform,
-									_user$project$Messages$ResponseError,
-									_user$project$Messages$CreatePanSuccess,
-									A3(_user$project$Services_Pan$create, _p15._0, '4111111111111111', model.clientSettings))
-								]));
-					}
-				case 'CreatePanSuccess':
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							model,
-							{
-								pan: _elm_lang$core$Maybe$Just(_p11._0.data)
-							}),
-						_elm_lang$core$Native_List.fromArray(
-							[]));
-				case 'CreateFakePan':
-					var _p16 = model.pan;
-					if (_p16.ctor === 'Nothing') {
-						return A2(
-							_elm_lang$core$Platform_Cmd_ops['!'],
-							model,
-							_elm_lang$core$Native_List.fromArray(
-								[]));
-					} else {
-						return A2(
-							_elm_lang$core$Platform_Cmd_ops['!'],
-							model,
-							_elm_lang$core$Native_List.fromArray(
-								[
-									A3(
-									_elm_lang$core$Task$perform,
-									_user$project$Messages$ResponseError,
-									_user$project$Messages$CreateFakePanSuccess,
-									A2(_user$project$Services_Pan$createFake, _p16._0.id, model.clientSettings))
-								]));
-					}
-				default:
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							model,
-							{
-								fakePan: _elm_lang$core$Maybe$Just(_p11._0.data)
-							}),
-						_elm_lang$core$Native_List.fromArray(
-							[]));
 			}
 		});
 	var _user$project$Main$Model = function (a) {
@@ -12520,11 +12653,7 @@
 								return function (h) {
 									return function (i) {
 										return function (j) {
-											return function (k) {
-												return function (l) {
-													return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, otp: j, pan: k, fakePan: l};
-												};
-											};
+											return {page: a, services: b, error: c, validationErrors: d, clientSettings: e, schema: f, input: g, serviceId: h, job: i, vault: j};
 										};
 									};
 								};
@@ -12539,17 +12668,17 @@
 		function (persistedData, result) {
 			var defaultSettings = A4(_user$project$Types$ClientSettings, 'http://localhost:3000', 'https://localhost:5000', '', false);
 			var cfg = function () {
-				var _p17 = persistedData.clientSettings;
-				if (_p17.ctor === 'Nothing') {
+				var _p13 = persistedData.clientSettings;
+				if (_p13.ctor === 'Nothing') {
 					return defaultSettings;
 				} else {
-					return _p17._0;
+					return _p13._0;
 				}
 			}();
 			return A2(
 				_user$project$Main$urlUpdate,
 				result,
-				_user$project$Main$Model(_user$project$Pages$Settings)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Dict$empty)(cfg)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing));
+				_user$project$Main$Model(_user$project$Pages$Settings)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Dict$empty)(cfg)(_elm_lang$core$Maybe$Nothing)(_elm_lang$core$Maybe$Nothing)('')(_elm_lang$core$Maybe$Nothing)(_user$project$Pages_Vault$init));
 		});
 	var _user$project$Main$main = {
 		main: A2(
