@@ -1,7 +1,7 @@
 module Messages exposing (Msg, Msg(..))
 
 import Types exposing (Id, Value)
-import Models exposing (Job, ServiceDescriptor, Context, Otp)
+import Models exposing (Job, ServiceDescriptor, Context, Otp, Pan, FakePan)
 import Pages.Settings
 import Pages.Schema
 import HttpBuilder exposing (Response, Error)
@@ -17,4 +17,7 @@ type Msg
     | ResponseError (Error String)
     | CreateOtp
     | CreateOtpSuccess (Response Otp)
-
+    | CreatePan
+    | CreatePanSuccess (Response Pan)
+    | CreateFakePan
+    | CreateFakePanSuccess (Response FakePan)

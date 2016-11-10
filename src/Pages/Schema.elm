@@ -1,7 +1,7 @@
 module Pages.Schema exposing (render, Path, Msg, update)
 
 import Types exposing (..)
-import Models exposing (Context, ValidationErrors, Job, ServiceDescriptor, Otp)
+import Models exposing (Context, ValidationErrors, Job, ServiceDescriptor, Otp, Pan, FakePan)
 import Json.Encode as Encode
 import Html exposing (div, span, button, text, form, input, ul, li)
 import Html.Events exposing (onClick, onSubmit, onInput)
@@ -37,6 +37,8 @@ type alias Model =
     , serviceId : Id
     , job : Maybe Job
     , otp : Maybe Otp
+    , pan : Maybe Pan
+    , fakePan : Maybe FakePan
     }
 
 update : Msg -> Model -> ( Model, Cmd Msg )

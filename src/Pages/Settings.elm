@@ -12,6 +12,7 @@ type Msg
     = SetClientSecretKey String
     | SetServiceApiUrl String
     | SetVaultApiUrl String
+    | ToggleGuide
 
 
 update : Msg -> ClientSettings -> ClientSettings
@@ -26,10 +27,14 @@ update msg model =
         SetVaultApiUrl c ->
             { model | vault = c }
 
+        ToggleGuide ->
+            { model | guide = not model.guide }
 
-service : String
-service =
-    """
+
+service : Bool -> Html.Html msg
+service guide =
+    if guide then
+        Markdown.toHtml [] """
 ## Service API
 
 This API provides automation-related endpoints:
@@ -39,11 +44,14 @@ This API provides automation-related endpoints:
 - create automation job `POST /jobs` -> Job
 - poll state of specific job `GET /jobs/:id` -> Job
 """
+    else
+        text "Service API url:"
 
 
-vault : String
-vault =
-    """
+vault : Bool -> Html.Html msg
+vault guide =
+    if guide then
+        Markdown.toHtml [] """
 ## Secure Vault
 
 PCI Compliant secure storage which allows to store PAN.
@@ -53,16 +61,22 @@ Following endpoints open for public use:
 - store PAN `POST /pan {otp}`
 - issue fake PAN `POST /pan/fake`
 """
+    else
+        text "Secure Vault url:"
 
-auth : String
-auth =
-    """
+
+auth : Bool -> Html.Html msg
+auth guide =
+    if guide then
+        Markdown.toHtml [] """
 ## Authentication
 
 All API services require authentication via Basic HTTP auth over HTTPS.
 Unauthorised requests will result in 401 Unauthorized.
 All requests using the HTTP protocol will fail with 403 Forbidden status code.
 """
+    else
+        text "Client secret key:"
 
 
 render : ClientSettings -> Html.Html Msg
@@ -82,7 +96,18 @@ render clientSettings =
     in
         div []
             [ div [ style boxStyle ]
-                [ Markdown.toHtml [] service
+                [ Html.label []
+                    [ input
+                        [ Attrs.type' "checkbox"
+                        , Attrs.checked clientSettings.guide
+                        , onClick ToggleGuide
+                        ]
+                        []
+                    , text " Guide mode"
+                    ]
+                ]
+            , div [ style boxStyle ]
+                [ service clientSettings.guide
                 , input
                     [ Attrs.value clientSettings.service
                     , Attrs.autocomplete True
@@ -95,7 +120,7 @@ render clientSettings =
                     []
                 ]
             , div [ style boxStyle ]
-                [ Markdown.toHtml [] vault
+                [ vault clientSettings.guide
                 , input
                     [ Attrs.value clientSettings.vault
                     , Attrs.autocomplete True
@@ -108,7 +133,7 @@ render clientSettings =
                     []
                 ]
             , div [ style boxStyle ]
-                [ Markdown.toHtml [] auth
+                [ auth clientSettings.guide
                 , input
                     [ Attrs.value clientSettings.secretKey
                     , Attrs.autocomplete False

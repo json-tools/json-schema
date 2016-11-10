@@ -13,6 +13,7 @@ import String
 import JsonSchema as JS
 import Services.ServiceDescriptor as ServiceDescriptorSvc
 import Services.Otp as OtpSvc
+import Services.Pan as PanSvc
 import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
@@ -122,6 +123,8 @@ type alias Model =
     , serviceId : Id
     , job : Maybe Job
     , otp : Maybe Otp
+    , pan : Maybe Pan
+    , fakePan : Maybe FakePan
     }
 
 
@@ -133,6 +136,7 @@ init persistedData result =
                 "http://localhost:3000"
                 "https://localhost:5000"
                 ""
+                False
 
         cfg =
             case persistedData.clientSettings of
@@ -163,6 +167,10 @@ init persistedData result =
                 -- job
                 Nothing
                 -- otp
+                Nothing
+                -- pan
+                Nothing
+                -- fakePan
                 Nothing
             )
 
@@ -230,10 +238,29 @@ update msg model =
                     { model | error = err } ! []
 
         CreateOtp ->
-            model ! [ Task.perform ResponseError CreateOtpSuccess <| OtpSvc.create model.clientSettings ]
+            model ! [ Task.perform ResponseError CreateOtpSuccess <|
+                OtpSvc.create model.clientSettings ]
 
         CreateOtpSuccess { data } ->
             { model | otp = Just data } ! []
+
+        CreatePan ->
+            case model.otp of
+                Nothing ->
+                    model ! []
+
+                Just otp ->
+                    model ! [ Task.perform ResponseError CreatePanSuccess <|
+                        PanSvc.create otp "4111111111111111" model.clientSettings ]
+
+        CreatePanSuccess { data } ->
+            { model | pan = Just data } ! []
+
+        CreateFakePan ->
+            model ! []
+
+        CreateFakePanSuccess { data } ->
+            { model | fakePan = Just data } ! []
 
 
 
@@ -276,12 +303,12 @@ view : Model -> Html.Html Msg
 view model =
     div []
         [ div [ centerStyle "row" ]
-            [ viewLink Home "Home"
-            , viewLink Settings "Settings"
-            , viewLink SecureVault "Secure Vault"
-            , viewLink ServiceApi "Service API"
+            [ viewLink model.page Home "Home"
+            , viewLink model.page Settings "Settings"
+            , viewLink model.page SecureVault "Secure Vault"
+            , viewLink model.page ServiceApi "Service API"
             ]
-        , hr [] []
+        , hr [ style [ ( "border", "0" ), ("border-bottom", "1px solid #ddd" ) ] ] []
         , div [ centerStyle "column" ]
             (case model.page of
                 Home ->
@@ -301,10 +328,30 @@ view model =
 
                                 Just otp ->
                                     text otp.id
+
+                        panId =
+                            case model.pan of
+                                Nothing ->
+                                    text ""
+
+                                Just pan ->
+                                    text pan.id
+
+                        fakePan =
+                            case model.fakePan of
+                                Nothing ->
+                                    text ""
+
+                                Just fakePan ->
+                                    text fakePan
                     in
                         [ div [ style boxStyle ]
                             [ button [ onClick CreateOtp ] [ text "Create OTP" ]
                             , otpId
+                            , button [ onClick CreatePan ] [ text "Create PAN" ]
+                            , panId
+                            , button [ onClick CreateFakePan ] [ text "Create Fake PAN" ]
+                            , fakePan
                             ]
                         ]
 
@@ -314,9 +361,22 @@ view model =
         ]
 
 
-viewLink : Page -> String -> Html.Html msg
-viewLink page description =
-    a [ style [ ( "padding", "0 20px" ) ], href (toHash page) ] [ text description ]
+viewLink : Page -> Page -> String -> Html.Html msg
+viewLink currentPage page description =
+    let
+        linkStyle =
+            style [ ( "padding", "0 20px" ) ]
+
+        txt =
+            [ text description ]
+
+        block =
+        if currentPage == page then
+            span [ linkStyle ]
+        else
+            a [ linkStyle, href (toHash page) ]
+    in
+        block txt
 
 
 all : Model -> Html.Html Msg

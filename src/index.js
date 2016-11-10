@@ -8,6 +8,12 @@ const appState = storedState ? JSON.parse(storedState) : {
     clientSettings: null
 };
 
+if (appState.clientSettings) {
+    if (typeof appState.clientSettings.guide === 'undefined') {
+        appState.clientSettings.guide = true;
+    }
+}
+
 function init(state) {
     const clientApp = Elm.Main.fullscreen(appState);
 

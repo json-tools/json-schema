@@ -8,6 +8,7 @@ type alias ClientSettings =
     { service : String
     , vault : String
     , secretKey : String
+    , guide : Bool
     }
 
 
