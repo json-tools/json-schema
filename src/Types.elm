@@ -12,7 +12,7 @@ type alias ClientSettings =
 
 
 type alias PersistedData =
-    { clientSettings : ClientSettings
+    { clientSettings : Maybe ClientSettings
     }
 
 

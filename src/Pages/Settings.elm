@@ -5,6 +5,7 @@ import Types exposing (..)
 import Html exposing (div, span, button, text, form, input, ul, li, hr)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
+import Markdown
 
 
 type Msg
@@ -26,6 +27,43 @@ update msg model =
             { model | vault = c }
 
 
+service : String
+service =
+    """
+## Service API
+
+This API provides automation-related endpoints:
+
+- list services `GET /services` -> List Service
+- get schema for specific service `GET /service/:id` -> Service
+- create automation job `POST /jobs` -> Job
+- poll state of specific job `GET /jobs/:id` -> Job
+"""
+
+
+vault : String
+vault =
+    """
+## Secure Vault
+
+PCI Compliant secure storage which allows to store PAN.
+Following endpoints open for public use:
+
+- create OTP `POST /otp`
+- store PAN `POST /pan {otp}`
+- issue fake PAN `POST /pan/fake`
+"""
+
+auth : String
+auth =
+    """
+## Authentication
+
+All API services require authentication via Basic HTTP auth over HTTPS.
+Unauthorised requests will result in 401 Unauthorized.
+All requests using the HTTP protocol will fail with 403 Forbidden status code.
+"""
+
 
 render : ClientSettings -> Html.Html Msg
 render clientSettings =
@@ -37,40 +75,48 @@ render clientSettings =
             ]
 
         labelStyle =
-            [ ("margin-top", "10px")
-            , ("margin-bottom", "5px")
-            , ("font-weight", "700")
+            [ ( "margin-top", "10px" )
+            , ( "margin-bottom", "5px" )
+            , ( "font-weight", "700" )
             ]
     in
-        div [ style boxStyle ]
-            [ div [ style labelStyle ] [ text "Service API url" ]
-            , input
-                [ Attrs.value clientSettings.service
-                , Attrs.autocomplete True
-                , Attrs.placeholder "Service API url"
-                , Attrs.name "api-host"
-                , Attrs.type' "url"
-                , onInput SetServiceApiUrl
-                , style inputStyle
-                ] []
-            , div [ style labelStyle ] [ text "Vault API (frontend) url" ]
-            , input
-                [ Attrs.value clientSettings.vault
-                , Attrs.autocomplete True
-                , Attrs.placeholder "Vault API url"
-                , Attrs.name "vault url"
-                , Attrs.type' "url"
-                , onInput SetVaultApiUrl
-                , style inputStyle
-                ] []
-            , div [ style labelStyle ] [ text "Client secret key" ]
-            , input
-                [ Attrs.value clientSettings.secretKey
-                , Attrs.autocomplete False
-                , Attrs.placeholder "Client secret key (go grab it from db)"
-                , Attrs.name "client-secret-key"
-                , onInput SetClientSecretKey
-                , style inputStyle
+        div []
+            [ div [ style boxStyle ]
+                [ Markdown.toHtml [] service
+                , input
+                    [ Attrs.value clientSettings.service
+                    , Attrs.autocomplete True
+                    , Attrs.placeholder "Service API url"
+                    , Attrs.name "api-host"
+                    , Attrs.type' "url"
+                    , onInput SetServiceApiUrl
+                    , style inputStyle
+                    ]
+                    []
                 ]
-                []
+            , div [ style boxStyle ]
+                [ Markdown.toHtml [] vault
+                , input
+                    [ Attrs.value clientSettings.vault
+                    , Attrs.autocomplete True
+                    , Attrs.placeholder "Vault API url"
+                    , Attrs.name "vault url"
+                    , Attrs.type' "url"
+                    , onInput SetVaultApiUrl
+                    , style inputStyle
+                    ]
+                    []
+                ]
+            , div [ style boxStyle ]
+                [ Markdown.toHtml [] auth
+                , input
+                    [ Attrs.value clientSettings.secretKey
+                    , Attrs.autocomplete False
+                    , Attrs.placeholder "Client secret key (go grab it from db)"
+                    , Attrs.name "client-secret-key"
+                    , onInput SetClientSecretKey
+                    , style inputStyle
+                    ]
+                    []
+                ]
             ]

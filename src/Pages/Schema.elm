@@ -14,6 +14,7 @@ import Layout exposing (boxStyle)
 import Services.Job as JobSvc exposing (JobCreationError)
 import HttpBuilder
 import Task
+import Pages
 
 
 type alias Path =
@@ -26,7 +27,8 @@ type Msg
     | SubmitJobSuccess (HttpBuilder.Response Job)
 
 type alias Model =
-    { services : Maybe (List ServiceDescriptor)
+    { page : Pages.Page
+    , services : Maybe (List ServiceDescriptor)
     , error : String
     , validationErrors : ValidationErrors
     , clientSettings : ClientSettings

@@ -4,7 +4,9 @@ require('./index.html');
 const Elm = require('./Main');
 
 const storedState = localStorage.getItem('client-app-persisted-data-v3');
-const appState = storedState ? JSON.parse(storedState) : null;
+const appState = storedState ? JSON.parse(storedState) : {
+    clientSettings: null
+};
 
 function init(state) {
     const clientApp = Elm.Main.fullscreen(appState);
