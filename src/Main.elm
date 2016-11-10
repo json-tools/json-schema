@@ -199,7 +199,8 @@ update msg model =
                 settings =
                     Pages.Settings.update msg model.clientSettings
             in
-                { model | clientSettings = settings } ! []
+                { model | clientSettings = settings } !
+                    [ storeConfig (PersistedData <| Just settings) ]
 
         PagesSchemaMsg msg ->
             let
