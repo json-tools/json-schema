@@ -49,7 +49,7 @@ createFake panId clientSettings =
             HttpBuilder.jsonReader decodePan
 
         body = Encode.object
-            [ ("pan_id", Encode.string panId)
+            [ ("panId", Encode.string panId)
             ]
 
         decodePan =

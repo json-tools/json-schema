@@ -12,6 +12,7 @@ import String
 import JsonSchema as JS
 import Layout exposing (boxStyle)
 import Services.Job as JobSvc exposing (JobCreationError)
+import Pages.Vault
 import HttpBuilder
 import Task
 import Pages
@@ -36,9 +37,7 @@ type alias Model =
     , input : Maybe Value
     , serviceId : Id
     , job : Maybe Job
-    , otp : Maybe Otp
-    , pan : Maybe Pan
-    , fakePan : Maybe FakePan
+    , vault : Pages.Vault.Model
     }
 
 update : Msg -> Model -> ( Model, Cmd Msg )

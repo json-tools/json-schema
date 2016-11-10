@@ -12,11 +12,10 @@ import Dict
 import String
 import JsonSchema as JS
 import Services.ServiceDescriptor as ServiceDescriptorSvc
-import Services.Otp as OtpSvc
-import Services.Pan as PanSvc
 import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
+import Pages.Vault
 import Pages.Schema
 import Layout exposing (boxStyle)
 import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
@@ -122,9 +121,7 @@ type alias Model =
     , input : Maybe Value
     , serviceId : Id
     , job : Maybe Job
-    , otp : Maybe Otp
-    , pan : Maybe Pan
-    , fakePan : Maybe FakePan
+    , vault : Pages.Vault.Model
     }
 
 
@@ -166,12 +163,8 @@ init persistedData result =
                 ""
                 -- job
                 Nothing
-                -- otp
-                Nothing
-                -- pan
-                Nothing
-                -- fakePan
-                Nothing
+                -- vault
+                Pages.Vault.init
             )
 
 
@@ -217,6 +210,13 @@ update msg model =
             in
                 ( model, Cmd.map PagesSchemaMsg cmd )
 
+        PagesVaultMsg msg ->
+            let
+                ( vault, cmd ) =
+                    Pages.Vault.update msg model.vault model.clientSettings
+            in
+                ( { model | vault = vault }, Cmd.map PagesVaultMsg cmd )
+
         FetchServices ->
             { model | error = "" } ! [ fetchServices model.clientSettings ]
 
@@ -237,36 +237,6 @@ update msg model =
                 Err err ->
                     { model | error = err } ! []
 
-        CreateOtp ->
-            model ! [ Task.perform ResponseError CreateOtpSuccess <|
-                OtpSvc.create model.clientSettings ]
-
-        CreateOtpSuccess { data } ->
-            { model | otp = Just data } ! []
-
-        CreatePan ->
-            case model.otp of
-                Nothing ->
-                    model ! []
-
-                Just otp ->
-                    model ! [ Task.perform ResponseError CreatePanSuccess <|
-                        PanSvc.create otp "4111111111111111" model.clientSettings ]
-
-        CreatePanSuccess { data } ->
-            { model | pan = Just data } ! []
-
-        CreateFakePan ->
-            case model.pan of
-                Nothing ->
-                    model ! []
-
-                Just pan ->
-                    model ! [ Task.perform ResponseError CreateFakePanSuccess <|
-                        PanSvc.createFake pan.id model.clientSettings ]
-
-        CreateFakePanSuccess { data } ->
-            { model | fakePan = Just data } ! []
 
 
 
@@ -326,40 +296,9 @@ view model =
                     ]
 
                 SecureVault ->
-                    let
-                        otpId =
-                            case model.otp of
-                                Nothing ->
-                                    text ""
-
-                                Just otp ->
-                                    text otp.id
-
-                        panId =
-                            case model.pan of
-                                Nothing ->
-                                    text ""
-
-                                Just pan ->
-                                    text pan.id
-
-                        fakePan =
-                            case model.fakePan of
-                                Nothing ->
-                                    text ""
-
-                                Just fakePan ->
-                                    text fakePan
-                    in
-                        [ div [ style boxStyle ]
-                            [ button [ onClick CreateOtp ] [ text "Create OTP" ]
-                            , otpId
-                            , button [ onClick CreatePan ] [ text "Create PAN" ]
-                            , panId
-                            , button [ onClick CreateFakePan ] [ text "Create Fake PAN" ]
-                            , fakePan
-                            ]
-                        ]
+                    [ Html.App.map PagesVaultMsg <|
+                        Pages.Vault.render model.vault model.clientSettings
+                    ]
 
                 ServiceApi ->
                     [ all model ]
