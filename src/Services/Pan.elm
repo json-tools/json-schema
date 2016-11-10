@@ -1,4 +1,4 @@
-module Services.Pan exposing (create)
+module Services.Pan exposing (create, createFake)
 
 import HttpBuilder exposing (Response, Error)
 import Task
@@ -43,7 +43,7 @@ createFake panId clientSettings =
             buildAuthHeader clientSettings.secretKey
 
         resource =
-            clientSettings.vault ++ "/pan"
+            clientSettings.vault ++ "/pan/fake"
 
         successReader =
             HttpBuilder.jsonReader decodePan

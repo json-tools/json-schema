@@ -257,7 +257,13 @@ update msg model =
             { model | pan = Just data } ! []
 
         CreateFakePan ->
-            model ! []
+            case model.pan of
+                Nothing ->
+                    model ! []
+
+                Just pan ->
+                    model ! [ Task.perform ResponseError CreateFakePanSuccess <|
+                        PanSvc.createFake pan.id model.clientSettings ]
 
         CreateFakePanSuccess { data } ->
             { model | fakePan = Just data } ! []
