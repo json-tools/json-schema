@@ -11104,7 +11104,7 @@
 					}
 					]));
 			var successReader = _lukewestby$elm_http_builder$HttpBuilder$jsonReader(decodePan);
-			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan');
+			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan/fake');
 			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
 			return A3(
 				_lukewestby$elm_http_builder$HttpBuilder$send,
@@ -12478,11 +12478,26 @@
 						_elm_lang$core$Native_List.fromArray(
 							[]));
 				case 'CreateFakePan':
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						model,
-						_elm_lang$core$Native_List.fromArray(
-							[]));
+					var _p16 = model.pan;
+					if (_p16.ctor === 'Nothing') {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[]));
+					} else {
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							model,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									A3(
+									_elm_lang$core$Task$perform,
+									_user$project$Messages$ResponseError,
+									_user$project$Messages$CreateFakePanSuccess,
+									A2(_user$project$Services_Pan$createFake, _p16._0.id, model.clientSettings))
+								]));
+					}
 				default:
 					return A2(
 						_elm_lang$core$Platform_Cmd_ops['!'],
@@ -12524,11 +12539,11 @@
 		function (persistedData, result) {
 			var defaultSettings = A4(_user$project$Types$ClientSettings, 'http://localhost:3000', 'https://localhost:5000', '', false);
 			var cfg = function () {
-				var _p16 = persistedData.clientSettings;
-				if (_p16.ctor === 'Nothing') {
+				var _p17 = persistedData.clientSettings;
+				if (_p17.ctor === 'Nothing') {
 					return defaultSettings;
 				} else {
-					return _p16._0;
+					return _p17._0;
 				}
 			}();
 			return A2(
