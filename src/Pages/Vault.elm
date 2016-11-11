@@ -5,80 +5,85 @@ import Models exposing (Otp, Pan, FakePan)
 import Html exposing (text, div, button)
 import Html.Events exposing (onClick)
 import Html.Attributes exposing (style)
+import Json.Encode exposing (encode, Value)
 import Task
+import Dict
 import Services.Otp as OtpSvc
 import Services.Pan as PanSvc
 import Layout exposing (boxStyle)
 import Types exposing (ClientSettings)
+import Markdown
 
 type alias Model =
-    { otp : Maybe Otp
-    , pan : Maybe Pan
-    , fakePan : Maybe FakePan
+    { responses : Dict.Dict String (Response Value)
     , error : String
     }
 
 init : Model
 init =
     Model
-        -- otp
-        Nothing
-        -- pan
-        Nothing
-        -- fakePan
-        Nothing
+        -- responses
+        Dict.empty
         -- error
         ""
 
+type RequestType
+    = CreateOtp
+    | CreatePan Otp String
+    --| CreateFakePan
+
 type Msg
-    = ResponseError (Error String)
-    | CreateOtp
-    | CreateOtpSuccess (Response Otp)
-    | CreatePan
-    | CreatePanSuccess (Response Pan)
-    | CreateFakePan
-    | CreateFakePanSuccess (Response FakePan)
+    = ResponseError String (Error Value)
+    | ResponseSuccess String (Response Value)
+    | PerformRequest RequestType
+
+req : RequestType -> ClientSettings -> Task.Task (Error Value) (Response Value)
+req reqType clientSettings =
+    case reqType of
+        CreateOtp ->
+            OtpSvc.createRaw clientSettings
+
+        CreatePan otp card ->
+            PanSvc.createRaw otp card clientSettings
+
+        -- CreateFakePan card ->
 
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
 update msg model clientSettings =
     case msg of
-        ResponseError e ->
-            { model | error = toString e } ! []
+        ResponseError name e ->
+            case e of
+                HttpBuilder.BadResponse resp ->
+                    { model | responses = model.responses |> Dict.insert name resp } ! []
+                _ ->
+                    { model | error = toString e } ! []
 
-        CreateOtp ->
-            model ! [ Task.perform ResponseError CreateOtpSuccess <|
-                OtpSvc.create clientSettings ]
+        PerformRequest t ->
+            let name =
+                    case t of
+                        CreateOtp -> "otp"
+                        CreatePan a b -> "pan"
+            in
+            { model | responses = model.responses |> Dict.remove name } !
+            [ Task.perform (ResponseError name) (ResponseSuccess name) <|
+                req t clientSettings ]
 
-        CreateOtpSuccess { data } ->
-            { model | otp = Just data } ! []
+        ResponseSuccess name resp ->
+            { model | responses = model.responses |> Dict.insert name resp } ! []
 
-        CreatePan ->
-            case model.otp of
-                Nothing ->
-                    model ! []
-
-                Just otp ->
-                    model ! [ Task.perform ResponseError CreatePanSuccess <|
-                        PanSvc.create otp "4111111111111111" clientSettings ]
-
-        CreatePanSuccess { data } ->
-            { model | pan = Just data } ! []
-
-        CreateFakePan ->
-            case model.pan of
-                Nothing ->
-                    model ! []
-
-                Just pan ->
-                    model ! [ Task.perform ResponseError CreateFakePanSuccess <|
-                        PanSvc.createFake pan.id clientSettings ]
-
-        CreateFakePanSuccess { data } ->
-            { model | fakePan = Just data } ! []
+codeStyle : Html.Attribute msg
+codeStyle =
+    style
+        [ ( "background", "#444" )
+        , ( "color", "#eee" )
+        , ( "max-width", "300px" )
+        , ( "overflow", "auto" )
+        ]
 
 render : Model -> ClientSettings -> Html.Html Msg
-render model { guide, vault } =
+render model clientSettings =
     let
+        {-
         otpId =
             case model.otp of
                 Nothing ->
@@ -110,27 +115,51 @@ render model { guide, vault } =
 
                 Just fakePan ->
                     text fakePan
+        -}
+
+        formatResponse name =
+            case Dict.get name model.responses of
+                Nothing ->
+                    text "Push button to see response"
+
+                Just resp ->
+                    div []
+                        [ div [] [ text resp.url ]
+                        , text <| toString resp.status
+                        , text <| " " ++ resp.statusText
+                        , Html.dl [] (Dict.toList resp.headers
+                            |> List.foldl (\(header, value) x ->
+                                x ++
+                                    [ Html.dt [] [ text header ]
+                                    , Html.dd [] [ text value ]
+                                    ]
+                            ) []
+                        )
+                        , resp.data
+                            |> encode 2
+                            |> (\s -> "```json\n" ++ s ++ "\n```")
+                            |> Markdown.toHtml []
+                        ]
     in
         div []
             [ div [ style boxStyle ]
                 [ text "1. Request one-time password to authenticate next request"
-                , div [] [ button [ onClick CreateOtp ] [ text "Create OTP" ]]
+                , div [] [ button [ onClick (PerformRequest CreateOtp) ] [ text "Create OTP" ]]
+                , formatResponse "otp"
                 ]
             , div [ style boxStyle ]
                 [ text "2. Save PAN"
-                , div []
-                    [ Html.pre [] [ text <| "POST " ++ vault ++ "/pan\n{ otp: '" ++ otpId ++ "' }" ]
-                    ]
-                , div [] [ button [ onClick CreatePan ] [ text "Create PAN" ] ]
-                , text "card id: "
-                , panId
-                , Html.br [] []
-                , text "decryption key: "
-                , decryptionKey
+                -- , div []
+                    -- [ Html.pre [ codeStyle ] [ text <| "POST " ++ vault ++ "/pan\n{ otp: '" ++ otpId ++ "' }" ]
+                    -- ]
+                , div [] [ button [ onClick (PerformRequest <| CreatePan (Otp "") "4111111111111111") ] [ text "Create PAN" ] ]
+                , formatResponse "pan"
                 ]
+            {-
             , div [ style boxStyle ]
                 [ text "3. Issue fake card"
                 , div [] [ button [ onClick CreateFakePan ] [ text "Create Fake PAN" ] ]
                 , fakePan
                 ]
+            -}
             ]

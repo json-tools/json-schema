@@ -1,13 +1,36 @@
-module Services.Pan exposing (create, createFake)
+module Services.Pan exposing (create, createRaw, createFake)
 
 import HttpBuilder exposing (Response, Error)
 import Task
-import Json.Decode as Decode exposing (Decoder, string, (:=))
+import Json.Decode as Decode exposing (Decoder, string, (:=), Value)
 import Json.Encode as Encode
 import Types exposing (ClientSettings)
 import Models exposing (Pan, Otp, FakePan)
 import Util exposing (buildAuthHeader)
 
+
+createRaw : Otp -> String -> ClientSettings -> Task.Task (Error Value) (Response Value)
+createRaw otp pan clientSettings =
+    let
+        auth =
+            buildAuthHeader clientSettings.secretKey
+
+        resource =
+            clientSettings.vault ++ "/pan"
+
+        readAsValue =
+            HttpBuilder.jsonReader Decode.value
+
+        body = Encode.object
+            [ ("otp", Encode.string otp.id)
+            , ("pan", Encode.string pan)
+            ]
+
+    in
+        HttpBuilder.post resource
+            |> HttpBuilder.withHeader "Authorization" auth
+            |> HttpBuilder.withJsonBody body
+            |> HttpBuilder.send readAsValue readAsValue
 
 create : Otp -> String -> ClientSettings -> Task.Task (Error String) (Response Pan)
 create otp pan clientSettings =

@@ -264,12 +264,12 @@ entityRowStyle =
     ]
 
 
-centerStyle : String -> Html.Attribute msg
-centerStyle direction =
+centerStyle : String -> String -> Html.Attribute msg
+centerStyle direction align =
     style
         [ ( "display", "flex" )
         , ( "flex-direction", direction )
-        , ( "align-items", "center" )
+        , ( "align-items", align )
         , ( "justify-content", "center" )
         , ( "padding", "20px 0" )
         ]
@@ -278,14 +278,14 @@ centerStyle direction =
 view : Model -> Html.Html Msg
 view model =
     div []
-        [ div [ centerStyle "row" ]
+        [ div [ centerStyle "row" "center" ]
             [ viewLink model.page Home "Home"
             , viewLink model.page Settings "Settings"
             , viewLink model.page SecureVault "Secure Vault"
             , viewLink model.page ServiceApi "Service API"
             ]
         , hr [ style [ ( "border", "0" ), ("border-bottom", "1px solid #ddd" ) ] ] []
-        , div [ centerStyle "column" ]
+        , div [ centerStyle "column" "stretch" ]
             (case model.page of
                 Home ->
                     [ text "Welcome to Automation Cloud Test Client" ]
