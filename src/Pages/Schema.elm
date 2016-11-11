@@ -1,9 +1,9 @@
-module Pages.Schema exposing (render, Path, Msg, update)
+module Pages.Schema exposing (render, Path, Msg, update, Model, init)
 
 import Types exposing (..)
-import Models exposing (Context, ValidationErrors, Job, ServiceDescriptor, Otp, Pan, FakePan)
+import Models exposing (ValidationErrors)
 import Json.Encode as Encode
-import Html exposing (div, span, button, text, form, input, ul, li)
+import Html exposing (div, span, button, text, input, ul, li)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
 import Dict
@@ -11,79 +11,49 @@ import Set
 import String
 import JsonSchema as JS
 import Layout exposing (boxStyle)
-import Services.Job as JobSvc exposing (JobCreationError)
-import Pages.Vault
-import HttpBuilder
-import Task
-import Pages
 
 
 type alias Path =
     List String
 
+
 type Msg
-    = UpdateProperty Context Path Value
-    | SubmitJob
-    | SubmitJobError JobCreationError
-    | SubmitJobSuccess (HttpBuilder.Response Job)
+    = NoOp
+    | UpdateProperty Model Path Value
+
 
 type alias Model =
-    { page : Pages.Page
-    , services : Maybe (List ServiceDescriptor)
-    , error : String
-    , validationErrors : ValidationErrors
-    , clientSettings : ClientSettings
-    , schema : Maybe Schema
-    , input : Maybe Value
-    , serviceId : Id
-    , job : Maybe Job
-    , vault : Pages.Vault.Model
+    { validationErrors : ValidationErrors
+    , schema : Schema
+    , data : Value
     }
+
+
+init : Model
+init =
+    Model
+        -- validationErrors
+        Dict.empty
+        -- schema
+        JS.empty
+        -- data
+        (Encode.object [])
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            model ! []
+
         UpdateProperty ctx path val ->
-            { model | input = Just <| JS.setValue ctx.root path val ctx.data } ! []
+            { model | data = JS.setValue ctx.schema path val ctx.data } ! []
 
-        SubmitJob ->
-            case model.input of
-                Just input ->
-                    { model | error = "" }
-                        ! [ Task.perform SubmitJobError SubmitJobSuccess <|
-                                JobSvc.create model.clientSettings model.serviceId input
-                          ]
+render : Model -> Html.Html Msg
+render context =
+    renderSchema context [] context.schema
 
-                Nothing ->
-                    model ! []
-
-        SubmitJobSuccess { data } ->
-            { model | job = Just data } ! []
-
-        SubmitJobError err ->
-            case err of
-                JobSvc.ValidationError errors ->
-                    { model | validationErrors = errors } ! []
-
-                e ->
-                    { model | error = toString e } ! []
-
-render : Context -> Schema -> Html.Html Msg
-render context schema =
-    form
-        [ onSubmit SubmitJob
-        , style
-            [ ( "max-width", "500px" )
-            , ( "margin", "0 auto" )
-            ]
-        ]
-        [ renderSchema context [] schema
-        , div [ style boxStyle ]
-            [ button [ Attrs.type' "submit" ] [ text "Create Job" ]
-            ]
-        ]
-
-renderSchema : Context -> Path -> Schema -> Html.Html Msg
+renderSchema : Model -> Path -> Schema -> Html.Html Msg
 renderSchema context path node =
     let
         renderRow : ( String, Schema ) -> Html.Html Msg
@@ -96,11 +66,11 @@ renderSchema context path node =
                     path ++ [ name ]
 
                 validationError =
-                    Dict.get newPath context.errors
+                    Dict.get newPath context.validationErrors
                         |> Maybe.withDefault ""
 
                 hasError =
-                    Dict.member newPath context.errors
+                    Dict.member newPath context.validationErrors
 
                 rowStyle =
                     if hasError then
@@ -136,17 +106,17 @@ renderSchema context path node =
         div [] <| JS.mapProperties node.properties renderRow
 
 
-renderSelect : Context -> List String -> Schema -> Bool -> Path -> Html.Html Msg
+renderSelect : Model -> List String -> Schema -> Bool -> Path -> Html.Html Msg
 renderSelect context options prop required path =
     options
         |> List.map (\opt -> Html.option [] [ text opt ])
         |> Html.select
             [ Html.Events.onInput (\s -> UpdateProperty context path <| Encode.string s)
-            , Attrs.value <| JS.getString context.root path context.data
+            , Attrs.value <| JS.getString context.schema path context.data
             ]
 
 
-renderProperty : Context -> Schema -> Bool -> Path -> Html.Html Msg
+renderProperty : Model -> Schema -> Bool -> Path -> Html.Html Msg
 renderProperty context prop required path =
     case prop.type_ of
         "string" ->
@@ -175,11 +145,11 @@ renderProperty context prop required path =
             text ("Unknown property type: " ++ prop.type_)
 
 
-renderArray : Context -> Schema -> Bool -> List String -> Html.Html Msg
+renderArray : Model -> Schema -> Bool -> List String -> Html.Html Msg
 renderArray context property required path =
     let
         length =
-            JS.getLength context.root path context.data
+            JS.getLength context.schema path context.data
 
         buttonStyle =
             [ ( "background", "white" )
@@ -213,7 +183,7 @@ renderArray context property required path =
             ]
 
 
-renderInput : Context -> Schema -> Bool -> Path -> Html.Html Msg
+renderInput : Model -> Schema -> Bool -> Path -> Html.Html Msg
 renderInput context property required path =
     let
         inputType =
@@ -291,9 +261,9 @@ renderInput context property required path =
                 ]
             , Attrs.value <|
                 if property.type_ == "integer" then
-                    JS.getInt context.root path context.data |> toString
+                    JS.getInt context.schema path context.data |> toString
                 else
-                    JS.getString context.root path context.data
+                    JS.getString context.schema path context.data
             ]
             []
 

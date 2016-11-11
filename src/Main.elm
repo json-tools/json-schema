@@ -1,23 +1,16 @@
 port module Main exposing (..)
 
-import Models exposing (..)
 import Types exposing (..)
 import Html exposing (div, span, button, text, form, input, ul, li, hr, a)
 import Navigation exposing (programWithFlags)
 import Html.App
-import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style, href)
-import Task
-import Dict
 import String
-import JsonSchema as JS
-import Services.ServiceDescriptor as ServiceDescriptorSvc
 import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
 import Pages.Vault
-import Pages.Schema
-import Layout exposing (boxStyle)
+import Pages.ServiceApi
 import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
 
 
@@ -113,15 +106,9 @@ urlUpdate result model =
 
 type alias Model =
     { page : Page
-    , services : Maybe (List ServiceDescriptor)
-    , error : String
-    , validationErrors : ValidationErrors
     , clientSettings : ClientSettings
-    , schema : Maybe Schema
-    , input : Maybe Value
-    , serviceId : Id
-    , job : Maybe Job
     , vault : Pages.Vault.Model
+    , serviceApi : Pages.ServiceApi.Model
     }
 
 
@@ -147,41 +134,17 @@ init persistedData result =
             (Model
                 -- page
                 Settings
-                -- list services
-                Nothing
-                -- error
-                ""
-                -- validationErrors
-                Dict.empty
                 -- clientSettings
                 cfg
-                -- schema
-                Nothing
-                -- input
-                Nothing
-                -- serviceId
-                ""
-                -- job
-                Nothing
                 -- vault
                 Pages.Vault.init
+                -- serviceApi
+                Pages.ServiceApi.init
             )
 
 
 
 -- ! [ fetchServices cfg ]
-
-
-fetchServices : ClientSettings -> Cmd Msg
-fetchServices cfg =
-    Task.perform ResponseError FetchServicesSuccess <|
-        ServiceDescriptorSvc.list cfg
-
-
-fetchService : Id -> ClientSettings -> Cmd Msg
-fetchService id cfg =
-    Task.perform ResponseError FetchServiceSuccess <|
-        ServiceDescriptorSvc.get id cfg
 
 
 
@@ -203,12 +166,12 @@ update msg model =
                 { model | clientSettings = settings } !
                     [ storeConfig (PersistedData <| Just settings) ]
 
-        PagesSchemaMsg msg ->
+        PagesServiceApiMsg msg ->
             let
-                ( model, cmd ) =
-                    Pages.Schema.update msg model
+                ( serviceApi, cmd ) =
+                    Pages.ServiceApi.update msg model.serviceApi
             in
-                ( model, Cmd.map PagesSchemaMsg cmd )
+                ( { model | serviceApi = serviceApi }, Cmd.map PagesServiceApiMsg cmd )
 
         PagesVaultMsg msg ->
             let
@@ -217,25 +180,6 @@ update msg model =
             in
                 ( { model | vault = vault }, Cmd.map PagesVaultMsg cmd )
 
-        FetchServices ->
-            { model | error = "" } ! [ fetchServices model.clientSettings ]
-
-        ResponseError err ->
-            { model | error = toString err } ! []
-
-        FetchServicesSuccess { data } ->
-            { model | services = Just data } ! []
-
-        FetchService id ->
-            { model | serviceId = id, error = "" } ! [ fetchService id model.clientSettings ]
-
-        FetchServiceSuccess { data } ->
-            case JS.convert data.schema of
-                Ok s ->
-                    { model | schema = Just s } ! []
-
-                Err err ->
-                    { model | error = err } ! []
 
 
 
@@ -252,16 +196,6 @@ subscriptions model =
 
 
 -- VIEW
-
-
-entityRowStyle : List ( String, String )
-entityRowStyle =
-    [ ( "padding", "5px" )
-    , ( "background", "#eee" )
-    , ( "margin-top", "5px" )
-    , ( "cursor", "pointer" )
-    , ( "font-family", "menlo, monospace" )
-    ]
 
 
 centerStyle : String -> String -> Html.Attribute msg
@@ -301,7 +235,8 @@ view model =
                     ]
 
                 ServiceApi ->
-                    [ all model ]
+                    [ Html.App.map PagesServiceApiMsg <|
+                        Pages.ServiceApi.render model.serviceApi ]
             )
         ]
 
@@ -324,87 +259,3 @@ viewLink currentPage page description =
         block txt
 
 
-all : Model -> Html.Html Msg
-all model =
-    let
-        services =
-            div [ style boxStyle ]
-                [ button
-                    [ Attrs.disabled
-                        (String.isEmpty model.clientSettings.secretKey)
-                    , onClick FetchServices
-                    ]
-                    [ text "Fetch services" ]
-                , (case model.services of
-                    Nothing ->
-                        text ""
-
-                    Just svcs ->
-                        renderServices svcs model.serviceId
-                  )
-                ]
-
-        schema =
-            case model.schema of
-                Nothing ->
-                    text ""
-
-                Just schema ->
-                    let
-                        context =
-                            Context
-                                schema
-                                (Maybe.withDefault (JS.defaultFor schema) model.input)
-                                model.validationErrors
-                    in
-                        Html.App.map PagesSchemaMsg <| Pages.Schema.render context schema
-
-        job =
-            case model.job of
-                Nothing ->
-                    text ""
-
-                Just j ->
-                    div [ style boxStyle ]
-                        [ div [ style entityRowStyle ]
-                            [ text ("Job " ++ j.id ++ ": " ++ j.state)
-                            ]
-                        ]
-    in
-        div []
-            [ services
-            , schema
-            , job
-            , text model.error
-            ]
-
-
-renderServices : List ServiceDescriptor -> Id -> Html.Html Msg
-renderServices services id =
-    let
-        entityStyle isActive =
-            [ ( "margin-right", "10px" )
-            , ( "display", "inline-block" )
-            , ( "font-weight", "bold" )
-            , ( "background"
-              , if isActive then
-                    "black"
-                else
-                    "lightgrey"
-              )
-            , ( "color"
-              , if isActive then
-                    "lightyellow"
-                else
-                    "black"
-              )
-            ]
-
-        renderService svc =
-            span
-                [ style <| (++) entityRowStyle <| entityStyle <| svc.id == id
-                , onClick (FetchService svc.id)
-                ]
-                [ text svc.name ]
-    in
-        div [] <| List.map renderService services
