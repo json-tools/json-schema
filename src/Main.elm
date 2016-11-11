@@ -169,7 +169,7 @@ update msg model =
         PagesServiceApiMsg msg ->
             let
                 ( serviceApi, cmd ) =
-                    Pages.ServiceApi.update msg model.serviceApi
+                    Pages.ServiceApi.update msg model.serviceApi model.clientSettings
             in
                 ( { model | serviceApi = serviceApi }, Cmd.map PagesServiceApiMsg cmd )
 

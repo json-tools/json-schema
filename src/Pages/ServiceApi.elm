@@ -47,8 +47,8 @@ type Msg
     | FetchServiceSuccess (Response ServiceDescriptor)
     | ResponseError (Error String)
 
-update : Msg -> ClientSettings -> Model -> ( Model, Cmd Msg )
-update msg clientSettings model =
+update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
+update msg model clientSettings =
     case msg of
         PagesSchemaMsg msg ->
             let
@@ -115,18 +115,24 @@ render model =
                     [ text "Fetch services" ]
                 , renderServices model.services model.serviceId
                 ]
+
+        jobForm =
+            form
+                [ onSubmit SubmitJob
+                , style
+                    [ ( "max-width", "500px" )
+                    , ( "margin", "0 auto" )
+                    ]
+                ]
+                [ Html.App.map PagesSchemaMsg <| Pages.Schema.render model.jobForm
+                , div [ style boxStyle ]
+                    [ button [ Attrs.type' "submit" ] [ text "Create Job" ]
+                    ]
+                ]
     in
-        form
-            [ onSubmit SubmitJob
-            , style
-                [ ( "max-width", "500px" )
-                , ( "margin", "0 auto" )
-                ]
-            ]
-            [ Html.App.map PagesSchemaMsg <| Pages.Schema.render model.jobForm
-            , div [ style boxStyle ]
-                [ button [ Attrs.type' "submit" ] [ text "Create Job" ]
-                ]
+        div []
+            [ services
+            , jobForm
             ]
 
 fetchServices : ClientSettings -> Cmd Msg
