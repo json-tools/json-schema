@@ -9,5 +9,6 @@ boxStyle =
     , ( "font-family", "iosevka, fira code, menlo, monospace" )
     , ( "font-size", "14px" )
     , ( "background-color", "rgba(0, 0, 0, 0.02)" )
+    , ( "overflow", "auto" )
     ]
 

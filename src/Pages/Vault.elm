@@ -1,52 +1,137 @@
 module Pages.Vault exposing (init, render, update, Msg, Model)
 
+import Fragments.Form as FragForm
 import HttpBuilder exposing (Error, Response)
-import Models exposing (Otp, Pan, FakePan)
 import Html exposing (text, div, button)
-import Html.Events exposing (onClick)
-import Html.Attributes exposing (style)
-import Json.Encode exposing (encode, Value)
+import Html.Events exposing (onClick, onSubmit)
+import Html.Attributes as Attrs exposing (style)
+import Json.Encode as Encode exposing (encode, null)
+import Json.Decode as Decode exposing (value, Value)
 import Task
 import Dict
+import Regex
+import String
 import Services.Otp as OtpSvc
 import Services.Pan as PanSvc
+import Services.ServiceDescriptor as ServiceDescriptorSvc
 import Layout exposing (boxStyle)
 import Types exposing (ClientSettings)
 import Markdown
+import JsonSchema as JS exposing (Schema)
+
 
 type alias Model =
     { responses : Dict.Dict String (Response Value)
+    , inputs : Dict.Dict String Value
     , error : String
     }
+
+
+schema : String -> Schema
+schema str =
+    JS.fromString str |> Result.withDefault JS.empty
+
+
+panSchema : Schema
+panSchema =
+    schema """
+        { "type": "object"
+        , "properties":
+            { "otp":
+                { "type": "string"
+                }
+            , "pan":
+                { "type": "string"
+                }
+            }
+        , "required": [ "pan", "otp" ]
+        }
+    """
+
+
+fakePanSchema : Schema
+fakePanSchema =
+    schema """
+        { "type": "object"
+        , "properties":
+            { "panId":
+                { "type": "string"
+                }
+            }
+        , "required": [ "panId" ]
+        }
+    """
+
 
 init : Model
 init =
     Model
         -- responses
         Dict.empty
+        -- inputs
+        Dict.empty
         -- error
         ""
 
+
 type RequestType
     = CreateOtp
-    | CreatePan Otp String
-    --| CreateFakePan
+    | CreatePan
+    | CreateFakePan
+    | FetchServices
+
 
 type Msg
     = ResponseError String (Error Value)
     | ResponseSuccess String (Response Value)
     | PerformRequest RequestType
+    | UpdateData RequestType Value
 
-req : RequestType -> ClientSettings -> Task.Task (Error Value) (Response Value)
-req reqType clientSettings =
-    case reqType of
+
+req : RequestType -> Dict.Dict String Value -> ClientSettings -> HttpBuilder.RequestBuilder
+req reqType inputs =
+    let
+        data =
+            inputs
+                |> Dict.get (requestName reqType)
+                |> Maybe.withDefault null
+    in
+        case reqType of
+            CreateOtp ->
+                OtpSvc.createRequest data
+
+            CreatePan ->
+                PanSvc.createRequest data
+
+            CreateFakePan ->
+                PanSvc.createFakeRequest data
+
+            FetchServices ->
+                ServiceDescriptorSvc.listRequest data
+
+
+requestName : RequestType -> String
+requestName t =
+    case t of
         CreateOtp ->
-            OtpSvc.createRaw clientSettings
+            "otp"
 
-        CreatePan otp card ->
-            PanSvc.createRaw otp card clientSettings
+        CreatePan ->
+            "pan"
 
-        -- CreateFakePan card ->
+        CreateFakePan ->
+            "fake-pan"
+
+        FetchServices ->
+            "services"
+
+
+send : HttpBuilder.RequestBuilder -> Task.Task (Error Value) (Response Value)
+send =
+    HttpBuilder.send
+        (HttpBuilder.jsonReader value)
+        (HttpBuilder.jsonReader value)
+
 
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
 update msg model clientSettings =
@@ -55,21 +140,26 @@ update msg model clientSettings =
             case e of
                 HttpBuilder.BadResponse resp ->
                     { model | responses = model.responses |> Dict.insert name resp } ! []
+
                 _ ->
                     { model | error = toString e } ! []
 
         PerformRequest t ->
-            let name =
-                    case t of
-                        CreateOtp -> "otp"
-                        CreatePan a b -> "pan"
+            let
+                name =
+                    requestName t
             in
-            { model | responses = model.responses |> Dict.remove name } !
-            [ Task.perform (ResponseError name) (ResponseSuccess name) <|
-                req t clientSettings ]
+                { model | responses = model.responses |> Dict.remove name }
+                    ! [ Task.perform (ResponseError name) (ResponseSuccess name) <|
+                            send (req t model.inputs clientSettings)
+                      ]
 
         ResponseSuccess name resp ->
             { model | responses = model.responses |> Dict.insert name resp } ! []
+
+        UpdateData reqType v ->
+            { model | inputs = Dict.insert (requestName reqType) v model.inputs } ! []
+
 
 codeStyle : Html.Attribute msg
 codeStyle =
@@ -80,86 +170,196 @@ codeStyle =
         , ( "overflow", "auto" )
         ]
 
+
 render : Model -> ClientSettings -> Html.Html Msg
 render model clientSettings =
     let
         {-
-        otpId =
-            case model.otp of
-                Nothing ->
-                    ""
+           otpId =
+               case model.otp of
+                   Nothing ->
+                       ""
 
-                Just otp ->
-                    otp.id
+                   Just otp ->
+                       otp.id
 
-        panId =
-            case model.pan of
-                Nothing ->
-                    text ""
+           panId =
+               case model.pan of
+                   Nothing ->
+                       text ""
 
-                Just pan ->
-                    text pan.id
+                   Just pan ->
+                       text pan.id
 
-        decryptionKey =
-            case model.pan of
-                Nothing ->
-                    text ""
+           decryptionKey =
+               case model.pan of
+                   Nothing ->
+                       text ""
 
-                Just pan ->
-                    text pan.key
+                   Just pan ->
+                       text pan.key
 
-        fakePan =
-            case model.fakePan of
-                Nothing ->
-                    text ""
+           fakePan =
+               case model.fakePan of
+                   Nothing ->
+                       text ""
 
-                Just fakePan ->
-                    text fakePan
+                   Just fakePan ->
+                       text fakePan
         -}
+        convertBodyToValue body =
+            let
+                str =
+                    body |> toString
 
-        formatResponse name =
-            case Dict.get name model.responses of
+                match =
+                    str
+                        |> Regex.find (Regex.AtMost 1) (Regex.regex "^BodyString")
+                        |> List.length
+            in
+                if match == 1 then
+                    case (String.dropLeft 11 str |> Decode.decodeString Decode.string) of
+                        Ok str ->
+                            str
+                                |> Decode.decodeString value
+                                |> Result.withDefault (Encode.string str)
+
+                        Err str ->
+                            Encode.string str
+                else
+                    Encode.string str
+
+        formatRequest kind =
+            let
+                request =
+                    req kind model.inputs clientSettings
+                        |> HttpBuilder.toRequest
+            in
+                div []
+                    [ request.verb ++ " " ++ request.url |> text |> (\s -> [ s ]) |> div [ style (boxStyle ++ [ ( "margin", "0 0 10px 0" ), ( "border-color", "#928374" ), ( "background", "#333" ) ]) ]
+                    , request.body |> convertBodyToValue |> renderJsonBody request.headers
+                    ]
+
+        renderHeaders h =
+            List.map (\( header, value ) -> header ++ ": " ++ value) h
+                |> String.join "\n"
+
+        renderJsonBody headers data =
+            data
+                |> encode 2
+                |> (\s -> "```http\n" ++ (renderHeaders headers) ++ "\n\n" ++ s ++ "\n```")
+                |> Markdown.toHtml
+                    [ style
+                        (boxStyle
+                            ++ [ ( "margin", "0 0 10px 0" )
+                               , ( "background", "#333" )
+                               , ( "color", "#ddd" )
+                               , ( "font-size", "12px" )
+                               , ( "line-height", "1.2em" )
+                               , ( "border-color", "#928374" )
+                               , ( "max-height", "500px" )
+                               ]
+                        )
+                    ]
+
+        formatResponse requestType =
+            case Dict.get (requestName requestType) model.responses of
                 Nothing ->
-                    text "Push button to see response"
+                    div []
+                        [ div
+                            [ style
+                                (boxStyle
+                                    ++ [ ( "margin", "0 0 10px 0" )
+                                       , ( "border-color", "slategray" )
+                                         -- , ( "background", "#222" )
+                                       , ( "color", "slategray" )
+                                       ]
+                                )
+                            ]
+                            [ text "Request is not sent"
+                            ]
+                        ]
 
                 Just resp ->
                     div []
-                        [ div [] [ text resp.url ]
-                        , text <| toString resp.status
-                        , text <| " " ++ resp.statusText
-                        , Html.dl [] (Dict.toList resp.headers
-                            |> List.foldl (\(header, value) x ->
-                                x ++
-                                    [ Html.dt [] [ text header ]
-                                    , Html.dd [] [ text value ]
-                                    ]
-                            ) []
-                        )
-                        , resp.data
-                            |> encode 2
-                            |> (\s -> "```json\n" ++ s ++ "\n```")
-                            |> Markdown.toHtml []
+                        [ div
+                            [ style
+                                (boxStyle
+                                    ++ [ ( "margin", "0 0 10px 0" )
+                                       , ( "padding", "0 10px" )
+                                       , ( "border-color"
+                                         , (if 200 <= resp.status && resp.status < 400 then
+                                                "olivedrab"
+                                            else
+                                                "crimson"
+                                           )
+                                         )
+                                       ]
+                                )
+                            ]
+                            --[ text <| resp.url ++ " -- "
+                            [ "```http\nHTTP/1.1 " ++ (toString resp.status) ++ " " ++ resp.statusText ++ "\n```" |> Markdown.toHtml [ style [ ( "padding", "0" ), ( "font-size", "12px" ) ] ]
+                            ]
+                        , resp.data |> renderJsonBody (resp.headers |> Dict.toList)
                         ]
+
+        column bg fg =
+            div [ style [ ( "padding", "10px" ), ( "width", "33%" ), ( "background", bg ), ( "color", fg ) ] ]
+
+        renderBlock label buttonText schema requestBuilder =
+            let
+                data =
+                    model.inputs
+                        |> Dict.get (requestName requestBuilder)
+                        |> Maybe.withDefault null
+            in
+                div [ style [ ( "border-bottom", "1px solid #aaa" ) ] ]
+                    [ div [ style [ ( "display", "flex" ), ( "flex-direction", "row" ) ] ]
+                        [ column "transparent"
+                            "black"
+                            [ Html.form [ onSubmit (PerformRequest requestBuilder) ]
+                                [ text label
+                                , FragForm.render
+                                    { validationErrors = Dict.empty
+                                    , schema = schema
+                                    , data = data
+                                    , onInput = UpdateData requestBuilder
+                                    }
+                                , div [] [ button [ Attrs.type' "submit" ] [ text buttonText ] ]
+                                ]
+                            ]
+                        , column "#444"
+                            "cornsilk"
+                            [ Html.h3 [] [ text "Request" ]
+                            , formatRequest requestBuilder
+                            ]
+                        , column "#222"
+                            "cornsilk"
+                            [ Html.h3 [] [ text "Response" ]
+                            , formatResponse requestBuilder
+                            ]
+                        ]
+                    ]
     in
         div []
-            [ div [ style boxStyle ]
-                [ text "1. Request one-time password to authenticate next request"
-                , div [] [ button [ onClick (PerformRequest CreateOtp) ] [ text "Create OTP" ]]
-                , formatResponse "otp"
-                ]
-            , div [ style boxStyle ]
-                [ text "2. Save PAN"
-                -- , div []
-                    -- [ Html.pre [ codeStyle ] [ text <| "POST " ++ vault ++ "/pan\n{ otp: '" ++ otpId ++ "' }" ]
-                    -- ]
-                , div [] [ button [ onClick (PerformRequest <| CreatePan (Otp "") "4111111111111111") ] [ text "Create PAN" ] ]
-                , formatResponse "pan"
-                ]
-            {-
-            , div [ style boxStyle ]
-                [ text "3. Issue fake card"
-                , div [] [ button [ onClick CreateFakePan ] [ text "Create Fake PAN" ] ]
-                , fakePan
-                ]
-            -}
+            [ renderBlock
+                "1. Request OTP to authorize saving PAN"
+                "Create OTP"
+                JS.empty
+                CreateOtp
+            , renderBlock
+                "2. Save PAN"
+                "Create PAN"
+                panSchema
+                CreatePan
+            , renderBlock
+                "3. Issue fake card"
+                "Create Fake PAN"
+                fakePanSchema
+                CreateFakePan
+            , renderBlock
+                "4. Do something else"
+                "Just do it"
+                JS.empty
+                FetchServices
             ]

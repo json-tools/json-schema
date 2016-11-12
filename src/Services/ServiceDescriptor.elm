@@ -1,12 +1,22 @@
-module Services.ServiceDescriptor exposing (list, get)
+module Services.ServiceDescriptor exposing (list, listRequest, get)
 
-import HttpBuilder exposing (Response, Error)
+import HttpBuilder exposing (Response, Error, RequestBuilder)
 import Task exposing (Task)
-import Json.Decode as Decode exposing (Decoder, string, (:=))
+import Json.Decode as Decode exposing (Decoder, Value, string, (:=))
 import Types exposing (ClientSettings, Id)
 import Models exposing (ServiceDescriptor)
-import Util exposing (fetch)
+import Util exposing (fetch, buildAuthHeader)
 import JsonSchema as JS exposing (decodeSchema)
+
+
+listRequest : Value -> ClientSettings -> RequestBuilder
+listRequest body clientSettings =
+    HttpBuilder.get (clientSettings.service ++ "/services")
+        |> HttpBuilder.withHeaders
+           [ ( "Authorization", buildAuthHeader clientSettings.secretKey )
+           , ( "Accept", "application/json" )
+           ]
+        |> HttpBuilder.withJsonBody body
 
 
 list : ClientSettings -> Task (Error String) (Response (List ServiceDescriptor))

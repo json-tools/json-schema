@@ -1,10 +1,10 @@
-module Pages.Schema exposing (render, Msg, update, Model, init)
+module Fragments.Form exposing (render, Context)
 
 import Types exposing (..)
 import Models exposing (ValidationErrors)
 import Json.Encode as Encode
-import Html exposing (div, span, button, text, input, ul, li)
-import Html.Events exposing (onClick, onSubmit, onInput)
+import Html exposing (div, span, text, input)
+import Html.Events exposing (onClick, onInput)
 import Html.Attributes as Attrs exposing (style)
 import Dict
 import Set
@@ -17,47 +17,27 @@ type alias Path =
     List String
 
 
-type Msg
-    = NoOp
-    | UpdateProperty Model Path Value
-
-
-type alias Model =
+type alias Context msg =
     { validationErrors : ValidationErrors
     , schema : Schema
     , data : Value
+    , onInput : Value -> msg
     }
 
 
-init : Model
-init =
-    Model
-        -- validationErrors
-        Dict.empty
-        -- schema
-        JS.empty
-        -- data
-        (Encode.object [])
+updateValue : Context msg -> Path -> Value -> Value
+updateValue ctx path val =
+    JS.setValue ctx.schema path val ctx.data
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        NoOp ->
-            model ! []
-
-        UpdateProperty ctx path val ->
-            { model | data = JS.setValue ctx.schema path val ctx.data } ! []
-
-
-render : Model -> Html.Html Msg
+render : Context msg -> Html.Html msg
 render context =
     renderSchema context [] context.schema
 
-renderSchema : Model -> Path -> Schema -> Html.Html Msg
+
+renderSchema : Context msg -> Path -> Schema -> Html.Html msg
 renderSchema context path node =
     let
-        renderRow : ( String, Schema ) -> Html.Html Msg
         renderRow ( name, property ) =
             let
                 required =
@@ -107,17 +87,17 @@ renderSchema context path node =
         div [] <| JS.mapProperties node.properties renderRow
 
 
-renderSelect : Model -> List String -> Schema -> Bool -> Path -> Html.Html Msg
+renderSelect : Context msg -> List String -> Schema -> Bool -> Path -> Html.Html msg
 renderSelect context options prop required path =
     options
         |> List.map (\opt -> Html.option [] [ text opt ])
         |> Html.select
-            [ Html.Events.onInput (\s -> UpdateProperty context path <| Encode.string s)
+            [ Html.Events.onInput (\s -> context.onInput <| updateValue context path <| Encode.string s)
             , Attrs.value <| JS.getString context.schema path context.data
             ]
 
 
-renderProperty : Model -> Schema -> Bool -> Path -> Html.Html Msg
+renderProperty : Context msg -> Schema -> Bool -> Path -> Html.Html msg
 renderProperty context prop required path =
     case prop.type_ of
         "string" ->
@@ -146,7 +126,7 @@ renderProperty context prop required path =
             text ("Unknown property type: " ++ prop.type_)
 
 
-renderArray : Model -> Schema -> Bool -> List String -> Html.Html Msg
+renderArray : Context msg -> Schema -> Bool -> List String -> Html.Html msg
 renderArray context property required path =
     let
         length =
@@ -177,14 +157,14 @@ renderArray context property required path =
                 List.map renderItem <|
                     List.map toString [0..(length - 1)]
             , span
-                [ onClick (UpdateProperty context (path ++ [ toString length ]) (JS.defaultFor property))
+                [ onClick (context.onInput <| updateValue context (path ++ [ toString length ]) (JS.defaultFor property))
                 , style buttonStyle
                 ]
                 [ text "Add item" ]
             ]
 
 
-renderInput : Model -> Schema -> Bool -> Path -> Html.Html Msg
+renderInput : Context msg -> Schema -> Bool -> Path -> Html.Html msg
 renderInput context property required path =
     let
         inputType =
@@ -238,7 +218,7 @@ renderInput context property required path =
                     ""
 
         update s =
-            UpdateProperty context path
+            context.onInput <| updateValue context path
                 (case property.type_ of
                     "integer" ->
                         Encode.int (Result.withDefault 0 (String.toInt s))

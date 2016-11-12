@@ -52,10 +52,10 @@ update msg model clientSettings =
     case msg of
         PagesSchemaMsg msg ->
             let
-                ( jobForm, cmd ) =
+                ( updatedSubmodel, cmd ) =
                     Pages.Schema.update msg model.jobForm
             in
-                ( { model | jobForm = jobForm }, Cmd.map PagesSchemaMsg cmd )
+                ( { model | jobForm = updatedSubmodel }, Cmd.map PagesSchemaMsg cmd )
 
         SubmitJob ->
             { model | error = "" }
@@ -110,8 +110,7 @@ render model =
         services =
             div [ style boxStyle ]
                 [ button
-                    [ onClick FetchServices
-                    ]
+                    [ onClick FetchServices ]
                     [ text "Fetch services" ]
                 , renderServices model.services model.serviceId
                 ]
