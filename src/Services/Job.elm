@@ -1,6 +1,6 @@
-module Services.Job exposing (create, JobCreationError, JobCreationError(..))
+module Services.Job exposing (create, createRequest, JobCreationError, JobCreationError(..))
 
-import HttpBuilder exposing (Response, Error)
+import HttpBuilder exposing (Response, Error, RequestBuilder)
 import Json.Decode as Decode exposing (Decoder, (:=))
 import Json.Encode as Encode
 import Types exposing (ClientSettings, Id, Value)
@@ -13,6 +13,15 @@ import Dict
 type JobCreationError
     = ValidationError ValidationErrors
     | HttpError (HttpBuilder.Error (List String))
+
+createRequest : Value -> ClientSettings -> RequestBuilder
+createRequest body clientSettings =
+    HttpBuilder.post (clientSettings.service ++ "/jobs")
+        |> HttpBuilder.withHeaders
+           [ ( "Authorization", buildAuthHeader clientSettings.secretKey )
+           , ( "Accept", "application/json" )
+           ]
+        |> HttpBuilder.withJsonBody body
 
 create : ClientSettings -> String -> Value -> Task JobCreationError (Response Job)
 create clientSettings serviceId inputData =

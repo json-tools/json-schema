@@ -122,6 +122,9 @@ renderProperty context prop required path =
                 Nothing ->
                     text "missing item definition for array"
 
+        "any" ->
+            renderInput context prop required path
+
         _ ->
             text ("Unknown property type: " ++ prop.type_)
 
@@ -206,7 +209,7 @@ renderInput context property required path =
         title =
             case property.format of
                 Just "uuid" ->
-                    "Enter UUID like: 6a6eb029-06d9-4d4f-b257-ada7233b6086"
+                    "Enter UUID like: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx where x is any hexadecimal digit and y is one of 8, 9, A, or B"
 
                 Just "date" ->
                     "Date format is YYYY-MM-DD"

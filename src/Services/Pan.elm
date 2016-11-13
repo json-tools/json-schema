@@ -12,16 +12,12 @@ import Util exposing (buildAuthHeader)
 createRequest : Value -> ClientSettings -> RequestBuilder
 createRequest body clientSettings =
     let
-        auth =
-            buildAuthHeader clientSettings.secretKey
-
         resource =
             clientSettings.vault ++ "/pan"
     in
         HttpBuilder.post resource
             |> withHeaders
-                [ ( "Authorization", auth )
-                , ( "Content-Type", "application/json" )
+                [ ( "Content-Type", "application/json" )
                 , ( "Accept", "application/json" )
                 ]
             |> HttpBuilder.withJsonBody body

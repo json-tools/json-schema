@@ -113,7 +113,7 @@ convert rootSchema =
                 tryNext ( key, prop ) list =
                     case walk prop of
                         Ok p ->
-                            Ok ( (key, p )  :: list)
+                            Ok (( key, p ) :: list)
 
                         Err s ->
                             Err s
@@ -145,26 +145,29 @@ convert rootSchema =
                         Err s ->
                             Err s
 
-
         clarifyType node =
             let
                 checkEnum node =
                     case node.enum of
-                        Nothing -> checkItems node
-                        Just enum -> { node | type_ = "string" }
+                        Nothing ->
+                            checkItems node
+
+                        Just enum ->
+                            { node | type_ = "string" }
 
                 checkItems node =
                     case node.items of
-                        Nothing -> checkProperties node node.properties
-                        Just items -> { node | type_ = "array" }
+                        Nothing ->
+                            checkProperties node node.properties
+
+                        Just items ->
+                            { node | type_ = "array" }
 
                 checkProperties node (Properties p) =
                     if List.isEmpty p then
                         { node | type_ = "any" }
                     else
                         { node | type_ = "object" }
-
-
             in
                 if String.isEmpty node.type_ || node.type_ == "any" then
                     Ok (checkEnum node)
@@ -183,7 +186,6 @@ convert rootSchema =
                 `Result.andThen` updateProperties
                 `Result.andThen` updateArrayItemDef
                 `Result.andThen` clarifyType
-
     in
         walk rootSchema
 
@@ -394,6 +396,29 @@ withDefaultFor : Schema -> Maybe Value -> Value
 withDefaultFor schema =
     Maybe.withDefault <| defaultFor schema
 
-mapProperties : Properties -> ( ( String, Schema ) -> a) -> List a
+
+mapProperties : Properties -> (( String, Schema ) -> a) -> List a
 mapProperties (Properties props) fn =
     List.map fn props
+
+
+registerProperty : String -> Schema -> Schema -> Schema
+registerProperty name prop schema =
+    let
+        hasProperty name list =
+            List.foldl (\( n, _ ) res -> res || name == n) False list
+
+        upgrade (Properties props) =
+            if hasProperty name props then
+                List.map
+                    (\( n, p ) ->
+                        if n == name then
+                            ( n, prop )
+                        else
+                            ( n, p )
+                    )
+                    props
+            else
+                ( name, prop ) :: props
+    in
+        { schema | properties = Properties <| upgrade schema.properties }
