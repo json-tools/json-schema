@@ -80,12 +80,17 @@ type RequestType
     | CreateFakePan
     | FetchServices
 
+type PostAction
+    = NoOp
+    | FillPan
+    | FillFake
 
 type Msg
     = ResponseError String (Error Value)
     | ResponseSuccess String (Response Value)
     | PerformRequest RequestType
     | UpdateData RequestType Value
+    | PerformPostAction String
 
 
 req : RequestType -> Dict.Dict String Value -> ClientSettings -> HttpBuilder.RequestBuilder
@@ -125,6 +130,17 @@ requestName t =
         FetchServices ->
             "services"
 
+getSchema : String -> Schema
+getSchema t =
+    case t of
+        "pan" ->
+            panSchema
+
+        "fake-pan" ->
+            fakePanSchema
+
+        _ -> JS.empty
+
 
 send : HttpBuilder.RequestBuilder -> Task.Task (Error Value) (Response Value)
 send =
@@ -148,14 +164,62 @@ update msg model clientSettings =
             let
                 name =
                     requestName t
+
+                updatedModel =
+                    model
+                    -- { model | responses = model.responses |> Dict.remove name }
             in
-                { model | responses = model.responses |> Dict.remove name }
+                updatedModel
                     ! [ Task.perform (ResponseError name) (ResponseSuccess name) <|
                             send (req t model.inputs clientSettings)
                       ]
 
         ResponseSuccess name resp ->
-            { model | responses = model.responses |> Dict.insert name resp } ! []
+            let
+                updatedModel =
+                    { model | responses = model.responses |> Dict.insert name resp }
+            in
+                update (PerformPostAction name) updatedModel clientSettings
+
+        PerformPostAction name ->
+            let
+                get sourceName sourcePath =
+                    model.responses
+                        |> Dict.get sourceName
+                        |> (\s ->
+                            case s of
+                                Nothing -> Encode.string ""
+                                Just resp ->
+                                    Decode.decodeValue (Decode.at sourcePath Decode.value) resp.data
+                                        |> Result.withDefault (Encode.string "")
+                           )
+
+                set destName destPath x =
+                    model.inputs
+                        |> Dict.update destName (\v ->
+                            case v of
+                                Nothing ->
+                                    Just <| JS.setValue (getSchema destName) destPath x null
+
+                                Just val ->
+                                    Just <| JS.setValue (getSchema destName) destPath x val
+                            )
+            in
+                case name of
+                    "otp" ->
+                        { model | inputs =
+                            get "otp" [ "id" ]
+                                |> set "pan" [ "otp" ]
+                        } ! []
+
+                    "pan" ->
+                        { model | inputs =
+                            get "pan" [ "id" ]
+                                |> set "fake-pan" [ "panId" ]
+                        } ! []
+
+                    _ ->
+                        model ! []
 
         UpdateData reqType v ->
             { model | inputs = Dict.insert (requestName reqType) v model.inputs } ! []
@@ -303,21 +367,36 @@ render model clientSettings =
                         , resp.data |> renderJsonBody (resp.headers |> Dict.toList)
                         ]
 
-        column bg fg =
-            div [ style [ ( "padding", "10px" ), ( "width", "33%" ), ( "background", bg ), ( "color", fg ) ] ]
+        column bg fg width =
+            div
+                [ style
+                    [ ( "padding", "10px" )
+                    , ( "width", width )
+                    , ( "flex-shrink", "0" )
+                    , ( "background", bg )
+                    , ( "color", fg )
+                    , ( "box-sizing", "border-box" )
+                    --, ( "transition", "height 1s 1s" )
+                    ]
+                ]
 
-        renderBlock label buttonText schema requestBuilder =
+        renderBlock label buttonText requestBuilder postAction =
             let
+                name =
+                    requestName requestBuilder
+
+                schema =
+                    getSchema name
+
                 data =
                     model.inputs
-                        |> Dict.get (requestName requestBuilder)
+                        |> Dict.get name
                         |> Maybe.withDefault null
             in
                 div [ style [ ( "border-bottom", "1px solid #aaa" ) ] ]
                     [ div [ style [ ( "display", "flex" ), ( "flex-direction", "row" ) ] ]
-                        [ column "transparent"
-                            "black"
-                            [ Html.form [ onSubmit (PerformRequest requestBuilder) ]
+                        [ column "transparent" "black" "34%"
+                            [ Html.form [ onSubmit (PerformRequest requestBuilder ) ]
                                 [ text label
                                 , FragForm.render
                                     { validationErrors = Dict.empty
@@ -328,13 +407,11 @@ render model clientSettings =
                                 , div [] [ button [ Attrs.type' "submit" ] [ text buttonText ] ]
                                 ]
                             ]
-                        , column "#444"
-                            "cornsilk"
+                        , column "#444" "cornsilk" "33%"
                             [ Html.h3 [] [ text "Request" ]
                             , formatRequest requestBuilder
                             ]
-                        , column "#222"
-                            "cornsilk"
+                        , column "#222" "cornsilk" "33%"
                             [ Html.h3 [] [ text "Response" ]
                             , formatResponse requestBuilder
                             ]
@@ -345,21 +422,21 @@ render model clientSettings =
             [ renderBlock
                 "1. Request OTP to authorize saving PAN"
                 "Create OTP"
-                JS.empty
                 CreateOtp
+                FillPan
             , renderBlock
                 "2. Save PAN"
                 "Create PAN"
-                panSchema
                 CreatePan
+                FillFake
             , renderBlock
                 "3. Issue fake card"
                 "Create Fake PAN"
-                fakePanSchema
                 CreateFakePan
+                NoOp
             , renderBlock
                 "4. Do something else"
                 "Just do it"
-                JS.empty
                 FetchServices
+                NoOp
             ]
