@@ -12656,6 +12656,17 @@
 	};
 	var _user$project$Pages_Vault$panSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"otp\":\n                { \"type\": \"string\"\n                }\n            , \"pan\":\n                { \"type\": \"string\"\n                }\n            }\n        , \"required\": [ \"pan\", \"otp\" ]\n        }\n    ');
 	var _user$project$Pages_Vault$fakePanSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"panId\":\n                { \"type\": \"string\"\n                }\n            }\n        , \"required\": [ \"panId\" ]\n        }\n    ');
+	var _user$project$Pages_Vault$getSchema = function (t) {
+		var _p2 = t;
+		switch (_p2) {
+			case 'pan':
+				return _user$project$Pages_Vault$panSchema;
+			case 'fake-pan':
+				return _user$project$Pages_Vault$fakePanSchema;
+			default:
+				return _user$project$JsonSchema$empty;
+		}
+	};
 	var _user$project$Pages_Vault$Model = F3(
 		function (a, b, c) {
 			return {responses: a, inputs: b, error: c};
@@ -12665,6 +12676,12 @@
 	var _user$project$Pages_Vault$CreateFakePan = {ctor: 'CreateFakePan'};
 	var _user$project$Pages_Vault$CreatePan = {ctor: 'CreatePan'};
 	var _user$project$Pages_Vault$CreateOtp = {ctor: 'CreateOtp'};
+	var _user$project$Pages_Vault$FillFake = {ctor: 'FillFake'};
+	var _user$project$Pages_Vault$FillPan = {ctor: 'FillPan'};
+	var _user$project$Pages_Vault$NoOp = {ctor: 'NoOp'};
+	var _user$project$Pages_Vault$PerformPostAction = function (a) {
+		return {ctor: 'PerformPostAction', _0: a};
+	};
 	var _user$project$Pages_Vault$UpdateData = F2(
 		function (a, b) {
 			return {ctor: 'UpdateData', _0: a, _1: b};
@@ -12674,8 +12691,8 @@
 	};
 	var _user$project$Pages_Vault$render = F2(
 		function (model, clientSettings) {
-			var column = F2(
-				function (bg, fg) {
+			var column = F3(
+				function (bg, fg, width) {
 					return _elm_lang$html$Html$div(
 						_elm_lang$core$Native_List.fromArray(
 							[
@@ -12683,9 +12700,11 @@
 								_elm_lang$core$Native_List.fromArray(
 									[
 										{ctor: '_Tuple2', _0: 'padding', _1: '10px'},
-										{ctor: '_Tuple2', _0: 'width', _1: '33%'},
+										{ctor: '_Tuple2', _0: 'width', _1: width},
+										{ctor: '_Tuple2', _0: 'flex-shrink', _1: '0'},
 										{ctor: '_Tuple2', _0: 'background', _1: bg},
-										{ctor: '_Tuple2', _0: 'color', _1: fg}
+										{ctor: '_Tuple2', _0: 'color', _1: fg},
+										{ctor: '_Tuple2', _0: 'box-sizing', _1: 'border-box'}
 									]))
 							]));
 				});
@@ -12695,12 +12714,12 @@
 					'\n',
 					A2(
 						_elm_lang$core$List$map,
-						function (_p2) {
-							var _p3 = _p2;
+						function (_p3) {
+							var _p4 = _p3;
 							return A2(
 								_elm_lang$core$Basics_ops['++'],
-								_p3._0,
-								A2(_elm_lang$core$Basics_ops['++'], ': ', _p3._1));
+								_p4._0,
+								A2(_elm_lang$core$Basics_ops['++'], ': ', _p4._1));
 						},
 						h));
 			};
@@ -12740,11 +12759,11 @@
 							A2(_elm_lang$core$Json_Encode$encode, 2, data)));
 				});
 			var formatResponse = function (requestType) {
-				var _p4 = A2(
+				var _p5 = A2(
 					_elm_lang$core$Dict$get,
 					_user$project$Pages_Vault$requestName(requestType),
 					model.responses);
-				if (_p4.ctor === 'Nothing') {
+				if (_p5.ctor === 'Nothing') {
 					return A2(
 						_elm_lang$html$Html$div,
 						_elm_lang$core$Native_List.fromArray(
@@ -12772,7 +12791,7 @@
 									]))
 							]));
 				} else {
-					var _p5 = _p4._0;
+					var _p6 = _p5._0;
 					return A2(
 						_elm_lang$html$Html$div,
 						_elm_lang$core$Native_List.fromArray(
@@ -12794,7 +12813,7 @@
 													{
 													ctor: '_Tuple2',
 													_0: 'border-color',
-													_1: ((_elm_lang$core$Native_Utils.cmp(200, _p5.status) < 1) && (_elm_lang$core$Native_Utils.cmp(_p5.status, 400) < 0)) ? 'olivedrab' : 'crimson'
+													_1: ((_elm_lang$core$Native_Utils.cmp(200, _p6.status) < 1) && (_elm_lang$core$Native_Utils.cmp(_p6.status, 400) < 0)) ? 'olivedrab' : 'crimson'
 												}
 												])))
 									]),
@@ -12816,16 +12835,16 @@
 											'```http\nHTTP/1.1 ',
 											A2(
 												_elm_lang$core$Basics_ops['++'],
-												_elm_lang$core$Basics$toString(_p5.status),
+												_elm_lang$core$Basics$toString(_p6.status),
 												A2(
 													_elm_lang$core$Basics_ops['++'],
 													' ',
-													A2(_elm_lang$core$Basics_ops['++'], _p5.statusText, '\n```')))))
+													A2(_elm_lang$core$Basics_ops['++'], _p6.statusText, '\n```')))))
 									])),
 								A2(
 								renderJsonBody,
-								_elm_lang$core$Dict$toList(_p5.headers),
-								_p5.data)
+								_elm_lang$core$Dict$toList(_p6.headers),
+								_p6.data)
 							]));
 				}
 			};
@@ -12838,18 +12857,18 @@
 						_elm_lang$core$Regex$regex('^BodyString'),
 						str));
 				if (_elm_lang$core$Native_Utils.eq(match, 1)) {
-					var _p6 = A2(
+					var _p7 = A2(
 						_elm_lang$core$Json_Decode$decodeString,
 						_elm_lang$core$Json_Decode$string,
 						A2(_elm_lang$core$String$dropLeft, 11, str));
-					if (_p6.ctor === 'Ok') {
-						var _p7 = _p6._0;
+					if (_p7.ctor === 'Ok') {
+						var _p8 = _p7._0;
 						return A2(
 							_elm_lang$core$Result$withDefault,
-							_elm_lang$core$Json_Encode$string(_p7),
-							A2(_elm_lang$core$Json_Decode$decodeString, _elm_lang$core$Json_Decode$value, _p7));
+							_elm_lang$core$Json_Encode$string(_p8),
+							A2(_elm_lang$core$Json_Decode$decodeString, _elm_lang$core$Json_Decode$value, _p8));
 					} else {
-						return _elm_lang$core$Json_Encode$string(_p6._0);
+						return _elm_lang$core$Json_Encode$string(_p7._0);
 					}
 				} else {
 					return _elm_lang$core$Json_Encode$string(str);
@@ -12895,14 +12914,13 @@
 						]));
 			};
 			var renderBlock = F4(
-				function (label, buttonText, schema, requestBuilder) {
+				function (label, buttonText, requestBuilder, postAction) {
+					var name = _user$project$Pages_Vault$requestName(requestBuilder);
+					var schema = _user$project$Pages_Vault$getSchema(name);
 					var data = A2(
 						_elm_lang$core$Maybe$withDefault,
 						_elm_lang$core$Json_Encode$null,
-						A2(
-							_elm_lang$core$Dict$get,
-							_user$project$Pages_Vault$requestName(requestBuilder),
-							model.inputs));
+						A2(_elm_lang$core$Dict$get, name, model.inputs));
 					return A2(
 						_elm_lang$html$Html$div,
 						_elm_lang$core$Native_List.fromArray(
@@ -12928,10 +12946,11 @@
 									]),
 								_elm_lang$core$Native_List.fromArray(
 									[
-										A3(
+										A4(
 										column,
 										'transparent',
 										'black',
+										'34%',
 										_elm_lang$core$Native_List.fromArray(
 											[
 												A2(
@@ -12970,10 +12989,11 @@
 															]))
 													]))
 											])),
-										A3(
+										A4(
 										column,
 										'#444',
 										'cornsilk',
+										'33%',
 										_elm_lang$core$Native_List.fromArray(
 											[
 												A2(
@@ -12986,10 +13006,11 @@
 													])),
 												formatRequest(requestBuilder)
 											])),
-										A3(
+										A4(
 										column,
 										'#222',
 										'cornsilk',
+										'33%',
 										_elm_lang$core$Native_List.fromArray(
 											[
 												A2(
@@ -13011,10 +13032,10 @@
 					[]),
 				_elm_lang$core$Native_List.fromArray(
 					[
-						A4(renderBlock, '1. Request OTP to authorize saving PAN', 'Create OTP', _user$project$JsonSchema$empty, _user$project$Pages_Vault$CreateOtp),
-						A4(renderBlock, '2. Save PAN', 'Create PAN', _user$project$Pages_Vault$panSchema, _user$project$Pages_Vault$CreatePan),
-						A4(renderBlock, '3. Issue fake card', 'Create Fake PAN', _user$project$Pages_Vault$fakePanSchema, _user$project$Pages_Vault$CreateFakePan),
-						A4(renderBlock, '4. Do something else', 'Just do it', _user$project$JsonSchema$empty, _user$project$Pages_Vault$FetchServices)
+						A4(renderBlock, '1. Request OTP to authorize saving PAN', 'Create OTP', _user$project$Pages_Vault$CreateOtp, _user$project$Pages_Vault$FillPan),
+						A4(renderBlock, '2. Save PAN', 'Create PAN', _user$project$Pages_Vault$CreatePan, _user$project$Pages_Vault$FillFake),
+						A4(renderBlock, '3. Issue fake card', 'Create Fake PAN', _user$project$Pages_Vault$CreateFakePan, _user$project$Pages_Vault$NoOp),
+						A4(renderBlock, '4. Do something else', 'Just do it', _user$project$Pages_Vault$FetchServices, _user$project$Pages_Vault$NoOp)
 					]));
 		});
 	var _user$project$Pages_Vault$ResponseSuccess = F2(
@@ -13027,75 +13048,172 @@
 		});
 	var _user$project$Pages_Vault$update = F3(
 		function (msg, model, clientSettings) {
-			var _p8 = msg;
-			switch (_p8.ctor) {
-				case 'ResponseError':
-					var _p10 = _p8._1;
-					var _p9 = _p10;
-					if (_p9.ctor === 'BadResponse') {
+			update:
+			while (true) {
+				var _p9 = msg;
+				switch (_p9.ctor) {
+					case 'ResponseError':
+						var _p11 = _p9._1;
+						var _p10 = _p11;
+						if (_p10.ctor === 'BadResponse') {
+							return A2(
+								_elm_lang$core$Platform_Cmd_ops['!'],
+								_elm_lang$core$Native_Utils.update(
+									model,
+									{
+										responses: A3(_elm_lang$core$Dict$insert, _p9._0, _p10._0, model.responses)
+									}),
+								_elm_lang$core$Native_List.fromArray(
+									[]));
+						} else {
+							return A2(
+								_elm_lang$core$Platform_Cmd_ops['!'],
+								_elm_lang$core$Native_Utils.update(
+									model,
+									{
+										error: _elm_lang$core$Basics$toString(_p11)
+									}),
+								_elm_lang$core$Native_List.fromArray(
+									[]));
+						}
+					case 'PerformRequest':
+						var _p12 = _p9._0;
+						var updatedModel = model;
+						var name = _user$project$Pages_Vault$requestName(_p12);
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							updatedModel,
+							_elm_lang$core$Native_List.fromArray(
+								[
+									A3(
+									_elm_lang$core$Task$perform,
+									_user$project$Pages_Vault$ResponseError(name),
+									_user$project$Pages_Vault$ResponseSuccess(name),
+									_user$project$Pages_Vault$send(
+										A3(_user$project$Pages_Vault$req, _p12, model.inputs, clientSettings)))
+								]));
+					case 'ResponseSuccess':
+						var _p13 = _p9._0;
+						var updatedModel = _elm_lang$core$Native_Utils.update(
+							model,
+							{
+								responses: A3(_elm_lang$core$Dict$insert, _p13, _p9._1, model.responses)
+							});
+						var _v8 = _user$project$Pages_Vault$PerformPostAction(_p13),
+							_v9 = updatedModel,
+							_v10 = clientSettings;
+						msg = _v8;
+						model = _v9;
+						clientSettings = _v10;
+						continue update;
+					case 'PerformPostAction':
+						var set = F3(
+							function (destName, destPath, x) {
+								return A3(
+									_elm_lang$core$Dict$update,
+									destName,
+									function (v) {
+										var _p14 = v;
+										if (_p14.ctor === 'Nothing') {
+											return _elm_lang$core$Maybe$Just(
+												A4(
+													_user$project$JsonSchema$setValue,
+													_user$project$Pages_Vault$getSchema(destName),
+													destPath,
+													x,
+													_elm_lang$core$Json_Encode$null));
+										} else {
+											return _elm_lang$core$Maybe$Just(
+												A4(
+													_user$project$JsonSchema$setValue,
+													_user$project$Pages_Vault$getSchema(destName),
+													destPath,
+													x,
+													_p14._0));
+										}
+									},
+									model.inputs);
+							});
+						var get = F2(
+							function (sourceName, sourcePath) {
+								return function (s) {
+									var _p15 = s;
+									if (_p15.ctor === 'Nothing') {
+										return _elm_lang$core$Json_Encode$string('');
+									} else {
+										return A2(
+											_elm_lang$core$Result$withDefault,
+											_elm_lang$core$Json_Encode$string(''),
+											A2(
+												_elm_lang$core$Json_Decode$decodeValue,
+												A2(_elm_lang$core$Json_Decode$at, sourcePath, _elm_lang$core$Json_Decode$value),
+												_p15._0.data));
+									}
+								}(
+									A2(_elm_lang$core$Dict$get, sourceName, model.responses));
+							});
+						var _p16 = _p9._0;
+						switch (_p16) {
+							case 'otp':
+								return A2(
+									_elm_lang$core$Platform_Cmd_ops['!'],
+									_elm_lang$core$Native_Utils.update(
+										model,
+										{
+											inputs: A3(
+												set,
+												'pan',
+												_elm_lang$core$Native_List.fromArray(
+													['otp']),
+												A2(
+													get,
+													'otp',
+													_elm_lang$core$Native_List.fromArray(
+														['id'])))
+										}),
+									_elm_lang$core$Native_List.fromArray(
+										[]));
+							case 'pan':
+								return A2(
+									_elm_lang$core$Platform_Cmd_ops['!'],
+									_elm_lang$core$Native_Utils.update(
+										model,
+										{
+											inputs: A3(
+												set,
+												'fake-pan',
+												_elm_lang$core$Native_List.fromArray(
+													['panId']),
+												A2(
+													get,
+													'pan',
+													_elm_lang$core$Native_List.fromArray(
+														['id'])))
+										}),
+									_elm_lang$core$Native_List.fromArray(
+										[]));
+							default:
+								return A2(
+									_elm_lang$core$Platform_Cmd_ops['!'],
+									model,
+									_elm_lang$core$Native_List.fromArray(
+										[]));
+						}
+					default:
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							_elm_lang$core$Native_Utils.update(
 								model,
 								{
-									responses: A3(_elm_lang$core$Dict$insert, _p8._0, _p9._0, model.responses)
+									inputs: A3(
+										_elm_lang$core$Dict$insert,
+										_user$project$Pages_Vault$requestName(_p9._0),
+										_p9._1,
+										model.inputs)
 								}),
 							_elm_lang$core$Native_List.fromArray(
 								[]));
-					} else {
-						return A2(
-							_elm_lang$core$Platform_Cmd_ops['!'],
-							_elm_lang$core$Native_Utils.update(
-								model,
-								{
-									error: _elm_lang$core$Basics$toString(_p10)
-								}),
-							_elm_lang$core$Native_List.fromArray(
-								[]));
-					}
-				case 'PerformRequest':
-					var _p11 = _p8._0;
-					var name = _user$project$Pages_Vault$requestName(_p11);
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							model,
-							{
-								responses: A2(_elm_lang$core$Dict$remove, name, model.responses)
-							}),
-						_elm_lang$core$Native_List.fromArray(
-							[
-								A3(
-								_elm_lang$core$Task$perform,
-								_user$project$Pages_Vault$ResponseError(name),
-								_user$project$Pages_Vault$ResponseSuccess(name),
-								_user$project$Pages_Vault$send(
-									A3(_user$project$Pages_Vault$req, _p11, model.inputs, clientSettings)))
-							]));
-				case 'ResponseSuccess':
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							model,
-							{
-								responses: A3(_elm_lang$core$Dict$insert, _p8._0, _p8._1, model.responses)
-							}),
-						_elm_lang$core$Native_List.fromArray(
-							[]));
-				default:
-					return A2(
-						_elm_lang$core$Platform_Cmd_ops['!'],
-						_elm_lang$core$Native_Utils.update(
-							model,
-							{
-								inputs: A3(
-									_elm_lang$core$Dict$insert,
-									_user$project$Pages_Vault$requestName(_p8._0),
-									_p8._1,
-									model.inputs)
-							}),
-						_elm_lang$core$Native_List.fromArray(
-							[]));
+				}
 			}
 		});
 
