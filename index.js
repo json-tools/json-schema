@@ -13034,7 +13034,7 @@
 					[
 						A4(renderBlock, '1. Request OTP to authorize saving PAN', 'Create OTP', _user$project$Pages_Vault$CreateOtp, _user$project$Pages_Vault$FillPan),
 						A4(renderBlock, '2. Save PAN', 'Create PAN', _user$project$Pages_Vault$CreatePan, _user$project$Pages_Vault$FillFake),
-						A4(renderBlock, '3. Issue fake card', 'Create Fake PAN', _user$project$Pages_Vault$CreateFakePan, _user$project$Pages_Vault$NoOp),
+						A4(renderBlock, '3. Issue fake PAN given panId', 'Exchange panId -> fake PAN', _user$project$Pages_Vault$CreateFakePan, _user$project$Pages_Vault$NoOp),
 						A4(renderBlock, '4. Do something else', 'Just do it', _user$project$Pages_Vault$FetchServices, _user$project$Pages_Vault$NoOp)
 					]));
 		});
