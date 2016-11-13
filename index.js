@@ -11112,6 +11112,42 @@
 			A2(_elm_lang$core$Json_Decode$decodeValue, _user$project$JsonSchema$decodeSchema, val),
 			_user$project$JsonSchema$convert);
 	};
+	var _user$project$JsonSchema$registerProperty = F3(
+		function (name, prop, schema) {
+			var hasProperty = F2(
+				function (name, list) {
+					return A3(
+						_elm_lang$core$List$foldl,
+						F2(
+							function (_p39, res) {
+								var _p40 = _p39;
+								return res || _elm_lang$core$Native_Utils.eq(name, _p40._0);
+							}),
+						false,
+						list);
+				});
+			var upgrade = function (_p41) {
+				var _p42 = _p41;
+				var _p46 = _p42._0;
+				return A2(hasProperty, name, _p46) ? A2(
+					_elm_lang$core$List$map,
+					function (_p43) {
+						var _p44 = _p43;
+						var _p45 = _p44._0;
+						return _elm_lang$core$Native_Utils.eq(_p45, name) ? {ctor: '_Tuple2', _0: _p45, _1: prop} : {ctor: '_Tuple2', _0: _p45, _1: _p44._1};
+					},
+					_p46) : A2(
+					_elm_lang$core$List_ops['::'],
+					{ctor: '_Tuple2', _0: name, _1: prop},
+					_p46);
+			};
+			return _elm_lang$core$Native_Utils.update(
+				schema,
+				{
+					properties: _user$project$JsonSchema$Properties(
+						upgrade(schema.properties))
+				});
+		});
 
 	var _user$project$Types$ClientSettings = F4(
 		function (a, b, c, d) {
@@ -11217,7 +11253,7 @@
 					if (_p1.ctor === 'Just') {
 						switch (_p1._0) {
 							case 'uuid':
-								return 'Enter UUID like: 6a6eb029-06d9-4d4f-b257-ada7233b6086';
+								return 'Enter UUID like: xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx where x is any hexadecimal digit and y is one of 8, 9, A, or B';
 							case 'date':
 								return 'Date format is YYYY-MM-DD';
 							case 'uri':
@@ -11326,6 +11362,8 @@
 					} else {
 						return _elm_lang$html$Html$text('missing item definition for array');
 					}
+				case 'any':
+					return A4(_user$project$Fragments_Form$renderInput, context, prop, required, path);
 				default:
 					return _elm_lang$html$Html$text(
 						A2(_elm_lang$core$Basics_ops['++'], 'Unknown property type: ', prop.type_));
@@ -11695,6 +11733,25 @@
 		A2(_elm_lang$core$Json_Decode_ops[':='], 'state', _elm_lang$core$Json_Decode$string),
 		A2(_elm_lang$core$Json_Decode_ops[':='], 'input', _elm_lang$core$Json_Decode$value),
 		A2(_elm_lang$core$Json_Decode_ops[':='], 'output', _elm_lang$core$Json_Decode$value));
+	var _user$project$Services_Job$createRequest = F2(
+		function (body, clientSettings) {
+			return A2(
+				_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
+				body,
+				A2(
+					_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							{
+							ctor: '_Tuple2',
+							_0: 'Authorization',
+							_1: _user$project$Util$buildAuthHeader(clientSettings.secretKey)
+						},
+							{ctor: '_Tuple2', _0: 'Accept', _1: 'application/json'}
+						]),
+					_lukewestby$elm_http_builder$HttpBuilder$post(
+						A2(_elm_lang$core$Basics_ops['++'], clientSettings.service, '/jobs'))));
+		});
 	var _user$project$Services_Job$HttpError = function (a) {
 		return {ctor: 'HttpError', _0: a};
 	};
@@ -12559,7 +12616,6 @@
 	var _user$project$Services_Pan$createRequest = F2(
 		function (body, clientSettings) {
 			var resource = A2(_elm_lang$core$Basics_ops['++'], clientSettings.vault, '/pan');
-			var auth = _user$project$Util$buildAuthHeader(clientSettings.secretKey);
 			return A2(
 				_lukewestby$elm_http_builder$HttpBuilder$withJsonBody,
 				body,
@@ -12567,7 +12623,6 @@
 					_lukewestby$elm_http_builder$HttpBuilder$withHeaders,
 					_elm_lang$core$Native_List.fromArray(
 						[
-							{ctor: '_Tuple2', _0: 'Authorization', _1: auth},
 							{ctor: '_Tuple2', _0: 'Content-Type', _1: 'application/json'},
 							{ctor: '_Tuple2', _0: 'Accept', _1: 'application/json'}
 						]),
@@ -12602,6 +12657,40 @@
 				A2(_user$project$Services_Pan$createRequest, body, clientSettings));
 		});
 
+	var _user$project$Pages_Vault$renderServices = F2(
+		function (model, selected) {
+			var renderService = function (s) {
+				return A2(
+					_elm_lang$html$Html$option,
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$html$Html_Attributes$value(s.name)
+						]),
+					_elm_lang$core$Native_List.fromArray(
+						[
+							_elm_lang$html$Html$text(s.name)
+						]));
+			};
+			return A2(
+				_elm_lang$html$Html$select,
+				_elm_lang$core$Native_List.fromArray(
+					[
+						_elm_lang$html$Html_Events$onInput(selected)
+					]),
+				A2(
+					_elm_lang$core$List_ops['::'],
+					A2(
+						_elm_lang$html$Html$option,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html_Attributes$value('')
+							]),
+						_elm_lang$core$Native_List.fromArray(
+							[
+								_elm_lang$html$Html$text('Select Service')
+							])),
+					A2(_elm_lang$core$List$map, renderService, model.services)));
+		});
 	var _user$project$Pages_Vault$codeStyle = _elm_lang$html$Html_Attributes$style(
 		_elm_lang$core$Native_List.fromArray(
 			[
@@ -12614,17 +12703,27 @@
 		_lukewestby$elm_http_builder$HttpBuilder$send,
 		_lukewestby$elm_http_builder$HttpBuilder$jsonReader(_elm_lang$core$Json_Decode$value),
 		_lukewestby$elm_http_builder$HttpBuilder$jsonReader(_elm_lang$core$Json_Decode$value));
+	var _user$project$Pages_Vault$getSchema = F2(
+		function (t, _p0) {
+			var _p1 = _p0;
+			return A2(
+				_elm_lang$core$Maybe$withDefault,
+				_user$project$JsonSchema$empty,
+				A2(_elm_lang$core$Dict$get, t, _p1.schemas));
+		});
 	var _user$project$Pages_Vault$requestName = function (t) {
-		var _p0 = t;
-		switch (_p0.ctor) {
+		var _p2 = t;
+		switch (_p2.ctor) {
 			case 'CreateOtp':
 				return 'otp';
 			case 'CreatePan':
 				return 'pan';
 			case 'CreateFakePan':
 				return 'fake-pan';
-			default:
+			case 'FetchServices':
 				return 'services';
+			default:
+				return 'job';
 		}
 	};
 	var _user$project$Pages_Vault$req = F2(
@@ -12636,49 +12735,71 @@
 					_elm_lang$core$Dict$get,
 					_user$project$Pages_Vault$requestName(reqType),
 					inputs));
-			var _p1 = reqType;
-			switch (_p1.ctor) {
+			var _p3 = reqType;
+			switch (_p3.ctor) {
 				case 'CreateOtp':
 					return _user$project$Services_Otp$createRequest(data);
 				case 'CreatePan':
 					return _user$project$Services_Pan$createRequest(data);
 				case 'CreateFakePan':
 					return _user$project$Services_Pan$createFakeRequest(data);
-				default:
+				case 'FetchServices':
 					return _user$project$Services_ServiceDescriptor$listRequest(data);
+				default:
+					return _user$project$Services_Job$createRequest(data);
 			}
 		});
 	var _user$project$Pages_Vault$schema = function (str) {
-		return A2(
-			_elm_lang$core$Result$withDefault,
-			_user$project$JsonSchema$empty,
-			_user$project$JsonSchema$fromString(str));
-	};
-	var _user$project$Pages_Vault$panSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"otp\":\n                { \"type\": \"string\"\n                }\n            , \"pan\":\n                { \"type\": \"string\"\n                }\n            }\n        , \"required\": [ \"pan\", \"otp\" ]\n        }\n    ');
-	var _user$project$Pages_Vault$fakePanSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"panId\":\n                { \"type\": \"string\"\n                }\n            }\n        , \"required\": [ \"panId\" ]\n        }\n    ');
-	var _user$project$Pages_Vault$getSchema = function (t) {
-		var _p2 = t;
-		switch (_p2) {
-			case 'pan':
-				return _user$project$Pages_Vault$panSchema;
-			case 'fake-pan':
-				return _user$project$Pages_Vault$fakePanSchema;
-			default:
-				return _user$project$JsonSchema$empty;
+		var _p4 = _user$project$JsonSchema$fromString(str);
+		if (_p4.ctor === 'Err') {
+			var a = A2(
+				_elm_lang$core$Debug$log,
+				A2(_elm_lang$core$Basics_ops['++'], 'Can not parse schema', str),
+				_p4._0);
+			return _user$project$JsonSchema$empty;
+		} else {
+			return _p4._0;
 		}
 	};
-	var _user$project$Pages_Vault$Model = F3(
-		function (a, b, c) {
-			return {responses: a, inputs: b, error: c};
+	var _user$project$Pages_Vault$panSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"otp\":\n                { \"type\": \"string\"\n                , \"format\": \"uuid\"\n                }\n            , \"pan\":\n                { \"type\": \"string\"\n                }\n            }\n        , \"required\": [ \"pan\", \"otp\" ]\n        }\n    ');
+	var _user$project$Pages_Vault$fakePanSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"panId\":\n                { \"type\": \"string\"\n                , \"format\": \"uuid\"\n                }\n            }\n        , \"required\": [ \"panId\" ]\n        }\n    ');
+	var _user$project$Pages_Vault$jobSchema = _user$project$Pages_Vault$schema('\n        { \"type\": \"object\"\n        , \"properties\":\n            { \"serviceId\":\n                { \"type\": \"string\"\n                , \"format\": \"uuid\"\n                }\n            , \"input\": { \"type\": \"object\" }\n            }\n        , \"required\": [ \"serviceId\", \"input\" ]\n        }\n    ');
+	var _user$project$Pages_Vault$Model = F5(
+		function (a, b, c, d, e) {
+			return {responses: a, inputs: b, schemas: c, error: d, services: e};
 		});
-	var _user$project$Pages_Vault$init = A3(_user$project$Pages_Vault$Model, _elm_lang$core$Dict$empty, _elm_lang$core$Dict$empty, '');
+	var _user$project$Pages_Vault$init = A5(
+		_user$project$Pages_Vault$Model,
+		_elm_lang$core$Dict$empty,
+		_elm_lang$core$Dict$empty,
+		A3(
+			_elm_lang$core$Dict$insert,
+			'job',
+			_user$project$Pages_Vault$jobSchema,
+			A3(
+				_elm_lang$core$Dict$insert,
+				'fake-pan',
+				_user$project$Pages_Vault$fakePanSchema,
+				A3(_elm_lang$core$Dict$insert, 'pan', _user$project$Pages_Vault$panSchema, _elm_lang$core$Dict$empty))),
+		'',
+		_elm_lang$core$Native_List.fromArray(
+			[]));
+	var _user$project$Pages_Vault$Service = F3(
+		function (a, b, c) {
+			return {id: a, name: b, schema: c};
+		});
+	var _user$project$Pages_Vault$CreateJob = {ctor: 'CreateJob'};
 	var _user$project$Pages_Vault$FetchServices = {ctor: 'FetchServices'};
 	var _user$project$Pages_Vault$CreateFakePan = {ctor: 'CreateFakePan'};
 	var _user$project$Pages_Vault$CreatePan = {ctor: 'CreatePan'};
 	var _user$project$Pages_Vault$CreateOtp = {ctor: 'CreateOtp'};
+	var _user$project$Pages_Vault$ListServices = {ctor: 'ListServices'};
 	var _user$project$Pages_Vault$FillFake = {ctor: 'FillFake'};
 	var _user$project$Pages_Vault$FillPan = {ctor: 'FillPan'};
 	var _user$project$Pages_Vault$NoOp = {ctor: 'NoOp'};
+	var _user$project$Pages_Vault$SelectService = function (a) {
+		return {ctor: 'SelectService', _0: a};
+	};
 	var _user$project$Pages_Vault$PerformPostAction = function (a) {
 		return {ctor: 'PerformPostAction', _0: a};
 	};
@@ -12714,12 +12835,12 @@
 					'\n',
 					A2(
 						_elm_lang$core$List$map,
-						function (_p3) {
-							var _p4 = _p3;
+						function (_p5) {
+							var _p6 = _p5;
 							return A2(
 								_elm_lang$core$Basics_ops['++'],
-								_p4._0,
-								A2(_elm_lang$core$Basics_ops['++'], ': ', _p4._1));
+								_p6._0,
+								A2(_elm_lang$core$Basics_ops['++'], ': ', _p6._1));
 						},
 						h));
 			};
@@ -12759,11 +12880,11 @@
 							A2(_elm_lang$core$Json_Encode$encode, 2, data)));
 				});
 			var formatResponse = function (requestType) {
-				var _p5 = A2(
+				var _p7 = A2(
 					_elm_lang$core$Dict$get,
 					_user$project$Pages_Vault$requestName(requestType),
 					model.responses);
-				if (_p5.ctor === 'Nothing') {
+				if (_p7.ctor === 'Nothing') {
 					return A2(
 						_elm_lang$html$Html$div,
 						_elm_lang$core$Native_List.fromArray(
@@ -12791,7 +12912,7 @@
 									]))
 							]));
 				} else {
-					var _p6 = _p5._0;
+					var _p8 = _p7._0;
 					return A2(
 						_elm_lang$html$Html$div,
 						_elm_lang$core$Native_List.fromArray(
@@ -12813,7 +12934,7 @@
 													{
 													ctor: '_Tuple2',
 													_0: 'border-color',
-													_1: ((_elm_lang$core$Native_Utils.cmp(200, _p6.status) < 1) && (_elm_lang$core$Native_Utils.cmp(_p6.status, 400) < 0)) ? 'olivedrab' : 'crimson'
+													_1: ((_elm_lang$core$Native_Utils.cmp(200, _p8.status) < 1) && (_elm_lang$core$Native_Utils.cmp(_p8.status, 400) < 0)) ? 'olivedrab' : 'crimson'
 												}
 												])))
 									]),
@@ -12835,16 +12956,16 @@
 											'```http\nHTTP/1.1 ',
 											A2(
 												_elm_lang$core$Basics_ops['++'],
-												_elm_lang$core$Basics$toString(_p6.status),
+												_elm_lang$core$Basics$toString(_p8.status),
 												A2(
 													_elm_lang$core$Basics_ops['++'],
 													' ',
-													A2(_elm_lang$core$Basics_ops['++'], _p6.statusText, '\n```')))))
+													A2(_elm_lang$core$Basics_ops['++'], _p8.statusText, '\n```')))))
 									])),
 								A2(
 								renderJsonBody,
-								_elm_lang$core$Dict$toList(_p6.headers),
-								_p6.data)
+								_elm_lang$core$Dict$toList(_p8.headers),
+								_p8.data)
 							]));
 				}
 			};
@@ -12857,18 +12978,18 @@
 						_elm_lang$core$Regex$regex('^BodyString'),
 						str));
 				if (_elm_lang$core$Native_Utils.eq(match, 1)) {
-					var _p7 = A2(
+					var _p9 = A2(
 						_elm_lang$core$Json_Decode$decodeString,
 						_elm_lang$core$Json_Decode$string,
 						A2(_elm_lang$core$String$dropLeft, 11, str));
-					if (_p7.ctor === 'Ok') {
-						var _p8 = _p7._0;
+					if (_p9.ctor === 'Ok') {
+						var _p10 = _p9._0;
 						return A2(
 							_elm_lang$core$Result$withDefault,
-							_elm_lang$core$Json_Encode$string(_p8),
-							A2(_elm_lang$core$Json_Decode$decodeString, _elm_lang$core$Json_Decode$value, _p8));
+							_elm_lang$core$Json_Encode$string(_p10),
+							A2(_elm_lang$core$Json_Decode$decodeString, _elm_lang$core$Json_Decode$value, _p10));
 					} else {
-						return _elm_lang$core$Json_Encode$string(_p7._0);
+						return _elm_lang$core$Json_Encode$string(_p9._0);
 					}
 				} else {
 					return _elm_lang$core$Json_Encode$string(str);
@@ -12913,10 +13034,10 @@
 							convertBodyToValue(request.body))
 						]));
 			};
-			var renderBlock = F4(
-				function (label, buttonText, requestBuilder, postAction) {
+			var renderBlock = F5(
+				function (label, buttonText, requestBuilder, postAction, childNodes) {
 					var name = _user$project$Pages_Vault$requestName(requestBuilder);
-					var schema = _user$project$Pages_Vault$getSchema(name);
+					var schema = A2(_user$project$Pages_Vault$getSchema, name, model);
 					var data = A2(
 						_elm_lang$core$Maybe$withDefault,
 						_elm_lang$core$Json_Encode$null,
@@ -12948,8 +13069,8 @@
 									[
 										A4(
 										column,
-										'transparent',
-										'black',
+										'rgba(249, 245, 236, 0.58)',
+										'#282828',
 										'34%',
 										_elm_lang$core$Native_List.fromArray(
 											[
@@ -12962,14 +13083,35 @@
 													]),
 												_elm_lang$core$Native_List.fromArray(
 													[
-														_elm_lang$html$Html$text(label),
-														_user$project$Fragments_Form$render(
-														{
-															validationErrors: _elm_lang$core$Dict$empty,
-															schema: schema,
-															data: data,
-															onInput: _user$project$Pages_Vault$UpdateData(requestBuilder)
-														}),
+														A2(
+														_elm_lang$html$Html$h3,
+														_elm_lang$core$Native_List.fromArray(
+															[]),
+														_elm_lang$core$Native_List.fromArray(
+															[
+																_elm_lang$html$Html$text(label)
+															])),
+														A2(
+														_elm_lang$html$Html$div,
+														_elm_lang$core$Native_List.fromArray(
+															[
+																_elm_lang$html$Html_Attributes$style(
+																_elm_lang$core$Native_List.fromArray(
+																	[
+																		{ctor: '_Tuple2', _0: 'max-height', _1: '500px'},
+																		{ctor: '_Tuple2', _0: 'overflow', _1: 'auto'}
+																	]))
+															]),
+														_elm_lang$core$Native_List.fromArray(
+															[
+																_user$project$Fragments_Form$render(
+																{
+																	validationErrors: _elm_lang$core$Dict$empty,
+																	schema: schema,
+																	data: data,
+																	onInput: _user$project$Pages_Vault$UpdateData(requestBuilder)
+																})
+															])),
 														A2(
 														_elm_lang$html$Html$div,
 														_elm_lang$core$Native_List.fromArray(
@@ -12980,18 +13122,35 @@
 																_elm_lang$html$Html$button,
 																_elm_lang$core$Native_List.fromArray(
 																	[
-																		_elm_lang$html$Html_Attributes$type$('submit')
+																		_elm_lang$html$Html_Attributes$type$('submit'),
+																		_elm_lang$html$Html_Attributes$style(
+																		_elm_lang$core$Native_List.fromArray(
+																			[
+																				{ctor: '_Tuple2', _0: 'font-family', _1: 'Iosevka, monospace'},
+																				{ctor: '_Tuple2', _0: 'font-size', _1: '14px'},
+																				{ctor: '_Tuple2', _0: 'width', _1: '100%'},
+																				{ctor: '_Tuple2', _0: 'height', _1: '40px'},
+																				{ctor: '_Tuple2', _0: 'background', _1: 'white'},
+																				{ctor: '_Tuple2', _0: 'border-radius', _1: '2px'},
+																				{ctor: '_Tuple2', _0: 'border', _1: '1px solid #ddd'},
+																				{ctor: '_Tuple2', _0: 'font-weight', _1: 'bold'}
+																			]))
 																	]),
 																_elm_lang$core$Native_List.fromArray(
 																	[
 																		_elm_lang$html$Html$text(buttonText)
 																	]))
-															]))
+															])),
+														A2(
+														_elm_lang$html$Html$div,
+														_elm_lang$core$Native_List.fromArray(
+															[]),
+														childNodes)
 													]))
 											])),
 										A4(
 										column,
-										'#444',
+										'#282828',
 										'cornsilk',
 										'33%',
 										_elm_lang$core$Native_List.fromArray(
@@ -13008,7 +13167,7 @@
 											])),
 										A4(
 										column,
-										'#222',
+										'#282828',
 										'cornsilk',
 										'33%',
 										_elm_lang$core$Native_List.fromArray(
@@ -13032,10 +13191,48 @@
 					[]),
 				_elm_lang$core$Native_List.fromArray(
 					[
-						A4(renderBlock, '1. Request OTP to authorize saving PAN', 'Create OTP', _user$project$Pages_Vault$CreateOtp, _user$project$Pages_Vault$FillPan),
-						A4(renderBlock, '2. Save PAN', 'Create PAN', _user$project$Pages_Vault$CreatePan, _user$project$Pages_Vault$FillFake),
-						A4(renderBlock, '3. Issue fake PAN given panId', 'Exchange panId -> fake PAN', _user$project$Pages_Vault$CreateFakePan, _user$project$Pages_Vault$NoOp),
-						A4(renderBlock, '4. Do something else', 'Just do it', _user$project$Pages_Vault$FetchServices, _user$project$Pages_Vault$NoOp)
+						A5(
+						renderBlock,
+						'1. Request OTP to authorize saving PAN',
+						'Create OTP',
+						_user$project$Pages_Vault$CreateOtp,
+						_user$project$Pages_Vault$FillPan,
+						_elm_lang$core$Native_List.fromArray(
+							[])),
+						A5(
+						renderBlock,
+						'2. Save PAN',
+						'Use otp -> create PAN',
+						_user$project$Pages_Vault$CreatePan,
+						_user$project$Pages_Vault$FillFake,
+						_elm_lang$core$Native_List.fromArray(
+							[])),
+						A5(
+						renderBlock,
+						'3. Issue fake PAN given panId',
+						'Exchange panId -> fake PAN',
+						_user$project$Pages_Vault$CreateFakePan,
+						_user$project$Pages_Vault$NoOp,
+						_elm_lang$core$Native_List.fromArray(
+							[])),
+						A5(
+						renderBlock,
+						'4. Fetch list of services',
+						'Show me what you can do',
+						_user$project$Pages_Vault$FetchServices,
+						_user$project$Pages_Vault$ListServices,
+						_elm_lang$core$Native_List.fromArray(
+							[
+								A2(_user$project$Pages_Vault$renderServices, model, _user$project$Pages_Vault$SelectService)
+							])),
+						A5(
+						renderBlock,
+						'5. Submit job',
+						'Do your job',
+						_user$project$Pages_Vault$CreateJob,
+						_user$project$Pages_Vault$NoOp,
+						_elm_lang$core$Native_List.fromArray(
+							[]))
 					]));
 		});
 	var _user$project$Pages_Vault$ResponseSuccess = F2(
@@ -13050,18 +13247,97 @@
 		function (msg, model, clientSettings) {
 			update:
 			while (true) {
-				var _p9 = msg;
-				switch (_p9.ctor) {
+				var _p11 = msg;
+				switch (_p11.ctor) {
+					case 'SelectService':
+						var _p15 = _p11._0;
+						var findService = function (name) {
+							return A3(
+								_elm_lang$core$List$foldl,
+								F2(
+									function (serv, res) {
+										var _p12 = res;
+										if (_p12.ctor === 'Nothing') {
+											return _elm_lang$core$Native_Utils.eq(serv.name, name) ? _elm_lang$core$Maybe$Just(serv) : _elm_lang$core$Maybe$Nothing;
+										} else {
+											return _elm_lang$core$Maybe$Just(_p12._0);
+										}
+									}),
+								_elm_lang$core$Maybe$Nothing,
+								model.services);
+						};
+						var target = A2(
+							_elm_lang$core$Maybe$withDefault,
+							_user$project$JsonSchema$empty,
+							A2(_elm_lang$core$Dict$get, 'job', model.schemas));
+						var applyServiceSchema = function (name) {
+							var _p13 = findService(name);
+							if (_p13.ctor === 'Just') {
+								return A3(
+									_elm_lang$core$Dict$insert,
+									'job',
+									A3(
+										_user$project$JsonSchema$registerProperty,
+										'input',
+										A2(
+											_elm_lang$core$Result$withDefault,
+											_user$project$JsonSchema$empty,
+											_user$project$JsonSchema$fromValue(_p13._0.schema)),
+										target),
+									model.schemas);
+							} else {
+								return model.schemas;
+							}
+						};
+						var id = function () {
+							var _p14 = findService(_p15);
+							if (_p14.ctor === 'Just') {
+								return _elm_lang$core$Json_Encode$string(_p14._0.id);
+							} else {
+								return _elm_lang$core$Json_Encode$string('');
+							}
+						}();
+						var set = F3(
+							function (destName, destPath, x) {
+								return A3(
+									_elm_lang$core$Dict$update,
+									destName,
+									function (v) {
+										return _elm_lang$core$Maybe$Just(
+											A4(
+												_user$project$JsonSchema$setValue,
+												A2(_user$project$Pages_Vault$getSchema, destName, model),
+												destPath,
+												x,
+												A2(_elm_lang$core$Maybe$withDefault, _elm_lang$core$Json_Encode$null, v)));
+									},
+									model.inputs);
+							});
+						return A2(
+							_elm_lang$core$Platform_Cmd_ops['!'],
+							_elm_lang$core$Native_Utils.update(
+								model,
+								{
+									schemas: applyServiceSchema(_p15),
+									inputs: A3(
+										set,
+										'job',
+										_elm_lang$core$Native_List.fromArray(
+											['serviceId']),
+										id)
+								}),
+							_elm_lang$core$Native_List.fromArray(
+								[]));
 					case 'ResponseError':
-						var _p11 = _p9._1;
-						var _p10 = _p11;
-						if (_p10.ctor === 'BadResponse') {
+						var _p17 = _p11._1;
+						var _p16 = _p17;
+						if (_p16.ctor === 'BadResponse') {
 							return A2(
 								_elm_lang$core$Platform_Cmd_ops['!'],
 								_elm_lang$core$Native_Utils.update(
 									model,
 									{
-										responses: A3(_elm_lang$core$Dict$insert, _p9._0, _p10._0, model.responses)
+										responses: A3(_elm_lang$core$Dict$insert, _p11._0, _p16._0, model.responses)
 									}),
 								_elm_lang$core$Native_List.fromArray(
 									[]));
@@ -13071,15 +13347,15 @@
 								_elm_lang$core$Native_Utils.update(
 									model,
 									{
-										error: _elm_lang$core$Basics$toString(_p11)
+										error: _elm_lang$core$Basics$toString(_p17)
 									}),
 								_elm_lang$core$Native_List.fromArray(
 									[]));
 						}
 					case 'PerformRequest':
-						var _p12 = _p9._0;
+						var _p18 = _p11._0;
 						var updatedModel = model;
-						var name = _user$project$Pages_Vault$requestName(_p12);
+						var name = _user$project$Pages_Vault$requestName(_p18);
 						return A2(
 							_elm_lang$core$Platform_Cmd_ops['!'],
 							updatedModel,
@@ -13090,21 +13366,21 @@
 									_user$project$Pages_Vault$ResponseError(name),
 									_user$project$Pages_Vault$ResponseSuccess(name),
 									_user$project$Pages_Vault$send(
-										A3(_user$project$Pages_Vault$req, _p12, model.inputs, clientSettings)))
+										A3(_user$project$Pages_Vault$req, _p18, model.inputs, clientSettings)))
 								]));
 					case 'ResponseSuccess':
-						var _p13 = _p9._0;
+						var _p19 = _p11._0;
 						var updatedModel = _elm_lang$core$Native_Utils.update(
 							model,
 							{
-								responses: A3(_elm_lang$core$Dict$insert, _p13, _p9._1, model.responses)
+								responses: A3(_elm_lang$core$Dict$insert, _p19, _p11._1, model.responses)
 							});
-						var _v8 = _user$project$Pages_Vault$PerformPostAction(_p13),
-							_v9 = updatedModel,
-							_v10 = clientSettings;
-						msg = _v8;
-						model = _v9;
-						clientSettings = _v10;
+						var _v12 = _user$project$Pages_Vault$PerformPostAction(_p19),
+							_v13 = updatedModel,
+							_v14 = clientSettings;
+						msg = _v12;
+						model = _v13;
+						clientSettings = _v14;
 						continue update;
 					case 'PerformPostAction':
 						var set = F3(
@@ -13113,32 +13389,21 @@
 									_elm_lang$core$Dict$update,
 									destName,
 									function (v) {
-										var _p14 = v;
-										if (_p14.ctor === 'Nothing') {
-											return _elm_lang$core$Maybe$Just(
-												A4(
-													_user$project$JsonSchema$setValue,
-													_user$project$Pages_Vault$getSchema(destName),
-													destPath,
-													x,
-													_elm_lang$core$Json_Encode$null));
-										} else {
-											return _elm_lang$core$Maybe$Just(
-												A4(
-													_user$project$JsonSchema$setValue,
-													_user$project$Pages_Vault$getSchema(destName),
-													destPath,
-													x,
-													_p14._0));
-										}
+										return _elm_lang$core$Maybe$Just(
+											A4(
+												_user$project$JsonSchema$setValue,
+												A2(_user$project$Pages_Vault$getSchema, destName, model),
+												destPath,
+												x,
+												A2(_elm_lang$core$Maybe$withDefault, _elm_lang$core$Json_Encode$null, v)));
 									},
 									model.inputs);
 							});
 						var get = F2(
 							function (sourceName, sourcePath) {
 								return function (s) {
-									var _p15 = s;
-									if (_p15.ctor === 'Nothing') {
+									var _p20 = s;
+									if (_p20.ctor === 'Nothing') {
 										return _elm_lang$core$Json_Encode$string('');
 									} else {
 										return A2(
@@ -13147,13 +13412,42 @@
 											A2(
 												_elm_lang$core$Json_Decode$decodeValue,
 												A2(_elm_lang$core$Json_Decode$at, sourcePath, _elm_lang$core$Json_Decode$value),
-												_p15._0.data));
+												_p20._0.data));
 									}
 								}(
 									A2(_elm_lang$core$Dict$get, sourceName, model.responses));
 							});
-						var _p16 = _p9._0;
-						switch (_p16) {
+						var decodeService = A4(
+							_elm_lang$core$Json_Decode$object3,
+							_user$project$Pages_Vault$Service,
+							A2(_elm_lang$core$Json_Decode_ops[':='], 'id', _elm_lang$core$Json_Decode$string),
+							A2(_elm_lang$core$Json_Decode_ops[':='], 'name', _elm_lang$core$Json_Decode$string),
+							A2(_elm_lang$core$Json_Decode_ops[':='], 'schema', _elm_lang$core$Json_Decode$value));
+						var getList = F2(
+							function (sourceName, sourcePath) {
+								return function (s) {
+									var _p21 = s;
+									if (_p21.ctor === 'Nothing') {
+										return _elm_lang$core$Native_List.fromArray(
+											[]);
+									} else {
+										return A2(
+											_elm_lang$core$Result$withDefault,
+											_elm_lang$core$Native_List.fromArray(
+												[]),
+											A2(
+												_elm_lang$core$Json_Decode$decodeValue,
+												A2(
+													_elm_lang$core$Json_Decode$at,
+													sourcePath,
+													_elm_lang$core$Json_Decode$list(decodeService)),
+												_p21._0.data));
+									}
+								}(
+									A2(_elm_lang$core$Dict$get, sourceName, model.responses));
+							});
+						var _p22 = _p11._0;
+						switch (_p22) {
 							case 'otp':
 								return A2(
 									_elm_lang$core$Platform_Cmd_ops['!'],
@@ -13192,6 +13486,20 @@
 										}),
 									_elm_lang$core$Native_List.fromArray(
 										[]));
+							case 'services':
+								return A2(
+									_elm_lang$core$Platform_Cmd_ops['!'],
+									_elm_lang$core$Native_Utils.update(
+										model,
+										{
+											services: A2(
+												getList,
+												'services',
+												_elm_lang$core$Native_List.fromArray(
+													['data']))
+										}),
+									_elm_lang$core$Native_List.fromArray(
+										[]));
 							default:
 								return A2(
 									_elm_lang$core$Platform_Cmd_ops['!'],
@@ -13207,8 +13515,8 @@
 								{
 									inputs: A3(
 										_elm_lang$core$Dict$insert,
-										_user$project$Pages_Vault$requestName(_p9._0),
-										_p9._1,
+										_user$project$Pages_Vault$requestName(_p11._0),
+										_p11._1,
 										model.inputs)
 								}),
 							_elm_lang$core$Native_List.fromArray(
