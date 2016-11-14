@@ -10,7 +10,7 @@ import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
 import Pages.Vault
-import Pages.ServiceApi
+--import Pages.ServiceApi
 import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
 
 
@@ -40,8 +40,8 @@ toHash page =
         SecureVault ->
             "#secure-vault"
 
-        ServiceApi ->
-            "#service-api"
+        -- ServiceApi ->
+            -- "#service-api"
 
 
 
@@ -62,7 +62,7 @@ pageParser =
         [ format Home (s "home")
         , format Settings (s "settings")
         , format SecureVault (s "secure-vault")
-        , format ServiceApi (s "service-api")
+        --, format ServiceApi (s "service-api")
           --, format Blog (s "blog" </> int)
           --, format Search (s "search" </> string)
         ]
@@ -108,7 +108,7 @@ type alias Model =
     { page : Page
     , clientSettings : ClientSettings
     , vault : Pages.Vault.Model
-    , serviceApi : Pages.ServiceApi.Model
+    -- , serviceApi : Pages.ServiceApi.Model
     }
 
 
@@ -139,7 +139,7 @@ init persistedData result =
                 -- vault
                 Pages.Vault.init
                 -- serviceApi
-                Pages.ServiceApi.init
+                -- Pages.ServiceApi.init
             )
 
 
@@ -166,12 +166,14 @@ update msg model =
                 { model | clientSettings = settings } !
                     [ storeConfig (PersistedData <| Just settings) ]
 
+{-
         PagesServiceApiMsg msg ->
             let
                 ( serviceApi, cmd ) =
                     Pages.ServiceApi.update msg model.serviceApi model.clientSettings
             in
                 ( { model | serviceApi = serviceApi }, Cmd.map PagesServiceApiMsg cmd )
+-}
 
         PagesVaultMsg msg ->
             let
@@ -216,7 +218,7 @@ view model =
             [ viewLink model.page Home "Home"
             , viewLink model.page Settings "Settings"
             , viewLink model.page SecureVault "Secure Vault"
-            , viewLink model.page ServiceApi "Service API"
+            -- , viewLink model.page ServiceApi "Service API"
             ]
         , hr [ style [ ( "border", "0" ), ("border-bottom", "1px solid #ddd" ) ] ] []
         , div [ centerStyle "column" "stretch" ]
@@ -234,9 +236,9 @@ view model =
                         Pages.Vault.render model.vault model.clientSettings
                     ]
 
-                ServiceApi ->
-                    [ Html.App.map PagesServiceApiMsg <|
-                        Pages.ServiceApi.render model.serviceApi ]
+                -- ServiceApi ->
+                    -- [ Html.App.map PagesServiceApiMsg <|
+                        -- Pages.ServiceApi.render model.serviceApi ]
             )
         ]
 

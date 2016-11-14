@@ -5,7 +5,7 @@ type Page
     = Home
     | Settings
     | SecureVault
-    | ServiceApi
+    -- | ServiceApi
 
 
 

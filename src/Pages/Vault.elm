@@ -46,10 +46,6 @@ schema str =
 
 
 
-
---, "idempotencyKey": { "type": "string" }
-
-
 init : Model
 init =
     Model
@@ -60,7 +56,7 @@ init =
         (Dict.empty
             |> Dict.insert "pan" PanSvc.createSchema
             |> Dict.insert "fake-pan" PanSvc.createFakeSchema
-            --|> Dict.insert "job" jobSchema
+            |> Dict.insert "job" JobSvc.createSchema
         )
         -- error
         ""
@@ -150,7 +146,9 @@ send =
 
 
 type alias Service =
-    { id : String, name : String, schema : Value }
+    { id : String
+    , name : String
+    , schema : Value }
 
 
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
@@ -355,28 +353,51 @@ render model clientSettings =
                     req kind model.inputs clientSettings
             in
                 div []
-                    [ request.method
-                        ++ " "
-                        ++ request.pathname
-                        |> text
-                        |> (\s -> [ s ])
-                        |> div
-                            [ style
-                                (boxStyle
-                                    ++ [ ( "margin", "0 0 10px 0" )
-                                       , ( "border-color", "#928374" )
-                                       , ( "background", "#333" )
-                                       ]
-                                )
-                            ]
-                    , request.body
-                        |> Maybe.withDefault null
-                        |> renderJsonBody (buildHeaders request)
+                    [ renderRequest request
                     ]
 
         renderHeaders h =
             List.map (\( header, value ) -> header ++ ": " ++ value) h
                 |> String.join "\n"
+
+        getHostname url =
+            url
+                |> String.split "/"
+                |> List.reverse
+                |> List.head
+                |> Maybe.withDefault ""
+
+        renderRequest r =
+            let
+                headers =
+                    buildHeaders r
+                        |> (::) ("Host", getHostname r.baseUrl)
+                        |> renderHeaders
+
+                body =
+                    case r.body of
+                        Nothing ->
+                            ""
+
+                        Just val ->
+                            encode 2 val
+
+            in
+                "```http\n" ++ r.method ++ " " ++ r.pathname ++ " HTTP/1.1\n" ++ headers ++ "\n\n" ++ body ++ "\n```"
+                    |> Markdown.toHtml
+                        [ style
+                            (boxStyle
+                                ++ [ ( "margin", "0 0 10px 0" )
+                                   , ( "background", "#333" )
+                                   , ( "color", "#ddd" )
+                                   , ( "font-size", "12px" )
+                                   , ( "line-height", "1.2em" )
+                                   , ( "border-color", "#928374" )
+                                   , ( "max-height", "500px" )
+                                   , ( "padding", "0 10px" )
+                                   ]
+                            )
+                        ]
 
         renderJsonBody headers data =
             data
@@ -391,7 +412,8 @@ render model clientSettings =
                                , ( "font-size", "12px" )
                                , ( "line-height", "1.2em" )
                                , ( "border-color", "#928374" )
-                               , ( "max-height", "500px" )
+                               , ( "max-height", "400px" )
+                               , ( "padding", "0 10px" )
                                ]
                         )
                     ]
@@ -449,7 +471,7 @@ render model clientSettings =
                     ]
                 ]
 
-        renderBlock label buttonText requestBuilder postAction childNodes =
+        renderBlock label guide buttonText requestBuilder postAction childNodes =
             let
                 name =
                     requestName requestBuilder
@@ -469,6 +491,7 @@ render model clientSettings =
                             "60%"
                             [ Html.form [ onSubmit (PerformRequest requestBuilder) ]
                                 [ Html.h3 [] [ text label ]
+                                , Markdown.toHtml [] guide
                                 , div [ style [ ( "max-height", "500px" ), ( "overflow", "auto" ) ] ]
                                     [ FragForm.render
                                         { validationErrors = Dict.empty
@@ -510,34 +533,52 @@ render model clientSettings =
         div []
             [ renderBlock
                 "1. Request OTP to authorize saving PAN"
-                "Create OTP"
+                """
+In order to let **someone** secure vault access to save their credit card number (PAN) we have
+to issue one-time password. Resulting OTP can be used only once to save one PAN.
+                """
+                "Create otp"
                 CreateOtp
                 FillPan
                 []
             , renderBlock
                 "2. Save PAN"
+                """
+Store credit card number (PAN) in secure vault. This endpoint is the only one not authenticated with client secret key, it requires OTP in order to authorize request.
+
+Result of this call must be stored in database as a permanent id of user's PAN. It can not be used to retrieve or decrype card, it can only be used to issue replacement token.
+                """
                 "Use otp -> create PAN"
                 CreatePan
                 FillFake
                 []
             , renderBlock
                 "3. Issue fake PAN given panId"
+                """
+This endpoint creates token which must be used to create a job which requires PAN. Issued token expires after some time (1 hour?). New token must be issued for each new job. One token can not be used twice.
+                """
                 "Exchange panId -> fake PAN"
                 CreateFakePan
                 NoOp
                 []
-                 , renderBlock
-                     "4. Fetch list of services"
-                     "Show me what you can do"
-                     FetchServices
-                     ListServices
-                     [ renderServices model SelectService ]
-                 , renderBlock
-                     "5. Submit job"
-                     "Do your job"
-                     CreateJob
-                     NoOp
-                     []
+             , renderBlock
+                 "4. Fetch list of services"
+                 """
+Automation cloud offers number of automation services, each of those services requires some input data in JSON format. This endpoint provides list of available services with schemas describing format of input data.
+                 """
+                 "Show me what you can do"
+                 FetchServices
+                 ListServices
+                 [ renderServices model SelectService ]
+             , renderBlock
+                 "5. Submit job"
+                 """
+This is the starting point of automation process. Basically this is function call with object as an argument which returns object which will represent job (output, errors, yields).
+                 """
+                 "Do your job"
+                 CreateJob
+                 NoOp
+                 []
             ]
 
 
