@@ -1,14 +1,40 @@
-module Services.Job exposing (create, createRequest, JobCreationError, JobCreationError(..))
+module Services.Job exposing (create, createSchema, JobCreationError, JobCreationError(..))
 
 import HttpBuilder exposing (Response, Error, RequestBuilder)
-import Json.Decode as Decode exposing (Decoder, (:=))
+import Json.Decode as Decode exposing (Decoder, (:=), Value)
 import Json.Encode as Encode
-import Types exposing (ClientSettings, Id, Value)
+import JsonSchema as JS exposing (Schema)
+import Types exposing (ClientSettings, Id, RequestConfig)
 import Models exposing (Job, ValidationErrors)
 import Task exposing (Task)
-import Util exposing (buildAuthHeader)
+import Util exposing (buildAuthHeader, schema)
 import String
 import Dict
+
+createSchema : Schema
+createSchema =
+    schema """
+        { "type": "object"
+        , "properties":
+            { "serviceId":
+                { "type": "string"
+                , "format": "uuid"
+                }
+            , "input": { "type": "object" }
+            }
+        , "required": [ "serviceId", "input" ]
+        }
+    """
+
+create : Maybe Value -> ClientSettings -> RequestConfig
+create body clientSettings =
+    RequestConfig
+        "POST"
+        clientSettings.service
+        "/jobs"
+        (Just clientSettings.secretKey)
+        body
+
 
 type JobCreationError
     = ValidationError ValidationErrors
@@ -23,8 +49,8 @@ createRequest body clientSettings =
            ]
         |> HttpBuilder.withJsonBody body
 
-create : ClientSettings -> String -> Value -> Task JobCreationError (Response Job)
-create clientSettings serviceId inputData =
+create2 : ClientSettings -> String -> Value -> Task JobCreationError (Response Job)
+create2 clientSettings serviceId inputData =
     let
         requestBody =
             Encode.object

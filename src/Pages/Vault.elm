@@ -16,9 +16,10 @@ import Services.Pan as PanSvc
 import Services.ServiceDescriptor as ServiceDescriptorSvc
 import Services.Job as JobSvc
 import Layout exposing (boxStyle)
-import Types exposing (ClientSettings)
+import Types exposing (ClientSettings, RequestConfig)
 import Markdown
 import JsonSchema as JS exposing (Schema)
+import Util exposing (performRequest, buildHeaders)
 
 
 type alias Model =
@@ -39,58 +40,14 @@ schema str =
                     Debug.log ("Can not parse schema" ++ str) e
             in
                 JS.empty
+
         Ok s ->
             s
 
 
-panSchema : Schema
-panSchema =
-    schema """
-        { "type": "object"
-        , "properties":
-            { "otp":
-                { "type": "string"
-                , "format": "uuid"
-                }
-            , "pan":
-                { "type": "string"
-                }
-            }
-        , "required": [ "pan", "otp" ]
-        }
-    """
 
 
-fakePanSchema : Schema
-fakePanSchema =
-    schema """
-        { "type": "object"
-        , "properties":
-            { "panId":
-                { "type": "string"
-                , "format": "uuid"
-                }
-            }
-        , "required": [ "panId" ]
-        }
-    """
-
-
-jobSchema : Schema
-jobSchema =
-    schema """
-        { "type": "object"
-        , "properties":
-            { "serviceId":
-                { "type": "string"
-                , "format": "uuid"
-                }
-            , "input": { "type": "object" }
-            }
-        , "required": [ "serviceId", "input" ]
-        }
-    """
-            --, "idempotencyKey": { "type": "string" }
+--, "idempotencyKey": { "type": "string" }
 
 
 init : Model
@@ -101,9 +58,9 @@ init =
         -- inputs
         Dict.empty
         (Dict.empty
-            |> Dict.insert "pan" panSchema
-            |> Dict.insert "fake-pan" fakePanSchema
-            |> Dict.insert "job" jobSchema
+            |> Dict.insert "pan" PanSvc.createSchema
+            |> Dict.insert "fake-pan" PanSvc.createFakeSchema
+            --|> Dict.insert "job" jobSchema
         )
         -- error
         ""
@@ -135,29 +92,28 @@ type Msg
     | SelectService String
 
 
-req : RequestType -> Dict.Dict String Value -> ClientSettings -> HttpBuilder.RequestBuilder
+req : RequestType -> Dict.Dict String Value -> ClientSettings -> RequestConfig
 req reqType inputs =
     let
         data =
             inputs
                 |> Dict.get (requestName reqType)
-                |> Maybe.withDefault null
     in
         case reqType of
             CreateOtp ->
-                OtpSvc.createRequest data
+                OtpSvc.create data
 
             CreatePan ->
-                PanSvc.createRequest data
+                PanSvc.create data
 
             CreateFakePan ->
-                PanSvc.createFakeRequest data
+                PanSvc.createFake data
 
             FetchServices ->
-                ServiceDescriptorSvc.listRequest data
+                ServiceDescriptorSvc.list data
 
             CreateJob ->
-                JobSvc.createRequest data
+                JobSvc.create data
 
 
 requestName : RequestType -> String
@@ -193,7 +149,9 @@ send =
         (HttpBuilder.jsonReader value)
 
 
-type alias Service = { id : String, name: String, schema: Value }
+type alias Service =
+    { id : String, name : String, schema : Value }
+
 
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
 update msg model clientSettings =
@@ -212,8 +170,11 @@ update msg model clientSettings =
 
                 id =
                     case findService name of
-                        Just serv -> Encode.string serv.id
-                        Nothing -> Encode.string ""
+                        Just serv ->
+                            Encode.string serv.id
+
+                        Nothing ->
+                            Encode.string ""
 
                 target =
                     Dict.get "job" model.schemas
@@ -224,22 +185,26 @@ update msg model clientSettings =
                         Just serv ->
                             model.schemas
                                 |> Dict.insert "job" (JS.registerProperty "input" (JS.fromValue serv.schema |> Result.withDefault JS.empty) target)
+
                         Nothing ->
                             model.schemas
-
 
                 findService : String -> Maybe Service
                 findService name =
                     model.services
-                        |> List.foldl (\serv res ->
-                            case res of
-                                Nothing ->
-                                    if serv.name == name then
-                                        Just serv
-                                    else
-                                        Nothing
-                                Just res -> Just res
-                            ) Nothing
+                        |> List.foldl
+                            (\serv res ->
+                                case res of
+                                    Nothing ->
+                                        if serv.name == name then
+                                            Just serv
+                                        else
+                                            Nothing
+
+                                    Just res ->
+                                        Just res
+                            )
+                            Nothing
             in
                 { model | schemas = applyServiceSchema name, inputs = set "job" [ "serviceId" ] id } ! []
 
@@ -262,8 +227,9 @@ update msg model clientSettings =
                 -- { model | responses = model.responses |> Dict.remove name }
             in
                 updatedModel
-                    ! [ Task.perform (ResponseError name) (ResponseSuccess name) <|
-                            send (req t model.inputs clientSettings)
+                    ! [ req t model.inputs clientSettings
+                            |> performRequest
+                            |> Task.perform (ResponseError name) (ResponseSuccess name)
                       ]
 
         ResponseSuccess name resp ->
@@ -337,7 +303,7 @@ update msg model clientSettings =
 
                     "services" ->
                         { model
-                           | services = getList "services" [ "data" ]
+                            | services = getList "services" [ "data" ]
                         }
                             ! []
 
@@ -361,39 +327,6 @@ codeStyle =
 render : Model -> ClientSettings -> Html.Html Msg
 render model clientSettings =
     let
-        {-
-           otpId =
-               case model.otp of
-                   Nothing ->
-                       ""
-
-                   Just otp ->
-                       otp.id
-
-           panId =
-               case model.pan of
-                   Nothing ->
-                       text ""
-
-                   Just pan ->
-                       text pan.id
-
-           decryptionKey =
-               case model.pan of
-                   Nothing ->
-                       text ""
-
-                   Just pan ->
-                       text pan.key
-
-           fakePan =
-               case model.fakePan of
-                   Nothing ->
-                       text ""
-
-                   Just fakePan ->
-                       text fakePan
-        -}
         convertBodyToValue body =
             let
                 str =
@@ -420,11 +353,25 @@ render model clientSettings =
             let
                 request =
                     req kind model.inputs clientSettings
-                        |> HttpBuilder.toRequest
             in
                 div []
-                    [ request.verb ++ " " ++ request.url |> text |> (\s -> [ s ]) |> div [ style (boxStyle ++ [ ( "margin", "0 0 10px 0" ), ( "border-color", "#928374" ), ( "background", "#333" ) ]) ]
-                    , request.body |> convertBodyToValue |> renderJsonBody request.headers
+                    [ request.method
+                        ++ " "
+                        ++ request.pathname
+                        |> text
+                        |> (\s -> [ s ])
+                        |> div
+                            [ style
+                                (boxStyle
+                                    ++ [ ( "margin", "0 0 10px 0" )
+                                       , ( "border-color", "#928374" )
+                                       , ( "background", "#333" )
+                                       ]
+                                )
+                            ]
+                    , request.body
+                        |> Maybe.withDefault null
+                        |> renderJsonBody (buildHeaders request)
                     ]
 
         renderHeaders h =
@@ -499,7 +446,6 @@ render model clientSettings =
                     , ( "background", bg )
                     , ( "color", fg )
                     , ( "box-sizing", "border-box" )
-                      --, ( "transition", "height 1s 1s" )
                     ]
                 ]
 
@@ -520,15 +466,16 @@ render model clientSettings =
                     [ div [ style [ ( "display", "flex" ), ( "flex-direction", "row" ) ] ]
                         [ column "rgba(249, 245, 236, 0.58)"
                             "#282828"
-                            "34%"
+                            "60%"
                             [ Html.form [ onSubmit (PerformRequest requestBuilder) ]
                                 [ Html.h3 [] [ text label ]
-                                , div [ style [("max-height", "500px"), ("overflow", "auto") ] ] [ FragForm.render
-                                    { validationErrors = Dict.empty
-                                    , schema = schema
-                                    , data = data
-                                    , onInput = UpdateData requestBuilder
-                                    }
+                                , div [ style [ ( "max-height", "500px" ), ( "overflow", "auto" ) ] ]
+                                    [ FragForm.render
+                                        { validationErrors = Dict.empty
+                                        , schema = schema
+                                        , data = data
+                                        , onInput = UpdateData requestBuilder
+                                        }
                                     ]
                                 , div []
                                     [ button
@@ -551,14 +498,10 @@ render model clientSettings =
                             ]
                         , column "#282828"
                             "cornsilk"
-                            "33%"
+                            "40%"
                             [ Html.h3 [] [ text "Request" ]
                             , formatRequest requestBuilder
-                            ]
-                        , column "#282828"
-                            "cornsilk"
-                            "33%"
-                            [ Html.h3 [] [ text "Response" ]
+                            , Html.h3 [] [ text "Response" ]
                             , formatResponse requestBuilder
                             ]
                         ]
@@ -583,19 +526,20 @@ render model clientSettings =
                 CreateFakePan
                 NoOp
                 []
-            , renderBlock
-                "4. Fetch list of services"
-                "Show me what you can do"
-                FetchServices
-                ListServices
-                [ renderServices model SelectService ]
-            , renderBlock
-                "5. Submit job"
-                "Do your job"
-                CreateJob
-                NoOp
-                []
+                 , renderBlock
+                     "4. Fetch list of services"
+                     "Show me what you can do"
+                     FetchServices
+                     ListServices
+                     [ renderServices model SelectService ]
+                 , renderBlock
+                     "5. Submit job"
+                     "Do your job"
+                     CreateJob
+                     NoOp
+                     []
             ]
+
 
 renderServices : Model -> (String -> msg) -> Html.Html msg
 renderServices model selected =
@@ -603,5 +547,12 @@ renderServices model selected =
         renderService s =
             Html.option [ Attrs.value s.name ] [ text s.name ]
     in
-        Html.select [ Html.Events.onInput selected ] <|
-            Html.option [ Attrs.value "" ] [ text "Select Service" ] :: List.map renderService model.services
+        if List.length model.services > 0 then
+            div [ style boxStyle ]
+                [ text "Select service: "
+                , Html.select [ Html.Events.onInput selected ] <|
+                    Html.option [ Attrs.value "" ] [ text "Select Service" ]
+                        :: List.map renderService model.services
+                ]
+        else
+            text ""

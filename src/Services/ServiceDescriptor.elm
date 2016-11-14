@@ -3,11 +3,19 @@ module Services.ServiceDescriptor exposing (list, listRequest, get)
 import HttpBuilder exposing (Response, Error, RequestBuilder)
 import Task exposing (Task)
 import Json.Decode as Decode exposing (Decoder, Value, string, (:=))
-import Types exposing (ClientSettings, Id)
+import Types exposing (ClientSettings, Id, RequestConfig)
 import Models exposing (ServiceDescriptor)
 import Util exposing (fetch, buildAuthHeader)
 import JsonSchema as JS exposing (decodeSchema)
 
+list : Maybe Value -> ClientSettings -> RequestConfig
+list body clientSettings =
+        RequestConfig
+            "GET"
+            clientSettings.service
+            "/services"
+            (Just clientSettings.secretKey)
+            Nothing
 
 listRequest : Value -> ClientSettings -> RequestBuilder
 listRequest body clientSettings =
@@ -19,8 +27,8 @@ listRequest body clientSettings =
         |> HttpBuilder.withJsonBody body
 
 
-list : ClientSettings -> Task (Error String) (Response (List ServiceDescriptor))
-list =
+list2 : ClientSettings -> Task (Error String) (Response (List ServiceDescriptor))
+list2 =
     fetch "/services" (Decode.at [ "data" ] <| Decode.list decodeService)
 
 
