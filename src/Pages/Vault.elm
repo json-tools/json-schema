@@ -534,8 +534,7 @@ render model clientSettings =
             [ renderBlock
                 "1. Request OTP to authorize saving PAN"
                 """
-In order to let **someone** secure vault access to save their credit card number (PAN) we have
-to issue one-time password. Resulting OTP can be used only once to save one PAN.
+To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.
                 """
                 "Create otp"
                 CreateOtp
@@ -544,9 +543,9 @@ to issue one-time password. Resulting OTP can be used only once to save one PAN.
             , renderBlock
                 "2. Save PAN"
                 """
-Store credit card number (PAN) in secure vault. This endpoint is the only one not authenticated with client secret key, it requires OTP in order to authorize request.
+Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.
 
-Result of this call must be stored in database as a permanent id of user's PAN. It can not be used to retrieve or decrype card, it can only be used to issue replacement token.
+The result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.
                 """
                 "Use otp -> create PAN"
                 CreatePan
@@ -555,7 +554,7 @@ Result of this call must be stored in database as a permanent id of user's PAN. 
             , renderBlock
                 "3. Issue fake PAN given panId"
                 """
-This endpoint creates token which must be used to create a job which requires PAN. Issued token expires after some time (1 hour?). New token must be issued for each new job. One token can not be used twice.
+This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.
                 """
                 "Exchange panId -> fake PAN"
                 CreateFakePan
@@ -564,7 +563,7 @@ This endpoint creates token which must be used to create a job which requires PA
              , renderBlock
                  "4. Fetch list of services"
                  """
-Automation cloud offers number of automation services, each of those services requires some input data in JSON format. This endpoint provides list of available services with schemas describing format of input data.
+The Automation cloud offers a number of automation services. Each of these services requires particular input data in JSON format. This endpoint provides list of the available services with schemas describing the format of the input data.
                  """
                  "Show me what you can do"
                  FetchServices
@@ -573,7 +572,7 @@ Automation cloud offers number of automation services, each of those services re
              , renderBlock
                  "5. Submit job"
                  """
-This is the starting point of automation process. Basically this is function call with object as an argument which returns object which will represent job (output, errors, yields).
+This is the starting point of the automation process, and creates your automation job. This is a function call with an object as an argument, and it returns the object which will represent your job (including the output, errors and yields).
                  """
                  "Do your job"
                  CreateJob
