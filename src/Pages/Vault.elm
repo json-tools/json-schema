@@ -9,7 +9,6 @@ import Json.Encode as Encode exposing (encode, null)
 import Json.Decode as Decode exposing (value, Value, (:=))
 import Task
 import Dict
-import Regex
 import String
 import Services.Otp as OtpSvc
 import Services.Pan as PanSvc
@@ -20,7 +19,6 @@ import Types exposing (ClientSettings, RequestConfig)
 import Markdown
 import JsonSchema as JS exposing (Schema)
 import Util exposing (performRequest, buildHeaders)
-
 
 type alias Model =
     { responses : Dict.Dict String (Response Value)
@@ -43,8 +41,6 @@ schema str =
 
         Ok s ->
             s
-
-
 
 init : Model
 init =
@@ -148,7 +144,8 @@ send =
 type alias Service =
     { id : String
     , name : String
-    , schema : Value }
+    , schema : Value
+    }
 
 
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
@@ -325,28 +322,6 @@ codeStyle =
 render : Model -> ClientSettings -> Html.Html Msg
 render model clientSettings =
     let
-        convertBodyToValue body =
-            let
-                str =
-                    body |> toString
-
-                match =
-                    str
-                        |> Regex.find (Regex.AtMost 1) (Regex.regex "^BodyString")
-                        |> List.length
-            in
-                if match == 1 then
-                    case (String.dropLeft 11 str |> Decode.decodeString Decode.string) of
-                        Ok str ->
-                            str
-                                |> Decode.decodeString value
-                                |> Result.withDefault (Encode.string str)
-
-                        Err str ->
-                            Encode.string str
-                else
-                    Encode.string str
-
         formatRequest kind =
             let
                 request =
@@ -371,7 +346,7 @@ render model clientSettings =
             let
                 headers =
                     buildHeaders r
-                        |> (::) ("Host", getHostname r.baseUrl)
+                        |> (::) ( "Host", getHostname r.baseUrl )
                         |> renderHeaders
 
                 body =
@@ -381,42 +356,36 @@ render model clientSettings =
 
                         Just val ->
                             encode 2 val
-
             in
-                "```http\n" ++ r.method ++ " " ++ r.pathname ++ " HTTP/1.1\n" ++ headers ++ "\n\n" ++ body ++ "\n```"
-                    |> Markdown.toHtml
-                        [ style
-                            (boxStyle
-                                ++ [ ( "margin", "0 0 10px 0" )
-                                   , ( "background", "#333" )
-                                   , ( "color", "#ddd" )
-                                   , ( "font-size", "12px" )
-                                   , ( "line-height", "1.2em" )
-                                   , ( "border-color", "#928374" )
-                                   , ( "max-height", "500px" )
-                                   , ( "padding", "0 10px" )
-                                   ]
-                            )
-                        ]
+                "```http\n"
+                    ++ r.method
+                    ++ " "
+                    ++ r.pathname
+                    ++ " HTTP/1.1\n"
+                    ++ headers
+                    ++ "\n\n"
+                    ++ body
+                    ++ "\n```"
+                    |> Markdown.toHtml [ markdownCodeStyle ]
+
+        markdownCodeStyle =
+            style <|
+                boxStyle
+                    ++ [ ( "margin", "0 0 10px 0" )
+                       , ( "background", "#333" )
+                       , ( "color", "#ddd" )
+                       , ( "font-size", "12px" )
+                       , ( "line-height", "1.2em" )
+                       , ( "border-color", "#928374" )
+                       , ( "max-height", "400px" )
+                       , ( "padding", "0 10px" )
+                       ]
 
         renderJsonBody headers data =
             data
                 |> encode 2
                 |> (\s -> "```http\n" ++ (renderHeaders headers) ++ "\n\n" ++ s ++ "\n```")
-                |> Markdown.toHtml
-                    [ style
-                        (boxStyle
-                            ++ [ ( "margin", "0 0 10px 0" )
-                               , ( "background", "#333" )
-                               , ( "color", "#ddd" )
-                               , ( "font-size", "12px" )
-                               , ( "line-height", "1.2em" )
-                               , ( "border-color", "#928374" )
-                               , ( "max-height", "400px" )
-                               , ( "padding", "0 10px" )
-                               ]
-                        )
-                    ]
+                |> Markdown.toHtml [ markdownCodeStyle ]
 
         formatResponse requestType =
             case Dict.get (requestName requestType) model.responses of
@@ -560,24 +529,24 @@ This endpoint creates a token which will then be used to start a job which requi
                 CreateFakePan
                 NoOp
                 []
-             , renderBlock
-                 "4. Fetch list of services"
-                 """
+            , renderBlock
+                "4. Fetch list of services"
+                """
 The Automation cloud offers a number of automation services. Each of these services requires particular input data in JSON format. This endpoint provides list of the available services with schemas describing the format of the input data.
                  """
-                 "Show me what you can do"
-                 FetchServices
-                 ListServices
-                 [ renderServices model SelectService ]
-             , renderBlock
-                 "5. Submit job"
-                 """
+                "Show me what you can do"
+                FetchServices
+                ListServices
+                [ renderServices model SelectService ]
+            , renderBlock
+                "5. Submit job"
+                """
 This is the starting point of the automation process, and creates your automation job. This is a function call with an object as an argument, and it returns the object which will represent your job (including the output, errors and yields).
                  """
-                 "Do your job"
-                 CreateJob
-                 NoOp
-                 []
+                "Do your job"
+                CreateJob
+                NoOp
+                []
             ]
 
 
