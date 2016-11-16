@@ -7,6 +7,7 @@ import Html.Events exposing (onClick, onSubmit)
 import Html.Attributes as Attrs exposing (style)
 import Json.Encode as Encode exposing (encode, null)
 import Json.Decode as Decode exposing (value, Value, (:=))
+import Regex
 import Task
 import Dict
 import String
@@ -29,6 +30,7 @@ type alias Model =
 
 type alias Endpoints =
     Dict.Dict String ApiEndpointDefinition
+
 
 schema : String -> Schema
 schema str =
@@ -60,18 +62,12 @@ init conf =
         -- endpoints
         (Dict.fromList conf.endpoints)
 
-extractInputSchemas : List (String, ApiEndpointDefinition) -> Dict.Dict String Schema
+
+extractInputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
 extractInputSchemas endpoints =
     endpoints
-        |> List.map (\(name, x) -> (name, JS.fromValue x.request |> Result.withDefault JS.empty))
+        |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty ))
         |> Dict.fromList
-        
-
-type PostAction
-    = NoOp
-    | FillPan
-    | FillFake
-    | ListServices
 
 
 type Msg
@@ -188,7 +184,7 @@ update msg model clientSettings =
 
                 body =
                     model.inputs
-                        |> Dict.get name 
+                        |> Dict.get name
             in
                 case request of
                     Err s ->
@@ -276,6 +272,14 @@ update msg model clientSettings =
                         }
                             ! []
 
+                    "service/create-job" ->
+                        { model
+                            | inputs =
+                                get "service/create-job" [ "id" ]
+                                    |> set "service/show-job" [ "id" ]
+                        }
+                            ! []
+
                     _ ->
                         model ! []
 
@@ -296,14 +300,14 @@ codeStyle =
 render : Model -> ClientSettings -> Html.Html Msg
 render model clientSettings =
     let
-        formatRequest kind =
+        formatRequest name =
             let
                 request =
-                    req kind model.endpoints model.inputs
+                    req name model.endpoints model.inputs
             in
                 case request of
                     Ok r ->
-                        div [] [ renderRequest r clientSettings ]
+                        div [] [ renderRequest name r clientSettings ]
 
                     Err s ->
                         text s
@@ -325,33 +329,48 @@ render model clientSettings =
             else
                 clientSettings.service
 
-        renderRequest r clientSettings =
+        renderRequest name r clientSettings =
             let
+                headers =
+                    buildHeaders r clientSettings
+                        |> (::) ( "Host", r.service |> serviceUrl |> getHostname )
+                        |> renderHeaders
 
-               headers =
-                   buildHeaders r clientSettings
-                       |> (::) ( "Host", r.service |> serviceUrl |> getHostname )
-                       |> renderHeaders
+                body =
+                    if r.method == "GET" then
+                        ""
+                    else
+                        case Dict.get name model.inputs of
+                            Nothing ->
+                                ""
 
-                {- TODO: grab body from inputs
-                   body =
-                       case r.body of
-                           Nothing ->
-                               ""
+                            Just val ->
+                                encode 2 val
 
-                           Just val ->
-                               encode 2 val
-                -}
+                pathname =
+                    case Dict.get name model.inputs of
+                        Nothing ->
+                            r.pathname
+
+                        Just val ->
+                            interpolate r.pathname val
+
+                interpolate str val =
+                    Regex.replace Regex.All (Regex.regex ":\\w+") (\{ match } ->
+                        val
+                            |> Decode.decodeValue ( Decode.at [ String.dropLeft 1 match ] Decode.string )
+                            |> Result.withDefault ""
+                            ) str
+
             in
                 "```http\n"
                     ++ r.method
                     ++ " "
-                    ++ r.pathname
+                    ++ pathname
                     ++ " HTTP/1.1\n"
                     ++ headers
-                    ++
-                        "\n\n"
-                    -- ++ body
+                    ++ "\n\n"
+                    ++ body
                     ++
                         "\n```"
                     |> Markdown.toHtml [ markdownCodeStyle ]
@@ -428,11 +447,8 @@ render model clientSettings =
                     ]
                 ]
 
-        renderBlock label guide buttonText requestBuilder postAction childNodes =
+        renderBlock label guide buttonText name childNodes =
             let
-                name =
-                    requestBuilder
-
                 schema =
                     getSchema name model
 
@@ -446,7 +462,7 @@ render model clientSettings =
                         [ column "rgba(249, 245, 236, 0.58)"
                             "#282828"
                             "60%"
-                            [ Html.form [ onSubmit (PerformRequest requestBuilder) ]
+                            [ Html.form [ onSubmit (PerformRequest name) ]
                                 [ Html.h3 [] [ text label ]
                                 , Markdown.toHtml [] guide
                                 , div [ style [ ( "max-height", "500px" ), ( "overflow", "auto" ) ] ]
@@ -454,7 +470,7 @@ render model clientSettings =
                                         { validationErrors = Dict.empty
                                         , schema = schema
                                         , data = data
-                                        , onInput = UpdateData requestBuilder
+                                        , onInput = UpdateData name
                                         }
                                     ]
                                 , div []
@@ -468,7 +484,7 @@ render model clientSettings =
                                             , ( "background", "white" )
                                             , ( "border-radius", "2px" )
                                             , ( "border", "1px solid #ddd" )
-                                            , ( "font-weight", "bold" )
+                                            , ( "font-weig", "bold" )
                                             ]
                                         ]
                                         [ text buttonText ]
@@ -480,9 +496,9 @@ render model clientSettings =
                             "cornsilk"
                             "40%"
                             [ Html.h3 [] [ text "Request" ]
-                            , formatRequest requestBuilder
+                            , formatRequest name
                             , Html.h3 [] [ text "Response" ]
-                            , formatResponse requestBuilder
+                            , formatResponse name
                             ]
                         ]
                     ]
@@ -504,7 +520,6 @@ To save a payment card securely in our vault we issue one-time password (OTP). T
                 """
                 "Create otp"
                 "vault/create-otp"
-                FillPan
                 []
             , renderBlock
                 "2. Save PAN"
@@ -515,7 +530,6 @@ The result of this call must be stored in your database as the permanent id of t
                 """
                 "Use otp -> create PAN"
                 "vault/create-pan"
-                FillFake
                 []
             , renderBlock
                 "3. Issue fake PAN given panId"
@@ -524,7 +538,6 @@ This endpoint creates a token which will then be used to start a job which requi
                 """
                 "Exchange panId -> fake PAN"
                 "vault/create-fake-pan"
-                NoOp
                 []
             , renderBlock
                 "4. Fetch list of services"
@@ -533,7 +546,6 @@ The Automation cloud offers a number of automation services. Each of these servi
                  """
                 "Show me what you can do"
                 "service/list-services"
-                ListServices
                 [ renderServices model SelectService ]
             , renderBlock
                 "5. Submit job"
@@ -542,7 +554,12 @@ This is the starting point of the automation process, and creates your automatio
                  """
                 "Do your job"
                 "service/create-job"
-                NoOp
+                []
+            , renderBlock
+                "6. Poll for job status"
+                ""
+                "Poll"
+                "service/show-job"
                 []
             ]
 

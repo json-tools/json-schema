@@ -8,6 +8,7 @@ import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (null)
 import JsonSchema as JS exposing (Schema)
 import String
+import Regex
 
 schema : String -> Schema
 schema str =
@@ -86,8 +87,27 @@ performRequest clientSettings body req =
                 -- TODO: this is bad, try to be a professional
                 _ ->
                     HttpBuilder.put
+
+        pathname =
+            case String.toUpper req.method of
+                "GET" ->
+                    interpolate req.pathname body
+
+                "DELETE" ->
+                    interpolate req.pathname body
+
+                _ ->
+                    req.pathname
+
+        interpolate str val =
+            Regex.replace Regex.All (Regex.regex ":\\w+") (\{ match } ->
+                (Maybe.withDefault null val)
+                    |> Decode.decodeValue ( Decode.at [ String.dropLeft 1 match ] Decode.string )
+                    |> Result.withDefault ""
+                ) str
+
     in
-        req.pathname
+        pathname
             |> (++) serviceUrl
             |> method
             |> HttpBuilder.withHeaders (buildHeaders req clientSettings)

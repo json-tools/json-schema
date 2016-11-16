@@ -18,11 +18,9 @@ const conf =
             , request: null
             , response:
                 { type: 'object'
+                , id: '#create-otp-response'
                 , properties: { id: { type: 'string', format: 'uuid' }}
                 }
-            , effects:
-                [ [ 'pipe', { from: 'id', to: [ 'vault/create-pan', 'otp' ] } ]
-                ]
             }]
         , [ 'vault/create-pan',
             { method: 'POST'
@@ -31,6 +29,7 @@ const conf =
             , auth: false
             , request:
                 { type: 'object'
+                , id: '#create-pan-request'
                 , properties:
                     { otp: { type: 'string', format: 'uuid' }
                     , pan: { type: 'string' }
@@ -39,15 +38,12 @@ const conf =
                 }
             , response:
                 { type: 'object'
+                , id: '#create-pan-response'
                 , properties:
                     { id: { type: 'string', format: 'uuid' }
                     , key: { type: 'string' }
                     }
                 }
-            , effects:
-                [ [ 'pipe', { from: 'id', to: [ 'vault/create-fake-pan', 'panId' ] } ]
-                , [ 'pipe', { from: 'key', to: [ 'service/create-job', 'payment/card/decryptionKey' ] } ]
-                ]
             }]
         , [ 'vault/create-fake-pan',
             { method: 'POST'
@@ -56,15 +52,14 @@ const conf =
             , auth: true
             , request:
                 { type: 'object'
+                , id: '#create-fake-pan-request'
                 , properties: { panId: { type: 'string', format: 'uuid' }}
                 }
             , response:
                 { type: 'object'
+                , id: '#create-fake-pan-response'
                 , properties: { pan: { type: 'string' }}
                 }
-            , effects:
-                [ [ 'pipe', { from: 'pan', to: [ 'service/create-job', 'payment/card/token' ] } ]
-                ]
             }]
         , [ 'service/list-services',
             { method: 'GET'
@@ -74,6 +69,7 @@ const conf =
             , request: null
             , response:
                 { type: 'object'
+                , id: '#list-services-response'
                 , properties:
                     { data:
                         { type: 'array'
@@ -94,15 +90,41 @@ const conf =
             , service: 'service'
             , auth: true
             , request:
-                { properties:
-                    { id: { type: 'string', format: 'uuid' }
+                { type: 'object'
+                , id: '#create-job-request'
+                , properties:
+                    { serviceId: { type: 'string', format: 'uuid' }
                     , input: { type: 'object' }
                     }
                 }
             , response:
                 { type: 'object'
+                , id: '#show-job-response'
                 }
             }]
+        , [ 'service/show-job',
+            { method: 'GET'
+            , pathname: '/jobs/:id'
+            , service: 'service'
+            , auth: true
+            , request:
+                { type: 'object'
+                , id: '#show-job-request'
+                , properties:
+                    { id: { type: 'string', format: 'uuid' }
+                    }
+                }
+            , response:
+                { type: 'object'
+                , id: '#show-job-response'
+                }
+            }]
+        ]
+    , dependencies:
+        [ [ '#create-otp-response/id', '#create-pan-request/otp' ]
+        , [ '#create-pan-response/id', '#create-fake-pan-request/panId' ]
+        , [ '#create-pan-response/key', '#payment-card/decryptionKey' ]
+        , [ '#create-fake-pan-response/pan', '#payment-card/cardToken' ]
         ]
     };
 
