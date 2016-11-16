@@ -10,15 +10,12 @@ import Json.Decode as Decode exposing (value, Value, (:=))
 import Task
 import Dict
 import String
-import Services.Otp as OtpSvc
-import Services.Pan as PanSvc
-import Services.ServiceDescriptor as ServiceDescriptorSvc
-import Services.Job as JobSvc
 import Layout exposing (boxStyle)
-import Types exposing (ClientSettings, RequestConfig, Config)
+import Types exposing (ClientSettings, RequestConfig, Config, ApiEndpointDefinition)
 import Markdown
 import JsonSchema as JS exposing (Schema)
 import Util exposing (performRequest, buildHeaders)
+
 
 type alias Model =
     { responses : Dict.Dict String (Response Value)
@@ -26,9 +23,12 @@ type alias Model =
     , schemas : Dict.Dict String Schema
     , error : String
     , services : List Service
-    , def : Config
+    , endpoints : Endpoints
     }
 
+
+type alias Endpoints =
+    Dict.Dict String ApiEndpointDefinition
 
 schema : String -> Schema
 schema str =
@@ -43,6 +43,7 @@ schema str =
         Ok s ->
             s
 
+
 init : Config -> Model
 init conf =
     Model
@@ -50,18 +51,21 @@ init conf =
         Dict.empty
         -- inputs
         Dict.empty
-        (Dict.empty
-            |> Dict.insert "pan" PanSvc.createSchema
-            |> Dict.insert "fake-pan" PanSvc.createFakeSchema
-            |> Dict.insert "job" JobSvc.createSchema
-        )
+        -- schemas
+        (extractInputSchemas conf.endpoints)
         -- error
         ""
         -- services
         []
-        -- def
-        conf
+        -- endpoints
+        (Dict.fromList conf.endpoints)
 
+extractInputSchemas : List (String, ApiEndpointDefinition) -> Dict.Dict String Schema
+extractInputSchemas endpoints =
+    endpoints
+        |> List.map (\(name, x) -> (name, JS.fromValue x.request |> Result.withDefault JS.empty))
+        |> Dict.fromList
+        
 
 type PostAction
     = NoOp
@@ -79,31 +83,18 @@ type Msg
     | SelectService String
 
 
-req : String -> Dict.Dict String Value -> ClientSettings -> Maybe RequestConfig
-req reqType inputs clientSettings =
+req : String -> Endpoints -> Dict.Dict String Value -> Result String ApiEndpointDefinition
+req reqType endpoints inputs =
     let
         data =
-            inputs
-                |> Dict.get reqType
+            Dict.get reqType inputs
     in
-        case reqType of
-            "otp" ->
-                Just <| OtpSvc.create data clientSettings
+        case Dict.get reqType endpoints of
+            Just endpoint ->
+                Ok endpoint
 
-            "pan" ->
-                Just <| PanSvc.create data clientSettings
-
-            "fake-pan" ->
-                Just <| PanSvc.createFake data clientSettings
-
-            "services" ->
-                Just <| ServiceDescriptorSvc.list data clientSettings
-
-            "job" ->
-                Just <| JobSvc.create data clientSettings
-
-            _ ->
-                Nothing
+            Nothing ->
+                Err <| "Endpoint " ++ reqType ++ " not found"
 
 
 getSchema : String -> Model -> Schema
@@ -151,14 +142,14 @@ update msg model clientSettings =
                             Encode.string ""
 
                 target =
-                    Dict.get "job" model.schemas
+                    Dict.get "service/create-job" model.schemas
                         |> Maybe.withDefault JS.empty
 
                 applyServiceSchema name =
                     case findService name of
                         Just serv ->
                             model.schemas
-                                |> Dict.insert "job" (JS.registerProperty "input" (JS.fromValue serv.schema |> Result.withDefault JS.empty) target)
+                                |> Dict.insert "service/create-job" (JS.registerProperty "input" (JS.fromValue serv.schema |> Result.withDefault JS.empty) target)
 
                         Nothing ->
                             model.schemas
@@ -180,7 +171,7 @@ update msg model clientSettings =
                             )
                             Nothing
             in
-                { model | schemas = applyServiceSchema name, inputs = set "job" [ "serviceId" ] id } ! []
+                { model | schemas = applyServiceSchema name, inputs = set "service/create-job" [ "serviceId" ] id } ! []
 
         ResponseError name e ->
             case e of
@@ -193,18 +184,22 @@ update msg model clientSettings =
         PerformRequest name ->
             let
                 request =
-                    req name model.inputs clientSettings
+                    req name model.endpoints model.inputs
+
+                body =
+                    model.inputs
+                        |> Dict.get name 
             in
                 case request of
-                    Nothing ->
-                        model ! []
+                    Err s ->
+                        { model | error = s } ! []
 
-                    Just r ->
-                        model
-                        ! [ r
-                                |> performRequest
-                                |> Task.perform (ResponseError name) (ResponseSuccess name)
-                          ]
+                    Ok request ->
+                        { model | error = "" }
+                            ! [ request
+                                    |> performRequest clientSettings body
+                                    |> Task.perform (ResponseError name) (ResponseSuccess name)
+                              ]
 
         ResponseSuccess name resp ->
             let
@@ -259,25 +254,25 @@ update msg model clientSettings =
                             )
             in
                 case name of
-                    "otp" ->
+                    "vault/create-otp" ->
                         { model
                             | inputs =
-                                get "otp" [ "id" ]
-                                    |> set "pan" [ "otp" ]
+                                get "vault/create-otp" [ "id" ]
+                                    |> set "vault/create-pan" [ "otp" ]
                         }
                             ! []
 
-                    "pan" ->
+                    "vault/create-pan" ->
                         { model
                             | inputs =
-                                get "pan" [ "id" ]
-                                    |> set "fake-pan" [ "panId" ]
+                                get "vault/create-pan" [ "id" ]
+                                    |> set "vault/create-fake-pan" [ "panId" ]
                         }
                             ! []
 
-                    "services" ->
+                    "service/list-services" ->
                         { model
-                            | services = getList "services" [ "data" ]
+                            | services = getList "service/list-services" [ "data" ]
                         }
                             ! []
 
@@ -304,11 +299,14 @@ render model clientSettings =
         formatRequest kind =
             let
                 request =
-                    req kind model.inputs clientSettings
+                    req kind model.endpoints model.inputs
             in
                 case request of
-                    Just r -> div [] [ renderRequest r ]
-                    Nothing -> text ""
+                    Ok r ->
+                        div [] [ renderRequest r clientSettings ]
+
+                    Err s ->
+                        text s
 
         renderHeaders h =
             List.map (\( header, value ) -> header ++ ": " ++ value) h
@@ -321,20 +319,29 @@ render model clientSettings =
                 |> List.head
                 |> Maybe.withDefault ""
 
-        renderRequest r =
+        serviceUrl s =
+            if s == "vault" then
+                clientSettings.vault
+            else
+                clientSettings.service
+
+        renderRequest r clientSettings =
             let
-                headers =
-                    buildHeaders r
-                        |> (::) ( "Host", getHostname r.baseUrl )
-                        |> renderHeaders
 
-                body =
-                    case r.body of
-                        Nothing ->
-                            ""
+               headers =
+                   buildHeaders r clientSettings
+                       |> (::) ( "Host", r.service |> serviceUrl |> getHostname )
+                       |> renderHeaders
 
-                        Just val ->
-                            encode 2 val
+                {- TODO: grab body from inputs
+                   body =
+                       case r.body of
+                           Nothing ->
+                               ""
+
+                           Just val ->
+                               encode 2 val
+                -}
             in
                 "```http\n"
                     ++ r.method
@@ -342,9 +349,11 @@ render model clientSettings =
                     ++ r.pathname
                     ++ " HTTP/1.1\n"
                     ++ headers
-                    ++ "\n\n"
-                    ++ body
-                    ++ "\n```"
+                    ++
+                        "\n\n"
+                    -- ++ body
+                    ++
+                        "\n```"
                     |> Markdown.toHtml [ markdownCodeStyle ]
 
         markdownCodeStyle =
@@ -477,15 +486,24 @@ render model clientSettings =
                             ]
                         ]
                     ]
+
+        error =
+            case model.error of
+                "" ->
+                    text ""
+
+                _ ->
+                    div [ style (boxStyle ++ [ ( "border-color", "red" ), ( "position", "fixed" ), ( "background", "white" ), ( "bottom", "10px" ), ( "right", "10px" ) ]) ] [ text model.error ]
     in
         div []
-            [ renderBlock
+            [ error
+            , renderBlock
                 "1. Request OTP to authorize saving PAN"
                 """
 To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.
                 """
                 "Create otp"
-                "otp"
+                "vault/create-otp"
                 FillPan
                 []
             , renderBlock
@@ -496,7 +514,7 @@ Next you store your user’s PAN in the vault. This endpoint is the only one not
 The result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.
                 """
                 "Use otp -> create PAN"
-                "pan"
+                "vault/create-pan"
                 FillFake
                 []
             , renderBlock
@@ -505,7 +523,7 @@ The result of this call must be stored in your database as the permanent id of t
 This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.
                 """
                 "Exchange panId -> fake PAN"
-                "fake-pan"
+                "vault/create-fake-pan"
                 NoOp
                 []
             , renderBlock
@@ -514,7 +532,7 @@ This endpoint creates a token which will then be used to start a job which requi
 The Automation cloud offers a number of automation services. Each of these services requires particular input data in JSON format. This endpoint provides list of the available services with schemas describing the format of the input data.
                  """
                 "Show me what you can do"
-                "services"
+                "service/list-services"
                 ListServices
                 [ renderServices model SelectService ]
             , renderBlock
@@ -523,7 +541,7 @@ The Automation cloud offers a number of automation services. Each of these servi
 This is the starting point of the automation process, and creates your automation job. This is a function call with an object as an argument, and it returns the object which will represent your job (including the output, errors and yields).
                  """
                 "Do your job"
-                "job"
+                "service/create-job"
                 NoOp
                 []
             ]

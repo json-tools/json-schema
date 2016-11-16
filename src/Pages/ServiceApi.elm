@@ -14,6 +14,7 @@ import Pages.Schema
 import Types exposing (ClientSettings, Id)
 import JsonSchema as JS exposing (convert)
 
+
 type alias Model =
     { jobForm : Pages.Schema.Model
     , serviceId : String
@@ -21,6 +22,7 @@ type alias Model =
     , error : String
     , services : List ServiceDescriptor
     }
+
 
 init : Model
 init =
@@ -36,6 +38,7 @@ init =
         -- services
         []
 
+
 type Msg
     = SubmitJob
     | SubmitJobError JobCreationError
@@ -46,6 +49,7 @@ type Msg
     | FetchService Id
     | FetchServiceSuccess (Response ServiceDescriptor)
     | ResponseError (Error String)
+
 
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
 update msg model clientSettings =
@@ -62,7 +66,6 @@ update msg model clientSettings =
                 ! [ Task.perform SubmitJobError SubmitJobSuccess <|
                         JobSvc.create clientSettings model.serviceId model.jobForm.data
                   ]
-
 
         SubmitJobSuccess { data } ->
             { model | job = Just data } ! []
@@ -89,8 +92,8 @@ update msg model clientSettings =
             { model | services = data } ! []
 
         FetchService id ->
-            { model | serviceId = id } !
-                [ fetchService id clientSettings ]
+            { model | serviceId = id }
+                ! [ fetchService id clientSettings ]
 
         FetchServiceSuccess { data } ->
             case JS.convert data.schema of
@@ -103,6 +106,7 @@ update msg model clientSettings =
 
                 Err err ->
                     { model | error = err } ! []
+
 
 render : Model -> Html.Html Msg
 render model =
@@ -133,6 +137,7 @@ render model =
             [ services
             , jobForm
             ]
+
 
 fetchServices : ClientSettings -> Cmd Msg
 fetchServices cfg =
@@ -176,6 +181,7 @@ renderServices services id =
     in
         div [] <| List.map renderService services
 
+
 entityRowStyle : List ( String, String )
 entityRowStyle =
     [ ( "padding", "5px" )
@@ -184,5 +190,3 @@ entityRowStyle =
     , ( "cursor", "pointer" )
     , ( "font-family", "menlo, monospace" )
     ]
-
-

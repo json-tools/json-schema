@@ -1,6 +1,7 @@
 module Models exposing (..)
 
-import Types exposing (Id, Schema, Value)
+import Types exposing (Id, Schema)
+import Json.Decode exposing (Value)
 import Dict
 
 

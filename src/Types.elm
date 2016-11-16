@@ -25,10 +25,8 @@ type alias ApiEndpointDefinition =
 
 type alias RequestConfig =
     { method : String
-    , baseUrl : String
     , pathname : String
-    , auth : Maybe String
-    , body : Maybe Value
+    , auth : Bool
     }
 
 type alias PersistedData =

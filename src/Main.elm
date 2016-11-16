@@ -13,7 +13,7 @@ import Pages.Vault
 import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
 
 
-main : Program (PersistedData, Config)
+main : Program ( PersistedData, Config )
 main =
     programWithFlags (Navigation.makeParser hashParser)
         { init = init
@@ -38,6 +38,7 @@ toHash page =
 
         SecureVault ->
             "#secure-vault"
+
 
 
 -- Blog id ->
@@ -105,8 +106,8 @@ type alias Model =
     }
 
 
-init : (PersistedData, Config) -> Result String Page -> ( Model, Cmd Msg )
-init (persistedData, conf) result =
+init : ( PersistedData, Config ) -> Result String Page -> ( Model, Cmd Msg )
+init ( persistedData, conf ) result =
     let
         defaultSettings =
             ClientSettings
@@ -136,9 +137,6 @@ init (persistedData, conf) result =
 
 
 -- ! [ fetchServices cfg ]
-
-
-
 -- UPDATE
 
 
@@ -154,8 +152,8 @@ update msg model =
                 settings =
                     Pages.Settings.update msg model.clientSettings
             in
-                { model | clientSettings = settings } !
-                    [ storeConfig (PersistedData <| Just settings) ]
+                { model | clientSettings = settings }
+                    ! [ storeConfig (PersistedData <| Just settings) ]
 
         PagesVaultMsg msg ->
             let
@@ -163,8 +161,6 @@ update msg model =
                     Pages.Vault.update msg model.vault model.clientSettings
             in
                 ( { model | vault = vault }, Cmd.map PagesVaultMsg cmd )
-
-
 
 
 
@@ -200,9 +196,9 @@ view model =
             [ viewLink model.page Home "Home"
             , viewLink model.page Settings "Settings"
             , viewLink model.page SecureVault "Integration Example"
-            -- , viewLink model.page ServiceApi "Service API"
+              -- , viewLink model.page ServiceApi "Service API"
             ]
-        , hr [ style [ ( "border", "0" ), ("border-bottom", "1px solid #ddd" ) ] ] []
+        , hr [ style [ ( "border", "0" ), ( "border-bottom", "1px solid #ddd" ) ] ] []
         , div [ centerStyle "column" "stretch" ]
             (case model.page of
                 Home ->
@@ -231,11 +227,9 @@ viewLink currentPage page description =
             [ text description ]
 
         block =
-        if currentPage == page then
-            span [ linkStyle ]
-        else
-            a [ linkStyle, href (toHash page) ]
+            if currentPage == page then
+                span [ linkStyle ]
+            else
+                a [ linkStyle, href (toHash page) ]
     in
         block txt
-
-

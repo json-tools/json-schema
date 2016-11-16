@@ -51,7 +51,7 @@ const conf =
             }]
         , [ 'vault/create-fake-pan',
             { method: 'POST'
-            , pathname: '/pan'
+            , pathname: '/pan/fake'
             , service: 'vault'
             , auth: true
             , request:

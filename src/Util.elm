@@ -3,7 +3,7 @@ module Util exposing (fetch, buildAuthHeader, performRequest, schema, buildHeade
 import HttpBuilder exposing (Error, Response, jsonReader, RequestBuilder)
 import Task exposing (Task)
 import Base64
-import Types exposing (ClientSettings, RequestConfig)
+import Types exposing (ClientSettings, RequestConfig, ApiEndpointDefinition)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (null)
 import JsonSchema as JS exposing (Schema)
@@ -34,8 +34,8 @@ fetch url decoder clientSettings =
             |> HttpBuilder.withHeader "Authorization" auth
             |> HttpBuilder.send successReader HttpBuilder.stringReader
 
-buildHeaders : RequestConfig -> List (String, String)
-buildHeaders req =
+buildHeaders : ApiEndpointDefinition -> ClientSettings -> List (String, String)
+buildHeaders req clientSettings =
     let
         contentTypeHeader h =
             case String.toUpper req.method of
@@ -49,26 +49,31 @@ buildHeaders req =
                     ( "Content-Type", "application/json" ) :: h
 
         authHeader h =
-            case req.auth of
-                Nothing ->
-                    h
-
-                Just auth ->
-                    ( "Authorization", buildAuthHeader auth ) :: h
+            if req.auth then
+                ( "Authorization", buildAuthHeader clientSettings.secretKey) :: h
+            else
+                h
 
     in
         [ ( "Accept", "application/json" ) ]
             |> authHeader
             |> contentTypeHeader
 
-performRequest : RequestConfig -> Task (Error Value) (Response Value)
-performRequest req =
+performRequest : ClientSettings -> Maybe Value -> ApiEndpointDefinition -> Task (Error Value) (Response Value)
+performRequest clientSettings body req =
     let
         json =
             jsonReader Decode.value
 
+        serviceUrl =
+            if req.service == "vault" then
+                clientSettings.vault
+            else
+                clientSettings.service
+
+
         method =
-            case req.method of
+            case String.toUpper req.method of
                 "POST" ->
                     HttpBuilder.post
 
@@ -78,12 +83,15 @@ performRequest req =
                 "DELETE" ->
                     HttpBuilder.delete
 
+                -- TODO: this is bad, try to be a professional
                 _ ->
                     HttpBuilder.put
     in
-        method (req.baseUrl ++ req.pathname)
-            |> HttpBuilder.withHeaders (buildHeaders req)
-            |> HttpBuilder.withJsonBody (Maybe.withDefault null req.body)
+        req.pathname
+            |> (++) serviceUrl
+            |> method
+            |> HttpBuilder.withHeaders (buildHeaders req clientSettings)
+            |> HttpBuilder.withJsonBody (Maybe.withDefault null body)
             |> HttpBuilder.send json json
 
 

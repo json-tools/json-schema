@@ -2,7 +2,7 @@ module Fragments.Form exposing (render, Context)
 
 import Types exposing (..)
 import Models exposing (ValidationErrors)
-import Json.Encode as Encode
+import Json.Encode as Encode exposing (Value)
 import Html exposing (div, span, text, input)
 import Html.Events exposing (onClick, onInput)
 import Html.Attributes as Attrs exposing (style)
