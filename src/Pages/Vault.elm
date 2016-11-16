@@ -15,7 +15,7 @@ import Services.Pan as PanSvc
 import Services.ServiceDescriptor as ServiceDescriptorSvc
 import Services.Job as JobSvc
 import Layout exposing (boxStyle)
-import Types exposing (ClientSettings, RequestConfig)
+import Types exposing (ClientSettings, RequestConfig, Config)
 import Markdown
 import JsonSchema as JS exposing (Schema)
 import Util exposing (performRequest, buildHeaders)
@@ -26,6 +26,7 @@ type alias Model =
     , schemas : Dict.Dict String Schema
     , error : String
     , services : List Service
+    , def : Config
     }
 
 
@@ -42,8 +43,8 @@ schema str =
         Ok s ->
             s
 
-init : Model
-init =
+init : Config -> Model
+init conf =
     Model
         -- responses
         Dict.empty
@@ -58,14 +59,8 @@ init =
         ""
         -- services
         []
-
-
-type RequestType
-    = CreateOtp
-    | CreatePan
-    | CreateFakePan
-    | FetchServices
-    | CreateJob
+        -- def
+        conf
 
 
 type PostAction
@@ -78,53 +73,37 @@ type PostAction
 type Msg
     = ResponseError String (Error Value)
     | ResponseSuccess String (Response Value)
-    | PerformRequest RequestType
-    | UpdateData RequestType Value
+    | PerformRequest String
+    | UpdateData String Value
     | PerformPostAction String
     | SelectService String
 
 
-req : RequestType -> Dict.Dict String Value -> ClientSettings -> RequestConfig
-req reqType inputs =
+req : String -> Dict.Dict String Value -> ClientSettings -> Maybe RequestConfig
+req reqType inputs clientSettings =
     let
         data =
             inputs
-                |> Dict.get (requestName reqType)
+                |> Dict.get reqType
     in
         case reqType of
-            CreateOtp ->
-                OtpSvc.create data
+            "otp" ->
+                Just <| OtpSvc.create data clientSettings
 
-            CreatePan ->
-                PanSvc.create data
+            "pan" ->
+                Just <| PanSvc.create data clientSettings
 
-            CreateFakePan ->
-                PanSvc.createFake data
+            "fake-pan" ->
+                Just <| PanSvc.createFake data clientSettings
 
-            FetchServices ->
-                ServiceDescriptorSvc.list data
+            "services" ->
+                Just <| ServiceDescriptorSvc.list data clientSettings
 
-            CreateJob ->
-                JobSvc.create data
+            "job" ->
+                Just <| JobSvc.create data clientSettings
 
-
-requestName : RequestType -> String
-requestName t =
-    case t of
-        CreateOtp ->
-            "otp"
-
-        CreatePan ->
-            "pan"
-
-        CreateFakePan ->
-            "fake-pan"
-
-        FetchServices ->
-            "services"
-
-        CreateJob ->
-            "job"
+            _ ->
+                Nothing
 
 
 getSchema : String -> Model -> Schema
@@ -211,21 +190,21 @@ update msg model clientSettings =
                 _ ->
                     { model | error = toString e } ! []
 
-        PerformRequest t ->
+        PerformRequest name ->
             let
-                name =
-                    requestName t
-
-                updatedModel =
-                    model
-
-                -- { model | responses = model.responses |> Dict.remove name }
+                request =
+                    req name model.inputs clientSettings
             in
-                updatedModel
-                    ! [ req t model.inputs clientSettings
-                            |> performRequest
-                            |> Task.perform (ResponseError name) (ResponseSuccess name)
-                      ]
+                case request of
+                    Nothing ->
+                        model ! []
+
+                    Just r ->
+                        model
+                        ! [ r
+                                |> performRequest
+                                |> Task.perform (ResponseError name) (ResponseSuccess name)
+                          ]
 
         ResponseSuccess name resp ->
             let
@@ -306,7 +285,7 @@ update msg model clientSettings =
                         model ! []
 
         UpdateData reqType v ->
-            { model | inputs = Dict.insert (requestName reqType) v model.inputs } ! []
+            { model | inputs = Dict.insert reqType v model.inputs } ! []
 
 
 codeStyle : Html.Attribute msg
@@ -327,9 +306,9 @@ render model clientSettings =
                 request =
                     req kind model.inputs clientSettings
             in
-                div []
-                    [ renderRequest request
-                    ]
+                case request of
+                    Just r -> div [] [ renderRequest r ]
+                    Nothing -> text ""
 
         renderHeaders h =
             List.map (\( header, value ) -> header ++ ": " ++ value) h
@@ -388,7 +367,7 @@ render model clientSettings =
                 |> Markdown.toHtml [ markdownCodeStyle ]
 
         formatResponse requestType =
-            case Dict.get (requestName requestType) model.responses of
+            case Dict.get requestType model.responses of
                 Nothing ->
                     div []
                         [ div
@@ -443,7 +422,7 @@ render model clientSettings =
         renderBlock label guide buttonText requestBuilder postAction childNodes =
             let
                 name =
-                    requestName requestBuilder
+                    requestBuilder
 
                 schema =
                     getSchema name model
@@ -506,7 +485,7 @@ render model clientSettings =
 To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.
                 """
                 "Create otp"
-                CreateOtp
+                "otp"
                 FillPan
                 []
             , renderBlock
@@ -517,7 +496,7 @@ Next you store your user’s PAN in the vault. This endpoint is the only one not
 The result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.
                 """
                 "Use otp -> create PAN"
-                CreatePan
+                "pan"
                 FillFake
                 []
             , renderBlock
@@ -526,7 +505,7 @@ The result of this call must be stored in your database as the permanent id of t
 This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.
                 """
                 "Exchange panId -> fake PAN"
-                CreateFakePan
+                "fake-pan"
                 NoOp
                 []
             , renderBlock
@@ -535,7 +514,7 @@ This endpoint creates a token which will then be used to start a job which requi
 The Automation cloud offers a number of automation services. Each of these services requires particular input data in JSON format. This endpoint provides list of the available services with schemas describing the format of the input data.
                  """
                 "Show me what you can do"
-                FetchServices
+                "services"
                 ListServices
                 [ renderServices model SelectService ]
             , renderBlock
@@ -544,7 +523,7 @@ The Automation cloud offers a number of automation services. Each of these servi
 This is the starting point of the automation process, and creates your automation job. This is a function call with an object as an argument, and it returns the object which will represent your job (including the output, errors and yields).
                  """
                 "Do your job"
-                CreateJob
+                "job"
                 NoOp
                 []
             ]

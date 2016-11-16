@@ -13,7 +13,7 @@ import Pages.Vault
 import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
 
 
-main : Program (PersistedData)
+main : Program (PersistedData, Config)
 main =
     programWithFlags (Navigation.makeParser hashParser)
         { init = init
@@ -105,8 +105,8 @@ type alias Model =
     }
 
 
-init : PersistedData -> Result String Page -> ( Model, Cmd Msg )
-init persistedData result =
+init : (PersistedData, Config) -> Result String Page -> ( Model, Cmd Msg )
+init (persistedData, conf) result =
     let
         defaultSettings =
             ClientSettings
@@ -130,7 +130,7 @@ init persistedData result =
                 -- clientSettings
                 cfg
                 -- vault
-                Pages.Vault.init
+                (Pages.Vault.init conf)
             )
 
 
