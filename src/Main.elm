@@ -72,8 +72,8 @@ init ( persistedData, conf ) location =
     let
         defaultSettings =
             ClientSettings
-                "http://localhost:3000"
-                "https://localhost:5000"
+                "https://api.staging.automationcloud.net"
+                "https://vault.staging.automationcloud.net"
                 ""
                 False
 
@@ -209,9 +209,6 @@ view model =
 viewLink : String -> String -> String -> Html.Html Msg
 viewLink currentPage page description =
     let
-        aa =
-            Debug.log currentPage page
-
         linkStyle =
             style [ ( "padding", "0 20px" ) ]
 

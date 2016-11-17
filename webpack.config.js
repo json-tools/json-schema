@@ -14,7 +14,7 @@ var commonConfig = {
 
   output: {
     path:       path.resolve( __dirname, 'dist/' ),
-    filename: '[hash].js',
+    filename: 'index.js',
   },
 
   resolve: {
@@ -85,7 +85,7 @@ if ( TARGET_ENV === 'production' ) {
         {
           test:    /\.elm$/,
           exclude: [/elm-stuff/, /node_modules/],
-          loader:  'elm-webpack'
+          loader:  'elm-webpack?debug=true'
         }
       ]
     },
@@ -93,12 +93,9 @@ if ( TARGET_ENV === 'production' ) {
     plugins: [
       new CopyWebpackPlugin([
         {
-          from: 'src/static/img/',
-          to:   'static/img/'
-        },
-        {
-          from: 'src/favicon.ico'
-        },
+          from: 'src/assets',
+          // to:   'static/img/'
+        }
       ]),
 
       new webpack.optimize.OccurenceOrderPlugin(),

@@ -21,9 +21,11 @@ type alias Model =
     { responses : Dict.Dict String (Response String)
     , inputs : Dict.Dict String Value
     , schemas : Dict.Dict String Schema
+    , outputSchemas : Dict.Dict String Schema
     , error : String
     , services : List Service
     , endpoints : Endpoints
+    , dependencies : Dependencies
     }
 
 
@@ -40,12 +42,16 @@ init conf =
         Dict.empty
         -- schemas
         (extractInputSchemas conf.endpoints)
+        -- outputSchemas
+        (extractOutputSchemas conf.endpoints)
         -- error
         ""
         -- services
         []
         -- endpoints
         (Dict.fromList conf.endpoints)
+        -- dependencies
+        (extractDependencies conf.dependencies)
 
 
 extractInputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
@@ -54,6 +60,32 @@ extractInputSchemas endpoints =
         |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty ))
         |> Dict.fromList
 
+extractOutputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
+extractOutputSchemas endpoints =
+    endpoints
+        |> List.map (\( name, x ) -> ( name, JS.fromValue x.response |> Result.withDefault JS.empty ))
+        |> Dict.fromList
+
+extractDependencies : List (String, String) -> Dependencies
+extractDependencies source =
+    let
+        parseAddress str =
+            case String.split "/" str of
+                head :: tail ->
+                    (head, tail)
+                _ ->
+                    ("", [])
+    in
+        List.map
+            (\(a, b) -> (parseAddress a, parseAddress b))
+            source
+
+
+type alias JsonAddress =
+    (String, List String)
+
+type alias Dependencies =
+    List (JsonAddress, JsonAddress)
 
 type Msg
     = HttpResponse String (Response String)
@@ -77,6 +109,12 @@ getSchema t { schemas } =
         |> Dict.get t
         |> Maybe.withDefault JS.empty
 
+
+getOutputSchema : String -> Model -> Schema
+getOutputSchema t { outputSchemas } =
+    outputSchemas
+        |> Dict.get t
+        |> Maybe.withDefault JS.empty
 
 
 type alias Service =
@@ -110,8 +148,7 @@ update msg model clientSettings =
                             Encode.string ""
 
                 target =
-                    Dict.get "service/create-job" model.schemas
-                        |> Maybe.withDefault JS.empty
+                    getSchema "service/create-job" model
 
                 applyServiceSchema name =
                     case findService name of
@@ -148,14 +185,13 @@ update msg model clientSettings =
             in
                 update (PerformPostAction name) updatedModel clientSettings
 
-
         HttpError name err ->
-           case err of
-               Http.BadStatus resp ->
-                   { model | responses = model.responses |> Dict.insert name resp } ! []
+            case err of
+                Http.BadStatus resp ->
+                    { model | responses = model.responses |> Dict.insert name resp } ! []
 
-               _ ->
-                   { model | error = toString e } ! []
+                _ ->
+                    { model | error = toString err } ! []
 
         PerformRequest name ->
             let
@@ -174,13 +210,14 @@ update msg model clientSettings =
                         { model | error = "" }
                             ! [ request
                                     |> performRequest clientSettings body
-                                    |> Http.send (\res ->
-                                       case res of
-                                           Ok r ->
-                                               HttpResponse name r
+                                    |> Http.send
+                                        (\res ->
+                                            case res of
+                                                Ok r ->
+                                                    HttpResponse name r
 
-                                           Err err ->
-                                               HttpError name err
+                                                Err err ->
+                                                    HttpError name err
                                         )
                               ]
 
@@ -192,7 +229,7 @@ update msg model clientSettings =
                         (field "name" Decode.string)
                         (field "schema" Decode.value)
 
-                get sourceName sourcePath =
+                get sourceName path =
                     model.responses
                         |> Dict.get sourceName
                         |> (\s ->
@@ -201,7 +238,7 @@ update msg model clientSettings =
                                         Encode.string ""
 
                                     Just resp ->
-                                        Decode.decodeString (Decode.at sourcePath Decode.value) resp.body
+                                        Decode.decodeString (Decode.at path Decode.value) resp.body
                                             |> Result.withDefault (Encode.string "")
                            )
 
@@ -314,7 +351,7 @@ render model clientSettings =
             let
                 headers =
                     buildHeaders r clientSettings
-                        |> (::) ("Host", r.service |> serviceUrl |> getHostname)
+                        |> (::) ( "Host", r.service |> serviceUrl |> getHostname )
                         |> renderHeaders
 
                 body =
@@ -493,7 +530,18 @@ render model clientSettings =
                     text ""
 
                 _ ->
-                    div [ style (boxStyle ++ [ ( "border-color", "red" ), ( "position", "fixed" ), ( "background", "white" ), ( "bottom", "10px" ), ( "right", "10px" ) ]) ] [ text model.error ]
+                    div
+                        [ style
+                            (boxStyle
+                                ++ [ ( "border-color", "red" )
+                                   , ( "position", "fixed" )
+                                   , ( "background", "white" )
+                                   , ( "top", "10px" )
+                                   , ( "right", "10px" )
+                                   ]
+                            )
+                        ]
+                        [ text model.error ]
     in
         div []
             [ error

@@ -14,6 +14,7 @@ type alias ClientSettings =
 
 type alias Config =
     { endpoints : List ( String, ApiEndpointDefinition )
+    , dependencies : List ( String, String )
     }
 
 

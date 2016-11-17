@@ -96,6 +96,7 @@ render clientSettings =
     in
         div []
             [ div [ style boxStyle ]
+            {-
                 [ Html.label []
                     [ input
                         [ Attrs.type_ "checkbox"
@@ -107,6 +108,7 @@ render clientSettings =
                     ]
                 ]
             , div [ style boxStyle ]
+            -}
                 [ service clientSettings.guide
                 , input
                     [ Attrs.value clientSettings.service
