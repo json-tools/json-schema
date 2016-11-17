@@ -26,13 +26,15 @@ type alias Pan =
     , key : String
     }
 
+
 type alias FakePan =
     String
+
 
 type alias ServiceDescriptor =
     { id : Id
     , name : String
-    , type' : String
+    , type_ : String
     , schema : Schema
     }
 

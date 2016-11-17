@@ -158,7 +158,7 @@ renderArray context property required path =
         div []
             [ div [] <|
                 List.map renderItem <|
-                    List.map toString [0..(length - 1)]
+                    List.map toString (List.range 0 (length - 1))
             , span
                 [ onClick (context.onInput <| updateValue context (path ++ [ toString length ]) (JS.defaultFor property))
                 , style buttonStyle
@@ -221,21 +221,23 @@ renderInput context property required path =
                     ""
 
         update s =
-            context.onInput <| updateValue context path
-                (case property.type_ of
-                    "integer" ->
-                        Encode.int (Result.withDefault 0 (String.toInt s))
+            context.onInput <|
+                updateValue context
+                    path
+                    (case property.type_ of
+                        "integer" ->
+                            Encode.int (Result.withDefault 0 (String.toInt s))
 
-                    _ ->
-                        Encode.string s
-                )
+                        _ ->
+                            Encode.string s
+                    )
     in
         input
             [ Attrs.required required
               -- , Attrs.name name
             , Attrs.title title
             , Attrs.pattern pattern
-            , Attrs.type' inputType
+            , Attrs.type_ inputType
             , onInput update
             , style
                 [ ( "font-family", "iosevka, menlo, monospace" )
@@ -250,5 +252,3 @@ renderInput context property required path =
                     JS.getString context.schema path context.data
             ]
             []
-
-

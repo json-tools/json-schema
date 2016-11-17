@@ -1,14 +1,13 @@
 module Pages.Vault exposing (init, render, update, Msg, Model)
 
 import Fragments.Form as FragForm
-import HttpBuilder exposing (Error, Response)
+import Http exposing (Error, Response)
 import Html exposing (text, div, button)
 import Html.Events exposing (onClick, onSubmit)
 import Html.Attributes as Attrs exposing (style)
 import Json.Encode as Encode exposing (encode, null)
-import Json.Decode as Decode exposing (value, Value, (:=))
+import Json.Decode as Decode exposing (value, Value, field)
 import Regex
-import Task
 import Dict
 import String
 import Layout exposing (boxStyle)
@@ -19,7 +18,7 @@ import Util exposing (performRequest, buildHeaders)
 
 
 type alias Model =
-    { responses : Dict.Dict String (Response Value)
+    { responses : Dict.Dict String (Response String)
     , inputs : Dict.Dict String Value
     , schemas : Dict.Dict String Schema
     , error : String
@@ -30,20 +29,6 @@ type alias Model =
 
 type alias Endpoints =
     Dict.Dict String ApiEndpointDefinition
-
-
-schema : String -> Schema
-schema str =
-    case JS.fromString str of
-        Err e ->
-            let
-                a =
-                    Debug.log ("Can not parse schema" ++ str) e
-            in
-                JS.empty
-
-        Ok s ->
-            s
 
 
 init : Config -> Model
@@ -71,26 +56,19 @@ extractInputSchemas endpoints =
 
 
 type Msg
-    = ResponseError String (Error Value)
-    | ResponseSuccess String (Response Value)
+    = HttpResponse String (Response String)
+    | HttpError String Error
     | PerformRequest String
     | UpdateData String Value
     | PerformPostAction String
     | SelectService String
 
 
-req : String -> Endpoints -> Dict.Dict String Value -> Result String ApiEndpointDefinition
-req reqType endpoints inputs =
-    let
-        data =
-            Dict.get reqType inputs
-    in
-        case Dict.get reqType endpoints of
-            Just endpoint ->
-                Ok endpoint
-
-            Nothing ->
-                Err <| "Endpoint " ++ reqType ++ " not found"
+findEndpoint : String -> Endpoints -> Result String ApiEndpointDefinition
+findEndpoint label endpoints =
+    endpoints
+        |> Dict.get label
+        |> Result.fromMaybe ("Endpoint " ++ label ++ " not found")
 
 
 getSchema : String -> Model -> Schema
@@ -99,12 +77,6 @@ getSchema t { schemas } =
         |> Dict.get t
         |> Maybe.withDefault JS.empty
 
-
-send : HttpBuilder.RequestBuilder -> Task.Task (Error Value) (Response Value)
-send =
-    HttpBuilder.send
-        (HttpBuilder.jsonReader value)
-        (HttpBuilder.jsonReader value)
 
 
 type alias Service =
@@ -169,18 +141,26 @@ update msg model clientSettings =
             in
                 { model | schemas = applyServiceSchema name, inputs = set "service/create-job" [ "serviceId" ] id } ! []
 
-        ResponseError name e ->
-            case e of
-                HttpBuilder.BadResponse resp ->
-                    { model | responses = model.responses |> Dict.insert name resp } ! []
+        HttpResponse name r ->
+            let
+                updatedModel =
+                    { model | responses = model.responses |> Dict.insert name r }
+            in
+                update (PerformPostAction name) updatedModel clientSettings
 
-                _ ->
-                    { model | error = toString e } ! []
+
+        HttpError name err ->
+           case err of
+               Http.BadStatus resp ->
+                   { model | responses = model.responses |> Dict.insert name resp } ! []
+
+               _ ->
+                   { model | error = toString e } ! []
 
         PerformRequest name ->
             let
                 request =
-                    req name model.endpoints model.inputs
+                    findEndpoint name model.endpoints
 
                 body =
                     model.inputs
@@ -194,23 +174,23 @@ update msg model clientSettings =
                         { model | error = "" }
                             ! [ request
                                     |> performRequest clientSettings body
-                                    |> Task.perform (ResponseError name) (ResponseSuccess name)
-                              ]
+                                    |> Http.send (\res ->
+                                       case res of
+                                           Ok r ->
+                                               HttpResponse name r
 
-        ResponseSuccess name resp ->
-            let
-                updatedModel =
-                    { model | responses = model.responses |> Dict.insert name resp }
-            in
-                update (PerformPostAction name) updatedModel clientSettings
+                                           Err err ->
+                                               HttpError name err
+                                        )
+                              ]
 
         PerformPostAction name ->
             let
                 decodeService =
-                    Decode.object3 Service
-                        ("id" := Decode.string)
-                        ("name" := Decode.string)
-                        ("schema" := Decode.value)
+                    Decode.map3 Service
+                        (field "id" Decode.string)
+                        (field "name" Decode.string)
+                        (field "schema" Decode.value)
 
                 get sourceName sourcePath =
                     model.responses
@@ -221,7 +201,7 @@ update msg model clientSettings =
                                         Encode.string ""
 
                                     Just resp ->
-                                        Decode.decodeValue (Decode.at sourcePath Decode.value) resp.data
+                                        Decode.decodeString (Decode.at sourcePath Decode.value) resp.body
                                             |> Result.withDefault (Encode.string "")
                            )
 
@@ -235,7 +215,8 @@ update msg model clientSettings =
                                         []
 
                                     Just resp ->
-                                        Decode.decodeValue (Decode.at sourcePath <| Decode.list decodeService) resp.data
+                                        resp.body
+                                            |> Decode.decodeString (Decode.at sourcePath <| Decode.list decodeService)
                                             |> Result.withDefault []
                            )
 
@@ -303,7 +284,7 @@ render model clientSettings =
         formatRequest name =
             let
                 request =
-                    req name model.endpoints model.inputs
+                    findEndpoint name model.endpoints
             in
                 case request of
                     Ok r ->
@@ -333,7 +314,7 @@ render model clientSettings =
             let
                 headers =
                     buildHeaders r clientSettings
-                        |> (::) ( "Host", r.service |> serviceUrl |> getHostname )
+                        |> (::) ("Host", r.service |> serviceUrl |> getHostname)
                         |> renderHeaders
 
                 body =
@@ -356,12 +337,14 @@ render model clientSettings =
                             interpolate r.pathname val
 
                 interpolate str val =
-                    Regex.replace Regex.All (Regex.regex ":\\w+") (\{ match } ->
-                        val
-                            |> Decode.decodeValue ( Decode.at [ String.dropLeft 1 match ] Decode.string )
-                            |> Result.withDefault ""
-                            ) str
-
+                    Regex.replace Regex.All
+                        (Regex.regex ":\\w+")
+                        (\{ match } ->
+                            val
+                                |> Decode.decodeValue (Decode.at [ String.dropLeft 1 match ] Decode.string)
+                                |> Result.withDefault ""
+                        )
+                        str
             in
                 "```http\n"
                     ++ r.method
@@ -371,8 +354,7 @@ render model clientSettings =
                     ++ headers
                     ++ "\n\n"
                     ++ body
-                    ++
-                        "\n```"
+                    ++ "\n```"
                     |> Markdown.toHtml [ markdownCodeStyle ]
 
         markdownCodeStyle =
@@ -390,6 +372,8 @@ render model clientSettings =
 
         renderJsonBody headers data =
             data
+                |> Decode.decodeString Decode.value
+                |> Result.withDefault (Encode.string "")
                 |> encode 2
                 |> (\s -> "```http\n" ++ (renderHeaders headers) ++ "\n\n" ++ s ++ "\n```")
                 |> Markdown.toHtml [ markdownCodeStyle ]
@@ -420,7 +404,7 @@ render model clientSettings =
                                     ++ [ ( "margin", "0 0 10px 0" )
                                        , ( "padding", "0 10px" )
                                        , ( "border-color"
-                                         , (if 200 <= resp.status && resp.status < 400 then
+                                         , (if 200 <= resp.status.code && resp.status.code < 400 then
                                                 "olivedrab"
                                             else
                                                 "crimson"
@@ -430,9 +414,9 @@ render model clientSettings =
                                 )
                             ]
                             --[ text <| resp.url ++ " -- "
-                            [ "```http\nHTTP/1.1 " ++ (toString resp.status) ++ " " ++ resp.statusText ++ "\n```" |> Markdown.toHtml [ style [ ( "padding", "0" ), ( "font-size", "12px" ) ] ]
+                            [ "```http\nHTTP/1.1 " ++ (toString resp.status.code) ++ " " ++ resp.status.message ++ "\n```" |> Markdown.toHtml [ style [ ( "padding", "0" ), ( "font-size", "12px" ) ] ]
                             ]
-                        , resp.data |> renderJsonBody (resp.headers |> Dict.toList)
+                        , resp.body |> renderJsonBody (resp.headers |> Dict.toList)
                         ]
 
         column bg fg width =
@@ -475,7 +459,7 @@ render model clientSettings =
                                     ]
                                 , div []
                                     [ button
-                                        [ Attrs.type' "submit"
+                                        [ Attrs.type_ "submit"
                                         , style
                                             [ ( "font-family", "Iosevka, monospace" )
                                             , ( "font-size", "14px" )

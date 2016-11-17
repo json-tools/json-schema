@@ -1,8 +1,8 @@
 module JsonSchema exposing (..)
 
 import Set
-import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault, lazy)
-import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, (:=))
+import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
+import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
 import Dict
 import String
@@ -21,7 +21,7 @@ type alias Schema =
 
 
 type ArrayItemDefinition
-    = ArrayItemDefinition (Schema)
+    = ArrayItemDefinition Schema
 
 
 type Properties
@@ -52,26 +52,26 @@ empty =
 fromString : String -> Result String Schema
 fromString str =
     Decode.decodeString decodeSchema str
-        `Result.andThen` convert
+        |> Result.andThen convert
 
 
 fromValue : Value -> Result String Schema
 fromValue val =
     Decode.decodeValue decodeSchema val
-        `Result.andThen` convert
+        |> Result.andThen convert
 
 
 decodeSchema : Decoder Schema
 decodeSchema =
     succeed Schema
-        |: (withDefault "" ("type" := string))
-        |: (withDefault Set.empty ("required" := DecodeExtra.set string))
-        |: (maybe ("format" := string))
-        |: (maybe ("$ref" := string))
-        |: (maybe ("enum" := (Decode.list string)))
-        |: (maybe ("items" := (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema))))
-        |: (withDefault (Properties []) ("properties" := (lazy (\_ -> decodeProperties))))
-        |: (withDefault (Properties []) ("definitions" := (lazy (\_ -> decodeProperties))))
+        |: (withDefault "" (field "type" string))
+        |: (withDefault Set.empty (field "required" <| DecodeExtra.set string))
+        |: (maybe (field "format" string))
+        |: (maybe (field "$ref" string))
+        |: (maybe (field "enum" (Decode.list string)))
+        |: (maybe (field "items" (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema))))
+        |: (withDefault (Properties []) (field "properties" (lazy (\_ -> decodeProperties))))
+        |: (withDefault (Properties []) (field "definitions" (lazy (\_ -> decodeProperties))))
 
 
 decodeProperties : Decoder Properties
@@ -120,7 +120,7 @@ convert rootSchema =
 
                 newProps =
                     List.foldl
-                        (\item res -> res `Result.andThen` tryNext item)
+                        (\item res -> res |> Result.andThen (tryNext item))
                         (Ok [])
                         props
             in
@@ -183,9 +183,9 @@ convert rootSchema =
                 Nothing ->
                     Ok node
             )
-                `Result.andThen` updateProperties
-                `Result.andThen` updateArrayItemDef
-                `Result.andThen` clarifyType
+                |> Result.andThen updateProperties
+                |> Result.andThen updateArrayItemDef
+                |> Result.andThen clarifyType
     in
         walk rootSchema
 

@@ -3,23 +3,21 @@ port module Main exposing (..)
 import Types exposing (..)
 import Html exposing (div, span, button, text, form, input, ul, li, hr, a)
 import Navigation exposing (programWithFlags)
-import Html.App
 import Html.Attributes as Attrs exposing (style, href)
-import String
+import Html.Events exposing (onClick)
 import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
 import Pages.Vault
-import UrlParser exposing (Parser, (</>), format, int, oneOf, s, string)
+import UrlParser exposing (Parser, (</>), int, oneOf, s, string)
 
 
-main : Program ( PersistedData, Config )
+main : Program ( PersistedData, Config ) Model Msg
 main =
-    programWithFlags (Navigation.makeParser hashParser)
+    programWithFlags UrlChange
         { init = init
         , view = view
         , update = update
-        , urlUpdate = urlUpdate
         , subscriptions = subscriptions
         }
 
@@ -47,67 +45,30 @@ toHash page =
 --   "#search/" ++ query
 
 
-hashParser : Navigation.Location -> Result String Page
-hashParser location =
-    UrlParser.parse identity pageParser (String.dropLeft 1 location.hash)
-
-
-pageParser : Parser (Page -> a) a
-pageParser =
+route : Parser (Page -> a) a
+route =
     oneOf
-        [ format Home (s "home")
-        , format Settings (s "settings")
-        , format SecureVault (s "secure-vault")
-          --, format Blog (s "blog" </> int)
-          --, format Search (s "search" </> string)
+        [ UrlParser.map Home (s "home")
+        , UrlParser.map Settings (s "settings")
+        , UrlParser.map SecureVault (s "secure-vault")
+          --, map Blog (s "blog" </> int)
+          --, map Search (s "search" </> string)
         ]
 
 
-{-| The URL is turned into a result. If the URL is valid, we just update our
-model to the new count. If it is not a valid URL, we modify the URL to make
-sense.
--}
-urlUpdate : Result String Page -> Model -> ( Model, Cmd Msg )
-urlUpdate result model =
-    case Debug.log "result" result of
-        Err _ ->
-            ( model, Navigation.modifyUrl (toHash model.page) )
 
-        Ok page ->
-            { model | page = page } ! []
-
-
-
-{-
-   Ok ((Search query) as page) ->
-       { model
-           | page = page
-           , query = query
-       }
-           ! if Dict.member query model.cache then
-               []
-             else
-               [ get query ]
-
-   Ok page ->
-       { model
-           | page = page
-           , query = ""
-       }
-           ! []
--}
 -- MODEL
 
 
 type alias Model =
-    { page : Page
-    , clientSettings : ClientSettings
+    { clientSettings : ClientSettings
     , vault : Pages.Vault.Model
+    , history : List Page
     }
 
 
-init : ( PersistedData, Config ) -> Result String Page -> ( Model, Cmd Msg )
-init ( persistedData, conf ) result =
+init : ( PersistedData, Config ) -> Navigation.Location -> ( Model, Cmd Msg )
+init ( persistedData, conf ) location =
     let
         defaultSettings =
             ClientSettings
@@ -124,15 +85,21 @@ init ( persistedData, conf ) result =
                 Just settings ->
                     settings
     in
-        urlUpdate result <|
-            (Model
-                -- page
-                Settings
-                -- clientSettings
-                cfg
-                -- vault
-                (Pages.Vault.init conf)
-            )
+        Model
+            -- clientSettings
+            cfg
+            -- vault
+            (Pages.Vault.init conf)
+            -- history
+            [ parsePath location ]
+            ! []
+
+
+parsePath : Navigation.Location -> Page
+parsePath location =
+    location
+        |> UrlParser.parseHash route
+        |> Maybe.withDefault Home
 
 
 
@@ -161,6 +128,16 @@ update msg model =
                     Pages.Vault.update msg model.vault model.clientSettings
             in
                 ( { model | vault = vault }, Cmd.map PagesVaultMsg cmd )
+
+        NewUrl url ->
+            ( model
+            , Navigation.newUrl url
+            )
+
+        UrlChange location ->
+            ( { model | history = parsePath location :: model.history }
+            , Cmd.none
+            )
 
 
 
@@ -191,35 +168,50 @@ centerStyle direction align =
 
 view : Model -> Html.Html Msg
 view model =
-    div []
-        [ div [ centerStyle "row" "center" ]
-            [ viewLink model.page Home "Home"
-            , viewLink model.page Settings "Settings"
-            , viewLink model.page SecureVault "Integration Example"
-              -- , viewLink model.page ServiceApi "Service API"
+    let
+        currentPage =
+            case model.history of
+                head :: _ ->
+                    toHash head
+
+                _ ->
+                    "#home"
+    in
+        div []
+            [ div [ centerStyle "row" "center" ]
+                [ viewLink currentPage "#home" "Home"
+                , viewLink currentPage "#settings" "Settings"
+                , viewLink currentPage "#secure-vault" "Integration Example"
+                  -- , viewLink model.page ServiceApi "Service API"
+                ]
+            , hr [ style [ ( "border", "0" ), ( "border-bottom", "1px solid #ddd" ) ] ] []
+            , div [ centerStyle "column" "stretch" ]
+                (case model.history of
+                    Home :: h ->
+                        [ text "Welcome to Automation Cloud Test Client" ]
+
+                    Settings :: h ->
+                        [ Html.map PagesSettingsMsg <|
+                            Pages.Settings.render model.clientSettings
+                        ]
+
+                    SecureVault :: h ->
+                        [ Html.map PagesVaultMsg <|
+                            Pages.Vault.render model.vault model.clientSettings
+                        ]
+
+                    _ ->
+                        [ text "" ]
+                )
             ]
-        , hr [ style [ ( "border", "0" ), ( "border-bottom", "1px solid #ddd" ) ] ] []
-        , div [ centerStyle "column" "stretch" ]
-            (case model.page of
-                Home ->
-                    [ text "Welcome to Automation Cloud Test Client" ]
-
-                Settings ->
-                    [ Html.App.map PagesSettingsMsg <|
-                        Pages.Settings.render model.clientSettings
-                    ]
-
-                SecureVault ->
-                    [ Html.App.map PagesVaultMsg <|
-                        Pages.Vault.render model.vault model.clientSettings
-                    ]
-            )
-        ]
 
 
-viewLink : Page -> Page -> String -> Html.Html msg
+viewLink : String -> String -> String -> Html.Html Msg
 viewLink currentPage page description =
     let
+        aa =
+            Debug.log currentPage page
+
         linkStyle =
             style [ ( "padding", "0 20px" ) ]
 
@@ -230,6 +222,13 @@ viewLink currentPage page description =
             if currentPage == page then
                 span [ linkStyle ]
             else
-                a [ linkStyle, href (toHash page) ]
+                a
+                    [ style
+                        [ ( "padding", "0 20px" )
+                        , ( "color", "royalblue" )
+                        , ( "cursor", "pointer" )
+                        ]
+                    , onClick (NewUrl page)
+                    ]
     in
         block txt

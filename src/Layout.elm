@@ -1,5 +1,6 @@
 module Layout exposing (boxStyle)
 
+
 boxStyle : List ( String, String )
 boxStyle =
     [ ( "border", "1px solid #ddd" )
@@ -11,4 +12,3 @@ boxStyle =
     , ( "background-color", "rgba(0, 0, 0, 0.02)" )
     , ( "overflow", "auto" )
     ]
-

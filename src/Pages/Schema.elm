@@ -54,6 +54,7 @@ render : Model -> Html.Html Msg
 render context =
     renderSchema context [] context.schema
 
+
 renderSchema : Model -> Path -> Schema -> Html.Html Msg
 renderSchema context path node =
     let
@@ -175,7 +176,7 @@ renderArray context property required path =
         div []
             [ div [] <|
                 List.map renderItem <|
-                    List.map toString [0..(length - 1)]
+                    List.map toString (List.range 0 (length - 1))
             , span
                 [ onClick (UpdateProperty context (path ++ [ toString length ]) (JS.defaultFor property))
                 , style buttonStyle
@@ -238,7 +239,8 @@ renderInput context property required path =
                     ""
 
         update s =
-            UpdateProperty context path
+            UpdateProperty context
+                path
                 (case property.type_ of
                     "integer" ->
                         Encode.int (Result.withDefault 0 (String.toInt s))
@@ -252,7 +254,7 @@ renderInput context property required path =
               -- , Attrs.name name
             , Attrs.title title
             , Attrs.pattern pattern
-            , Attrs.type' inputType
+            , Attrs.type_ inputType
             , onInput update
             , style
                 [ ( "font-family", "iosevka, menlo, monospace" )
@@ -267,5 +269,3 @@ renderInput context property required path =
                     JS.getString context.schema path context.data
             ]
             []
-
-

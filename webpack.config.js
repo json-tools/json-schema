@@ -1,48 +1,115 @@
-var CleanWebpackPlugin = require('clean-webpack-plugin');
-var CopyWebpackPlugin = require('copy-webpack-plugin');
+var path              = require( 'path' );
+var webpack           = require( 'webpack' );
+var merge             = require( 'webpack-merge' );
+var HtmlWebpackPlugin = require( 'html-webpack-plugin' );
+var CopyWebpackPlugin = require( 'copy-webpack-plugin' );
 
-module.exports = {
-  entry: './src/index.js',
+console.log( 'WEBPACK GO!');
+
+// detemine build env
+var TARGET_ENV = process.env.npm_lifecycle_event === 'build' ? 'production' : 'development';
+
+// common webpack config
+var commonConfig = {
 
   output: {
-    path: './dist',
-    filename: 'index.js'
+    path:       path.resolve( __dirname, 'dist/' ),
+    filename: '[hash].js',
   },
 
   resolve: {
     modulesDirectories: ['node_modules'],
-    extensions: ['', '.js', '.elm']
+    extensions:         ['', '.js', '.elm']
   },
 
   module: {
+    noParse: /\.elm$/,
     loaders: [
       {
-        test: /\.html$/,
-        exclude: /node_modules/,
-        loader: 'file?name=[name].[ext]'
-      },
-      {
-        test: /\.elm$/,
-        exclude: [/elm-stuff/, /node_modules/],
-        loader: 'elm-hot!elm-webpack'
+        test: /\.(eot|ttf|woff|woff2|svg)$/,
+        loader: 'file-loader'
       }
-    ],
-
-    noParse: /\.elm$/
+    ]
   },
 
   plugins: [
-    new CleanWebpackPlugin(['dist'], {
-      root: __dirname,
-      verbose: true, 
-      dry: false
-    }),
-    new CopyWebpackPlugin([
-      { from: 'src/assets', to: 'assets'}
-    ])
-  ],
+    new HtmlWebpackPlugin({
+      template: 'src/index.html',
+      inject:   'body',
+      filename: 'index.html'
+    })
+  ]
 
-  devServer: {
-    stats: 'errors-only'
-  }
-};
+
+}
+
+// additional webpack settings for local env (when invoked by 'npm start')
+if ( TARGET_ENV === 'development' ) {
+  console.log( 'Serving locally...');
+
+  module.exports = merge( commonConfig, {
+
+    entry: [
+      'webpack-dev-server/client?http://localhost:8080',
+      path.join( __dirname, 'src/index.js' )
+    ],
+
+    devServer: {
+      inline:   true,
+      progress: true
+    },
+
+    module: {
+      loaders: [
+        {
+          test:    /\.elm$/,
+          exclude: [/elm-stuff/, /node_modules/],
+          loader:  'elm-hot!elm-webpack?verbose=true&warn=true&debug=true'
+        }
+      ]
+    }
+
+  });
+}
+
+// additional webpack settings for prod env (when invoked via 'npm run build')
+if ( TARGET_ENV === 'production' ) {
+  console.log( 'Building for prod...');
+
+  module.exports = merge( commonConfig, {
+
+    entry: path.join( __dirname, 'src/index.js' ),
+
+    module: {
+      loaders: [
+        {
+          test:    /\.elm$/,
+          exclude: [/elm-stuff/, /node_modules/],
+          loader:  'elm-webpack'
+        }
+      ]
+    },
+
+    plugins: [
+      new CopyWebpackPlugin([
+        {
+          from: 'src/static/img/',
+          to:   'static/img/'
+        },
+        {
+          from: 'src/favicon.ico'
+        },
+      ]),
+
+      new webpack.optimize.OccurenceOrderPlugin(),
+
+      // minify & mangle JS/CSS
+      new webpack.optimize.UglifyJsPlugin({
+          minimize:   true,
+          compressor: { warnings: false }
+          // mangle:  true
+      })
+    ]
+
+  });
+}

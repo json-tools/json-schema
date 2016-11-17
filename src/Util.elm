@@ -1,39 +1,14 @@
-module Util exposing (fetch, buildAuthHeader, performRequest, schema, buildHeaders)
+module Util exposing (buildAuthHeader, performRequest, buildHeaders)
 
-import HttpBuilder exposing (Error, Response, jsonReader, RequestBuilder)
-import Task exposing (Task)
-import Base64
+import Http exposing (Error, Response, Request, Header, header)
+import Vendor.Base64 as Base64
 import Types exposing (ClientSettings, RequestConfig, ApiEndpointDefinition)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (null)
-import JsonSchema as JS exposing (Schema)
 import String
 import Regex
 
-schema : String -> Schema
-schema str =
-    case JS.fromString str of
-        Err e ->
-            JS.empty
-                |> Debug.log ("Can not parse schema" ++ str)
-        Ok s ->
-            s
 
-fetch : String -> Decoder a -> ClientSettings -> Task (Error String) (Response a)
-fetch url decoder clientSettings =
-    let
-        auth =
-            buildAuthHeader clientSettings.secretKey
-
-        resource =
-            clientSettings.service ++ url
-
-        successReader =
-            HttpBuilder.jsonReader decoder
-    in
-        HttpBuilder.get resource
-            |> HttpBuilder.withHeader "Authorization" auth
-            |> HttpBuilder.send successReader HttpBuilder.stringReader
 
 buildHeaders : ApiEndpointDefinition -> ClientSettings -> List (String, String)
 buildHeaders req clientSettings =
@@ -51,20 +26,18 @@ buildHeaders req clientSettings =
 
         authHeader h =
             if req.auth then
-                ( "Authorization", buildAuthHeader clientSettings.secretKey) :: h
+                ( "Authorization", buildAuthHeader clientSettings.secretKey ) :: h
             else
                 h
-
     in
         [ ( "Accept", "application/json" ) ]
             |> authHeader
             |> contentTypeHeader
 
-performRequest : ClientSettings -> Maybe Value -> ApiEndpointDefinition -> Task (Error Value) (Response Value)
+
+performRequest : ClientSettings -> Maybe Value -> ApiEndpointDefinition -> Request (Response String)
 performRequest clientSettings body req =
     let
-        json =
-            jsonReader Decode.value
 
         serviceUrl =
             if req.service == "vault" then
@@ -72,24 +45,11 @@ performRequest clientSettings body req =
             else
                 clientSettings.service
 
-
         method =
-            case String.toUpper req.method of
-                "POST" ->
-                    HttpBuilder.post
-
-                "GET" ->
-                    HttpBuilder.get
-
-                "DELETE" ->
-                    HttpBuilder.delete
-
-                -- TODO: this is bad, try to be a professional
-                _ ->
-                    HttpBuilder.put
+            String.toUpper req.method
 
         pathname =
-            case String.toUpper req.method of
+            case method of
                 "GET" ->
                     interpolate req.pathname body
 
@@ -100,19 +60,24 @@ performRequest clientSettings body req =
                     req.pathname
 
         interpolate str val =
-            Regex.replace Regex.All (Regex.regex ":\\w+") (\{ match } ->
-                (Maybe.withDefault null val)
-                    |> Decode.decodeValue ( Decode.at [ String.dropLeft 1 match ] Decode.string )
-                    |> Result.withDefault ""
-                ) str
-
+            Regex.replace Regex.All
+                (Regex.regex ":\\w+")
+                (\{ match } ->
+                    (Maybe.withDefault null val)
+                        |> Decode.decodeValue (Decode.at [ String.dropLeft 1 match ] Decode.string)
+                        |> Result.withDefault ""
+                )
+                str
     in
-        pathname
-            |> (++) serviceUrl
-            |> method
-            |> HttpBuilder.withHeaders (buildHeaders req clientSettings)
-            |> HttpBuilder.withJsonBody (Maybe.withDefault null body)
-            |> HttpBuilder.send json json
+        Http.request
+            { method = method
+            , headers = buildHeaders req clientSettings |> List.map (\(k, v) -> header k v)
+            , url = serviceUrl ++ pathname
+            , body = Http.jsonBody <| Maybe.withDefault null body
+            , expect = Http.expectStringResponse (\r -> Ok r)
+            , timeout = Nothing
+            , withCredentials = False
+            }
 
 
 buildAuthHeader : String -> String

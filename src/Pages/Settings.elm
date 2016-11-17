@@ -98,7 +98,7 @@ render clientSettings =
             [ div [ style boxStyle ]
                 [ Html.label []
                     [ input
-                        [ Attrs.type' "checkbox"
+                        [ Attrs.type_ "checkbox"
                         , Attrs.checked clientSettings.guide
                         , onClick ToggleGuide
                         ]
@@ -113,7 +113,7 @@ render clientSettings =
                     , Attrs.autocomplete True
                     , Attrs.placeholder "Service API url"
                     , Attrs.name "api-host"
-                    , Attrs.type' "url"
+                    , Attrs.type_ "url"
                     , onInput SetServiceApiUrl
                     , style inputStyle
                     ]
@@ -126,7 +126,7 @@ render clientSettings =
                     , Attrs.autocomplete True
                     , Attrs.placeholder "Vault API url"
                     , Attrs.name "vault url"
-                    , Attrs.type' "url"
+                    , Attrs.type_ "url"
                     , onInput SetVaultApiUrl
                     , style inputStyle
                     ]

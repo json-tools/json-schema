@@ -129,7 +129,7 @@ render model =
                 ]
                 [ Html.App.map PagesSchemaMsg <| Pages.Schema.render model.jobForm
                 , div [ style boxStyle ]
-                    [ button [ Attrs.type' "submit" ] [ text "Create Job" ]
+                    [ button [ Attrs.type_ "submit" ] [ text "Create Job" ]
                     ]
                 ]
     in

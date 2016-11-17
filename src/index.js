@@ -1,6 +1,5 @@
 'use strict';
 
-require('./index.html');
 const Elm = require('./Main');
 
 const storedState = localStorage.getItem('client-app-persisted-data-v3');
