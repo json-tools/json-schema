@@ -155,15 +155,14 @@ subscriptions model =
 -- VIEW
 
 
-centerStyle : String -> String -> Html.Attribute msg
+centerStyle : String -> String -> List (String, String)
 centerStyle direction align =
-    style
-        [ ( "display", "flex" )
-        , ( "flex-direction", direction )
-        , ( "align-items", align )
-        , ( "justify-content", "center" )
-        , ( "padding", "20px 0" )
-        ]
+    [ ( "display", "flex" )
+    , ( "flex-direction", direction )
+    , ( "align-items", align )
+    , ( "justify-content", "center" )
+    , ( "padding", "20px 0" )
+    ]
 
 
 view : Model -> Html.Html Msg
@@ -178,14 +177,13 @@ view model =
                     "#home"
     in
         div []
-            [ div [ centerStyle "row" "center" ]
+            [ div [ style <| [ ("background", "aliceblue"), ("border-bottom", "3px solid darkcyan") ] ++ (centerStyle "row" "center") ]
                 [ viewLink currentPage "#home" "Home"
                 , viewLink currentPage "#settings" "Settings"
                 , viewLink currentPage "#secure-vault" "Integration Example"
                   -- , viewLink model.page ServiceApi "Service API"
                 ]
-            , hr [ style [ ( "border", "0" ), ( "border-bottom", "1px solid #ddd" ) ] ] []
-            , div [ centerStyle "column" "stretch" ]
+            , div [ style <| centerStyle "column" "stretch" ]
                 (case model.history of
                     Home :: h ->
                         [ text "Welcome to Automation Cloud Test Client" ]

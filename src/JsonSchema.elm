@@ -1,4 +1,4 @@
-module JsonSchema exposing (..)
+module JsonSchema exposing (Schema, ArrayItemDefinition(ArrayItemDefinition), Properties, empty, setValue, getValue, mapProperties, getString, getInt, getLength, defaultFor, fromValue, fromString, registerProperty)
 
 import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
@@ -11,6 +11,7 @@ import String
 type alias Schema =
     { type_ : String
     , required : Set.Set String
+    , description : String
     , format : Maybe String
     , ref : Maybe String
     , enum : Maybe (List String)
@@ -35,6 +36,8 @@ empty =
         "any"
         -- required []
         Set.empty
+        -- description
+        ""
         -- format
         Nothing
         -- ref
@@ -66,6 +69,7 @@ decodeSchema =
     succeed Schema
         |: (withDefault "" (field "type" string))
         |: (withDefault Set.empty (field "required" <| DecodeExtra.set string))
+        |: (withDefault "" (field "description" string))
         |: (maybe (field "format" string))
         |: (maybe (field "$ref" string))
         |: (maybe (field "enum" (Decode.list string)))

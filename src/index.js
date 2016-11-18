@@ -18,7 +18,13 @@ const conf =
             , response:
                 { type: 'object'
                 , id: '#create-otp-response'
-                , properties: { id: { type: 'string', format: 'uuid' }}
+                , properties:
+                    { id:
+                        { type: 'string'
+                        , format: 'uuid'
+                        , description: 'One-time password which should be used to save PAN to secure vault. Format of OTP is UUID v4. This OTP can be used on frontend to allow user to save its PAN.'
+                        }
+                    }
                 }
             }]
         , [ 'vault/create-pan',
@@ -30,8 +36,13 @@ const conf =
                 { type: 'object'
                 , id: '#create-pan-request'
                 , properties:
-                    { otp: { type: 'string', format: 'uuid' }
-                    , pan: { type: 'string' }
+                    { otp:
+                        { type: 'string'
+                        , format: 'uuid'
+                        }
+                    , pan:
+                        { type: 'string'
+                        }
                     }
                 , required: [ 'pan', 'otp' ]
                 }
@@ -39,8 +50,15 @@ const conf =
                 { type: 'object'
                 , id: '#create-pan-response'
                 , properties:
-                    { id: { type: 'string', format: 'uuid' }
-                    , key: { type: 'string' }
+                    { id:
+                        { type: 'string'
+                        , format: 'uuid'
+                        , description: "ID of PAN. Save it in your database. This ID is the only representation of user's credit card number. Later it will be used to issue temporary card token. It can not be used to retrieve original card number."
+                        }
+                    , key:
+                        { type: 'string'
+                        , description: 'Decryption key of PAN. This pan should be given to automation cloud along with temporary card token and will be during job processing.'
+                        }
                     }
                 }
             }]
@@ -72,11 +90,19 @@ const conf =
                 , properties:
                     { data:
                         { type: 'array'
+                        , description: 'List of available automation services. Each item of type `Service`.'
                         , items:
                             { type: 'object'
                             , properties:
-                                { id: { type: 'string', format: 'uuid' }
-                                , schema: { type: 'object' }
+                                { id:
+                                    { type: 'string'
+                                    , format: 'uuid'
+                                    , description: 'ID of service which will be used to create Job. This id never changes, so feel free to keep it in your database associated with particular automation preferences.'
+                                    }
+                                , schema:
+                                    { type: 'object'
+                                    , description: 'Schema formatted according to Json-Schema.org specifications. It describes input object required to create job.'
+                                    }
                                 }
                             }
                         }
@@ -99,6 +125,41 @@ const conf =
             , response:
                 { type: 'object'
                 , id: '#show-job-response'
+                , properties:
+                    { object:
+                        { type: 'string'
+                        , description: 'Object type. Value is "job".'
+                        }
+                    , id:
+                        { type: 'string'
+                        , format: 'uuid'
+                        , description: 'Unique ID of Job which could be used to request Job information'
+                        }
+                    , state:
+                        { type: 'string'
+                        , description: 'Current job state, enum of `created`, `started`, `finished`, `failed`'
+                        }
+                    , input:
+                        { type: 'object'
+                        , description: 'Input data provided for job (according to schema of particular service)'
+                        }
+                    , output:
+                        { type: 'array'
+                        , description: 'Output produced by job, TBD'
+                        }
+                    , errors:
+                        { type: 'array'
+                        , description: 'Array with async errors produced by job'
+                        }
+                    , createdAt:
+                        { type: 'number'
+                        , description: 'Date of job creation as UNIX timestamp in milliseconds'
+                        }
+                    , updatedAt:
+                        { type: 'number'
+                        , description: 'Date of last job update as UNIX timestamp in milliseconds'
+                        }
+                    }
                 }
             }]
         , [ 'service/show-job',

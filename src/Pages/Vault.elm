@@ -13,7 +13,7 @@ import String
 import Layout exposing (boxStyle)
 import Types exposing (ClientSettings, RequestConfig, Config, ApiEndpointDefinition)
 import Markdown
-import JsonSchema as JS exposing (Schema)
+import JsonSchema as JS exposing (Schema, ArrayItemDefinition)
 import Util exposing (performRequest, buildHeaders)
 
 
@@ -315,6 +315,35 @@ codeStyle =
         ]
 
 
+renderResponseSchema : Schema -> Html.Html msg
+renderResponseSchema schema =
+    div [] <|
+        JS.mapProperties schema.properties
+            (\(name, prop) ->
+                div []
+                    [ div [ style
+                        [ ("border-bottom", "1px solid #ddd")
+                        , ("margin-top", "20px")
+                        , ("padding", "10px")
+                        , ("display", "flex")
+                        , ("flex-direction", "row")
+                        ]]
+                        [ div [ style [("width", "30%"), ("text-align", "right"), ("padding", "10px") ]]
+                            [ Html.strong [] [ text name ]
+                            , Html.br [] []
+                            , text prop.type_
+                            ]
+                        , div [ style [("width", "70%"), ("padding", "10px")]] [ Markdown.toHtml [ style [("padding", "0") ], Attrs.class "markdown-doc" ] prop.description ]
+                        ]
+                    , case prop.items of
+                            Just (JS.ArrayItemDefinition aid) ->
+                                div [ style [("padding-left", "50px")]] [ renderResponseSchema aid ]
+
+                            Nothing ->
+                                text ""
+                    ]
+            )
+
 render : Model -> ClientSettings -> Html.Html Msg
 render model clientSettings =
     let
@@ -473,10 +502,25 @@ render model clientSettings =
                 schema =
                     getSchema name model
 
+                responseSchema =
+                    getOutputSchema name model
+
                 data =
                     model.inputs
                         |> Dict.get name
                         |> Maybe.withDefault null
+
+                submitButtonStyle =
+                    style
+                        [ ( "font-family", "Iosevka, monospace" )
+                        , ( "font-size", "14px" )
+                        , ( "width", "100%" )
+                        , ( "height", "40px" )
+                        , ( "background", "white" )
+                        , ( "border-radius", "2px" )
+                        , ( "border", "1px solid #ddd" )
+                        , ( "font-weight", "bold" )
+                        ]
             in
                 div [ style [ ( "border-bottom", "1px solid #aaa" ) ] ]
                     [ div [ style [ ( "display", "flex" ), ( "flex-direction", "row" ) ] ]
@@ -497,19 +541,11 @@ render model clientSettings =
                                 , div []
                                     [ button
                                         [ Attrs.type_ "submit"
-                                        , style
-                                            [ ( "font-family", "Iosevka, monospace" )
-                                            , ( "font-size", "14px" )
-                                            , ( "width", "100%" )
-                                            , ( "height", "40px" )
-                                            , ( "background", "white" )
-                                            , ( "border-radius", "2px" )
-                                            , ( "border", "1px solid #ddd" )
-                                            , ( "font-weig", "bold" )
-                                            ]
+                                        , submitButtonStyle
                                         ]
                                         [ text buttonText ]
                                     ]
+                                , div [] [ renderResponseSchema responseSchema ]
                                 , div [] childNodes
                                 ]
                             ]
