@@ -25,6 +25,7 @@ type alias ApiEndpointDefinition =
     , auth : Bool
     , request : Value
     , response : Value
+    , description : String
     }
 
 

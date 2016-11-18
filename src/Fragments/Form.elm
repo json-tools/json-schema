@@ -40,6 +40,9 @@ renderSchema context path node =
     let
         renderRow ( name, property ) =
             let
+                type_ =
+                    property.type_
+
                 required =
                     Set.member name node.required
 
@@ -59,29 +62,44 @@ renderSchema context path node =
                     else
                         boxStyle
             in
-                div [ style rowStyle ]
-                    [ text
-                        (if required then
-                            "* "
-                         else
-                            ""
-                        )
-                    , text (name ++ ": ")
-                    , renderProperty context property required newPath
-                    , if hasError then
-                        span
-                            [ style
-                                [ ( "display", "inline-block" )
-                                , ( "font-style", "italic" )
-                                , ( "background", "lightyellow" )
-                                , ( "color", "red" )
-                                  -- , ( "font-weight", "bold" )
-                                , ( "margin-top", "5px" )
-                                ]
+                div [ style [ ( "display", "flex" ), ("margin-bottom","20px") ] ]
+                    [ div
+                        [ style
+                            [ ( "flex-shrink", "0" )
+                            , ( "text-align", "right" )
+                            , ( "padding", "10px" )
+                            , ( "box-sizing", "border-box" )
+                            , ( "width", "70px" )
+                            , ( "background", "rgba(0,0,0,0.02)" )
                             ]
-                            [ text validationError ]
-                      else
-                        text ""
+                        ]
+                        [ text
+                            (if required then
+                                "* "
+                             else
+                                ""
+                            )
+                        , Html.strong [] [ text name ]
+                        , Html.br [] []
+                        , Html.span [ style [ ( "color", "dimgrey" ) ] ] [ text type_ ]
+                        ]
+                    , div [ style [("padding", "10px")] ]
+                        [ renderProperty context property required newPath
+                        , if hasError then
+                            span
+                                [ style
+                                    [ ( "display", "inline-block" )
+                                    , ( "font-style", "italic" )
+                                    , ( "background", "lightyellow" )
+                                    , ( "color", "red" )
+                                      -- , ( "font-weight", "bold" )
+                                    , ( "margin-top", "5px" )
+                                    ]
+                                ]
+                                [ text validationError ]
+                          else
+                            text ""
+                        ]
                     ]
     in
         div [] <| JS.mapProperties node.properties renderRow

@@ -26,6 +26,7 @@ const conf =
                         }
                     }
                 }
+            , description: `To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.`
             }]
         , [ 'vault/create-pan',
             { method: 'POST'
@@ -61,6 +62,9 @@ const conf =
                         }
                     }
                 }
+                , description: `Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.
+
+The result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.`
             }]
         , [ 'vault/create-fake-pan',
             { method: 'POST'
@@ -77,6 +81,7 @@ const conf =
                 , id: '#create-fake-pan-response'
                 , properties: { pan: { type: 'string' }}
                 }
+            , description: `This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.`
             }]
         , [ 'service/list-services',
             { method: 'GET'
@@ -108,6 +113,7 @@ const conf =
                         }
                     }
                 }
+            , description: 'The Automation cloud offers a number of automation services. Each of these services requires particular input data in JSON format. This endpoint provides list of the available services with schemas describing the format of the input data.'
             }]
         , [ 'service/create-job',
             { method: 'POST'
@@ -161,6 +167,7 @@ const conf =
                         }
                     }
                 }
+            , description: 'This is the starting point of the automation process, and creates your automation job. This is a function call with an object as an argument, and it returns the object which will represent your job (including the output, errors and yields).'
             }]
         , [ 'service/show-job',
             { method: 'GET'
@@ -178,6 +185,7 @@ const conf =
                 { type: 'object'
                 , id: '#show-job-response'
                 }
+            , description: ''
             }]
         ]
     , dependencies:

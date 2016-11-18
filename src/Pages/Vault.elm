@@ -60,32 +60,37 @@ extractInputSchemas endpoints =
         |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty ))
         |> Dict.fromList
 
+
 extractOutputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
 extractOutputSchemas endpoints =
     endpoints
         |> List.map (\( name, x ) -> ( name, JS.fromValue x.response |> Result.withDefault JS.empty ))
         |> Dict.fromList
 
-extractDependencies : List (String, String) -> Dependencies
+
+extractDependencies : List ( String, String ) -> Dependencies
 extractDependencies source =
     let
         parseAddress str =
             case String.split "/" str of
                 head :: tail ->
-                    (head, tail)
+                    ( head, tail )
+
                 _ ->
-                    ("", [])
+                    ( "", [] )
     in
         List.map
-            (\(a, b) -> (parseAddress a, parseAddress b))
+            (\( a, b ) -> ( parseAddress a, parseAddress b ))
             source
 
 
 type alias JsonAddress =
-    (String, List String)
+    ( String, List String )
+
 
 type alias Dependencies =
-    List (JsonAddress, JsonAddress)
+    List ( JsonAddress, JsonAddress )
+
 
 type Msg
     = HttpResponse String (Response String)
@@ -319,30 +324,48 @@ renderResponseSchema : Schema -> Html.Html msg
 renderResponseSchema schema =
     div [] <|
         JS.mapProperties schema.properties
-            (\(name, prop) ->
+            (\( name, prop ) ->
                 div []
-                    [ div [ style
-                        [ ("border-bottom", "1px solid #ddd")
-                        , ("margin-top", "20px")
-                        , ("padding", "10px")
-                        , ("display", "flex")
-                        , ("flex-direction", "row")
-                        ]]
-                        [ div [ style [("width", "30%"), ("text-align", "right"), ("padding", "10px") ]]
+                    [ div
+                        [ style
+                            [ ( "border-top", "1px solid transparent" )
+                            , ( "margin-top", "20px" )
+                            , ( "padding", "0px" )
+                            , ( "display", "flex" )
+                            , ( "flex-direction", "row" )
+                            ]
+                        ]
+                        [ div
+                            [ style
+                                [ ( "width", "70px" )
+                                , ( "background", "rgba(0,0,0,0.02)" )
+                                , ( "flex-shrink", "0" )
+                                , ( "text-align", "right" )
+                                , ( "padding", "10px" )
+                                , ( "box-sizing", "border-box" )
+                                ]
+                            ]
                             [ Html.strong [] [ text name ]
                             , Html.br [] []
-                            , text prop.type_
+                            , Html.span [ style [("color", "dimgrey")] ] [ text prop.type_ ]
                             ]
-                        , div [ style [("width", "70%"), ("padding", "10px")]] [ Markdown.toHtml [ style [("padding", "0") ], Attrs.class "markdown-doc" ] prop.description ]
+                        , div
+                            [ style
+                                [ ( "width", "auto" )
+                                , ( "padding", "10px" )
+                                ]
+                            ]
+                            [ Markdown.toHtml [ style [ ( "padding", "0" ) ], Attrs.class "markdown-doc" ] prop.description ]
                         ]
                     , case prop.items of
-                            Just (JS.ArrayItemDefinition aid) ->
-                                div [ style [("padding-left", "50px")]] [ renderResponseSchema aid ]
+                        Just (JS.ArrayItemDefinition aid) ->
+                            div [ style [ ( "padding-left", "70px" ) ] ] [ renderResponseSchema aid ]
 
-                            Nothing ->
-                                text ""
+                        Nothing ->
+                            text ""
                     ]
             )
+
 
 render : Model -> ClientSettings -> Html.Html Msg
 render model clientSettings =
@@ -497,7 +520,7 @@ render model clientSettings =
                     ]
                 ]
 
-        renderBlock label guide buttonText name childNodes =
+        renderBlock label buttonText name childNodes =
             let
                 schema =
                     getSchema name model
@@ -509,6 +532,14 @@ render model clientSettings =
                     model.inputs
                         |> Dict.get name
                         |> Maybe.withDefault null
+
+                guide =
+                    case Dict.get name model.endpoints of
+                        Just endpoint ->
+                            endpoint.description
+
+                        Nothing ->
+                            ""
 
                 submitButtonStyle =
                     style
@@ -583,49 +614,31 @@ render model clientSettings =
             [ error
             , renderBlock
                 "1. Request OTP to authorize saving PAN"
-                """
-To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.
-                """
                 "Create otp"
                 "vault/create-otp"
                 []
             , renderBlock
                 "2. Save PAN"
-                """
-Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.
-
-The result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.
-                """
                 "Use otp -> create PAN"
                 "vault/create-pan"
                 []
             , renderBlock
                 "3. Issue fake PAN given panId"
-                """
-This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.
-                """
                 "Exchange panId -> fake PAN"
                 "vault/create-fake-pan"
                 []
             , renderBlock
                 "4. Fetch list of services"
-                """
-The Automation cloud offers a number of automation services. Each of these services requires particular input data in JSON format. This endpoint provides list of the available services with schemas describing the format of the input data.
-                 """
                 "Show me what you can do"
                 "service/list-services"
                 [ renderServices model SelectService ]
             , renderBlock
                 "5. Submit job"
-                """
-This is the starting point of the automation process, and creates your automation job. This is a function call with an object as an argument, and it returns the object which will represent your job (including the output, errors and yields).
-                 """
                 "Do your job"
                 "service/create-job"
                 []
             , renderBlock
                 "6. Poll for job status"
-                ""
                 "Poll"
                 "service/show-job"
                 []
