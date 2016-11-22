@@ -16,3 +16,4 @@ type Msg
     | PagesVaultMsg Pages.Vault.Msg
     | UrlChange Navigation.Location
     | NewUrl String
+    | SetAuth String

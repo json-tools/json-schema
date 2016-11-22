@@ -262,8 +262,8 @@ update msg model clientSettings =
                                             |> Result.withDefault []
                            )
 
-                set destName destPath x =
-                    model.inputs
+                set destName destPath x inputs =
+                    inputs
                         |> Dict.update destName
                             (\v ->
                                 v
@@ -276,16 +276,24 @@ update msg model clientSettings =
                     "vault/create-otp" ->
                         { model
                             | inputs =
-                                get "vault/create-otp" [ "id" ]
-                                    |> set "vault/create-pan" [ "otp" ]
+                                model.inputs
+                                    |> set "vault/create-pan" [ "otp" ] (get "vault/create-otp" [ "id" ])
                         }
                             ! []
 
                     "vault/create-pan" ->
+                        let
+                            panId =
+                                get "vault/create-pan" [ "id" ]
+
+                            key =
+                                get "vault/create-pan" [ "key" ]
+                        in
                         { model
                             | inputs =
-                                get "vault/create-pan" [ "id" ]
-                                    |> set "vault/create-fake-pan" [ "panId" ]
+                                model.inputs
+                                    |> set "vault/create-fake-pan" [ "key" ] key
+                                    |> set "vault/create-fake-pan" [ "panId" ] panId
                         }
                             ! []
 
@@ -298,8 +306,8 @@ update msg model clientSettings =
                     "service/create-job" ->
                         { model
                             | inputs =
-                                get "service/create-job" [ "id" ]
-                                    |> set "service/show-job" [ "id" ]
+                                model.inputs
+                                    |> set "service/show-job" [ "id" ] (get "service/create-job" [ "id" ])
                         }
                             ! []
 

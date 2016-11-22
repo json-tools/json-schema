@@ -4,7 +4,7 @@ import Types exposing (..)
 import Html exposing (div, span, button, text, form, input, ul, li, hr, a)
 import Navigation exposing (programWithFlags)
 import Html.Attributes as Attrs exposing (style, href)
-import Html.Events exposing (onClick)
+import Html.Events exposing (onClick, onInput)
 import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
@@ -99,7 +99,7 @@ parsePath : Navigation.Location -> Page
 parsePath location =
     location
         |> UrlParser.parseHash route
-        |> Maybe.withDefault Home
+        |> Maybe.withDefault SecureVault
 
 
 
@@ -139,6 +139,13 @@ update msg model =
             , Cmd.none
             )
 
+        SetAuth str ->
+            let
+                cs =
+                    model.clientSettings
+            in
+                { model | clientSettings = { cs | secretKey = str } } ! []
+
 
 
 -- SUBSCRIPTIONS
@@ -155,13 +162,12 @@ subscriptions model =
 -- VIEW
 
 
-centerStyle : String -> String -> List (String, String)
+centerStyle : String -> String -> List ( String, String )
 centerStyle direction align =
     [ ( "display", "flex" )
     , ( "flex-direction", direction )
     , ( "align-items", align )
     , ( "justify-content", "center" )
-    , ( "padding", "20px 0" )
     ]
 
 
@@ -174,14 +180,38 @@ view model =
                     toHash head
 
                 _ ->
-                    "#home"
+                    "#secure-vault"
     in
         div []
-            [ div [ style <| [ ("background", "aliceblue"), ("border-bottom", "3px solid darkcyan") ] ++ (centerStyle "row" "center") ]
-                [ viewLink currentPage "#home" "Home"
-                , viewLink currentPage "#settings" "Settings"
-                , viewLink currentPage "#secure-vault" "Integration Example"
-                  -- , viewLink model.page ServiceApi "Service API"
+            [ div
+                [ style
+                    [ ( "background", "rgba(195, 192, 184, 0.580392)" )
+                    , ( "padding", "10px" )
+                    ]
+                ]
+                [ Html.label []
+                    [ text "Secret key: "
+                    , Html.input
+                        [ onInput SetAuth
+                        , Attrs.value model.clientSettings.secretKey
+                        , Attrs.size 48
+                        , style
+                            [ ( "font-family", "iosevka, menlo, monospace" )
+                            , ( "font-size", "14px" )
+                            , ( "border", "1px solid #aaa" )
+                            , ( "margin", "0 5px" )
+                            , ( "padding", "2px 4px" )
+                            ]
+                        ]
+                        []
+                    ]
+                , div
+                    [ style
+                        [ ( "color", "#777" )
+                        , ( "margin-top", "5px" )
+                        ]
+                    ]
+                    [ text "This key is used to authenticate all API requests. Contact API administrator (in slack) to obtain your secret key." ]
                 ]
             , div [ style <| centerStyle "column" "stretch" ]
                 (case model.history of

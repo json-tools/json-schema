@@ -62,9 +62,7 @@ const conf =
                         }
                     }
                 }
-                , description: `Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.
-
-The result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.`
+                , description: `Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.\n\nThe result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.`
             }]
         , [ 'vault/create-fake-pan',
             { method: 'POST'
@@ -74,12 +72,18 @@ The result of this call must be stored in your database as the permanent id of t
             , request:
                 { type: 'object'
                 , id: '#create-fake-pan-request'
-                , properties: { panId: { type: 'string', format: 'uuid' }}
+                , properties:
+                    { panId: { type: 'string', format: 'uuid' }
+                    , key: { type: 'string' }
+                    }
                 }
             , response:
                 { type: 'object'
                 , id: '#create-fake-pan-response'
-                , properties: { pan: { type: 'string' }}
+                , properties:
+                    { pan: { type: 'string' }
+                    , key: { type: 'string' }
+                    }
                 }
             , description: `This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.`
             }]
