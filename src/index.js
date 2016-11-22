@@ -26,7 +26,7 @@ const conf =
                         }
                     }
                 }
-            , description: `To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.`
+            , description: 'To save a payment card securely in our vault we issue one-time password (OTP). The resulting OTP can be used only once to save a single PAN.'
             }]
         , [ 'vault/create-pan',
             { method: 'POST'
@@ -43,6 +43,8 @@ const conf =
                         }
                     , pan:
                         { type: 'string'
+                        , minLength: 12
+                        , maxLength: 19
                         }
                     }
                 , required: [ 'pan', 'otp' ]
@@ -51,7 +53,7 @@ const conf =
                 { type: 'object'
                 , id: '#create-pan-response'
                 , properties:
-                    { id:
+                    { panId:
                         { type: 'string'
                         , format: 'uuid'
                         , description: "ID of PAN. Save it in your database. This ID is the only representation of user's credit card number. Later it will be used to issue temporary card token. It can not be used to retrieve original card number."
@@ -62,11 +64,11 @@ const conf =
                         }
                     }
                 }
-                , description: `Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.\n\nThe result of this call must be stored in your database as the permanent id of the user's PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.`
+                , description: 'Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.\n\nThe result of this call must be stored in your database as the permanent id of the user\'s PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.'
             }]
         , [ 'vault/create-fake-pan',
             { method: 'POST'
-            , pathname: '/pan/fake'
+            , pathname: '/pan/temporary'
             , service: 'vault'
             , auth: true
             , request:
@@ -81,11 +83,17 @@ const conf =
                 { type: 'object'
                 , id: '#create-fake-pan-response'
                 , properties:
-                    { pan: { type: 'string' }
-                    , key: { type: 'string' }
+                    { id:
+                        { type: 'string'
+                        , description: 'Temporary card identifier used when you create an automation job'
+                        }
+                    , key:
+                        { type: 'string'
+                        , description: 'Decryption key which should accompany the PAN Token'
+                        }
                     }
                 }
-            , description: `This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can't be used twice.`
+            , description: 'This endpoint creates a token which will then be used to start a job which requires a PAN. The token expires after some time (currently 1 hour). A new token must be issued for each new job. The same token can\'t be used twice.'
             }]
         , [ 'service/list-services',
             { method: 'GET'

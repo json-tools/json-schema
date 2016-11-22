@@ -185,7 +185,9 @@ view model =
         div []
             [ div
                 [ style
-                    [ ( "background", "rgba(195, 192, 184, 0.580392)" )
+                    [ ( "background", "chocolate" )
+                    , ( "color", "white" )
+                    , ( "font-weight", "bold" )
                     , ( "padding", "10px" )
                     ]
                 ]
@@ -198,7 +200,7 @@ view model =
                         , style
                             [ ( "font-family", "iosevka, menlo, monospace" )
                             , ( "font-size", "14px" )
-                            , ( "border", "1px solid #aaa" )
+                            , ( "border", "1px solid #555" )
                             , ( "margin", "0 5px" )
                             , ( "padding", "2px 4px" )
                             ]
@@ -207,7 +209,8 @@ view model =
                     ]
                 , div
                     [ style
-                        [ ( "color", "#777" )
+                        [ ( "color", "#eee" )
+                        , ( "font-weight", "normal" )
                         , ( "margin-top", "5px" )
                         ]
                     ]
