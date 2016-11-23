@@ -12,6 +12,7 @@ import String
 import JsonSchema as JS
 import Layout exposing (boxStyle)
 import Markdown
+import Regex exposing (replace, regex)
 
 
 type alias Path =
@@ -188,7 +189,7 @@ renderArray context property required path =
             ]
 
         renderItem index =
-            div [ style boxStyle ]
+            div [ ]
                 [ text ("#" ++ index)
                 , renderProperty
                     context
@@ -232,7 +233,7 @@ renderInput context property required path =
                 _ ->
                     case property.type_ of
                         "integer" ->
-                            "number"
+                            "text"
 
                         _ ->
                             "text"
@@ -268,7 +269,18 @@ renderInput context property required path =
                     path
                     (case property.type_ of
                         "integer" ->
-                            Encode.int (Result.withDefault 0 (String.toInt s))
+                            s
+                                |> replace Regex.All (regex "[^0-9]") (\_ -> "") 
+                                |> String.toInt
+                                |> (\r -> case r of
+                                    Ok r ->
+                                        Encode.int r
+                                    Err x ->
+                                        let
+                                            a = Debug.log "error" x
+                                        in
+                                            Encode.null
+                                )
 
                         _ ->
                             Encode.string s

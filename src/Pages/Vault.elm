@@ -569,7 +569,7 @@ render model clientSettings =
                             [ Html.form [ onSubmit (PerformRequest name) ]
                                 [ Html.h3 [] [ text label ]
                                 , Markdown.toHtml [] guide
-                                , div [ style [ ( "max-height", "500px" ), ( "overflow", "auto" ) ] ]
+                                , div [ style [ ( "overflow", "auto" ) ] ]
                                     [ FragForm.render
                                         { validationErrors = Dict.empty
                                         , schema = schema

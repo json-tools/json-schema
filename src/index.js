@@ -40,11 +40,13 @@ const conf =
                     { otp:
                         { type: 'string'
                         , format: 'uuid'
+                        , description: 'One-time password used to authorise call'
                         }
                     , pan:
                         { type: 'string'
                         , minLength: 12
                         , maxLength: 19
+                        , description: 'PAN (payment card number, usually 16 digits). This PAN will be encrypted and stored in secure vault permanently. It is not possible to decrypt PAN without key which is not stored in database.'
                         }
                     }
                 , required: [ 'pan', 'otp' ]
@@ -64,8 +66,8 @@ const conf =
                         }
                     }
                 }
-                , description: 'Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.\n\nThe result of this call must be stored in your database as the permanent id of the user\'s PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.'
-            }]
+            , description: 'Next you store your user’s PAN in the vault. This endpoint is the only one not authenticated with your client secret key, it requires OTP in order to authorise the request.\n\nThe result of this call must be stored in your database as the permanent id of the user\'s PAN. It can not be used to retrieve or decrypt the card, it can only be used to issue a replacement token.'
+        }]
         , [ 'vault/create-fake-pan',
             { method: 'POST'
             , pathname: '/pan/temporary'
@@ -75,8 +77,15 @@ const conf =
                 { type: 'object'
                 , id: '#create-fake-pan-request'
                 , properties:
-                    { panId: { type: 'string', format: 'uuid' }
-                    , key: { type: 'string' }
+                    { panId:
+                        { type: 'string'
+                        , format: 'uuid'
+                        , description: 'ID of PAN provided after pan creation'
+                        }
+                    , key:
+                        { type: 'string'
+                        , description: 'Decryption key of PAN provided after pan creation'
+                        }
                     }
                 }
             , response:
@@ -136,8 +145,15 @@ const conf =
                 { type: 'object'
                 , id: '#create-job-request'
                 , properties:
-                    { serviceId: { type: 'string', format: 'uuid' }
-                    , input: { type: 'object' }
+                    { serviceId:
+                        { type: 'string'
+                        , format: 'uuid'
+                        , description: 'ID of service. This service will be used to perform automation job.'
+                        }
+                    , input:
+                        { type: 'object'
+                        , description: 'Input for job. It should conform to service.schema requirements. Schema can be unique for each service. Attempt to supply an invalid data to `input` param will result in validation error. Even if API is accepting data validation error might happen asyncronously later. Poll status of created job to get updates about job state.'
+                        }
                     }
                 }
             , response:

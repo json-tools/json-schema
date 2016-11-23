@@ -64,7 +64,7 @@ if ( TARGET_ENV === 'development' ) {
         {
           test:    /\.elm$/,
           exclude: [/elm-stuff/, /node_modules/],
-          loader:  'elm-hot!elm-webpack?verbose=true&warn=true&debug=true'
+          loader:  'elm-hot!elm-webpack?verbose=true&warn=true'
         }
       ]
     }
@@ -85,7 +85,7 @@ if ( TARGET_ENV === 'production' ) {
         {
           test:    /\.elm$/,
           exclude: [/elm-stuff/, /node_modules/],
-          loader:  'elm-webpack?debug=true'
+          loader:  'elm-webpack'
         }
       ]
     },
