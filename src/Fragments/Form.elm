@@ -11,6 +11,7 @@ import Set
 import String
 import JsonSchema as JS
 import Layout exposing (boxStyle)
+import Markdown
 
 
 type alias Path =
@@ -62,6 +63,19 @@ renderSchema context path node =
                     else
                         boxStyle
             in
+                if property.type_ == "object" || property.type_ == "array" then
+                    div []
+                    [ div [ style
+                        [ ( "font-weight", "bold" )
+                        , ( "font-size", (toString (21 - (List.length path) * 3)) ++ "px" )
+                        , ( "margin-bottom", "20px" )
+                        , ( "margin-top", "30px" )
+                        ]
+                    ] [ text <| String.join " / " newPath ]
+                    , Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
+                    , renderProperty context property required newPath
+                    ]
+                else
                 div [ style [ ( "display", "flex" ), ("margin-bottom","20px") ] ]
                     [ div
                         [ style
@@ -69,8 +83,8 @@ renderSchema context path node =
                             , ( "text-align", "right" )
                             , ( "padding", "10px" )
                             , ( "box-sizing", "border-box" )
-                            , ( "width", "70px" )
-                            , ( "background", "rgba(0,0,0,0.02)" )
+                            , ( "width", "38.2%" )
+                            , ( "background", "rgba(10, 150, 140, 0.04)" )
                             ]
                         ]
                         [ text
@@ -79,12 +93,22 @@ renderSchema context path node =
                              else
                                 ""
                             )
-                        , Html.strong [] [ text name ]
+                        , Html.code [ style [ ("font-weight", "bold") ] ] [ text name ]
                         , Html.br [] []
                         , Html.span [ style [ ( "color", "dimgrey" ) ] ] [ text type_ ]
                         ]
-                    , div [ style [("padding", "10px")] ]
-                        [ renderProperty context property required newPath
+                    , div [ style
+                            [ ("padding", "10px")
+                            , ( "box-sizing", "border-box" )
+                            , ( "width", "61.8%" )
+                            ]
+                        ]
+                        [ if String.isEmpty property.description then
+                            text ""
+                        else
+                            Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
+
+                        ,  renderProperty context property required newPath
                         , if hasError then
                             span
                                 [ style

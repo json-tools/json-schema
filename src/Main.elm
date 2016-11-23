@@ -200,9 +200,12 @@ view model =
                         , style
                             [ ( "font-family", "iosevka, menlo, monospace" )
                             , ( "font-size", "14px" )
-                            , ( "border", "1px solid #555" )
+                            , ( "border", "1px solid rgb(252, 249, 244)" )
                             , ( "margin", "0 5px" )
                             , ( "padding", "2px 4px" )
+                            , ( "background", "#fcf9f4" )
+                            , ( "color", "saddlebrown" )
+                            , ( "border-radius", "2px" )
                             ]
                         ]
                         []

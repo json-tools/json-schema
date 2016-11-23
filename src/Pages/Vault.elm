@@ -345,15 +345,15 @@ renderResponseSchema schema =
                         ]
                         [ div
                             [ style
-                                [ ( "width", "70px" )
-                                , ( "background", "rgba(0,0,0,0.02)" )
+                                [ ( "width", "38.2%" )
+                                , ( "background", "rgba(210, 105, 30, 0.04)" )
                                 , ( "flex-shrink", "0" )
                                 , ( "text-align", "right" )
                                 , ( "padding", "10px" )
                                 , ( "box-sizing", "border-box" )
                                 ]
                             ]
-                            [ Html.strong [] [ text name ]
+                            [ Html.code [ style [ ( "font-weight", "bold" ) ] ] [ text name ]
                             , Html.br [] []
                             , Html.span [ style [("color", "dimgrey")] ] [ text prop.type_ ]
                             ]
@@ -367,7 +367,7 @@ renderResponseSchema schema =
                         ]
                     , case prop.items of
                         Just (JS.ArrayItemDefinition aid) ->
-                            div [ style [ ( "padding-left", "70px" ) ] ] [ renderResponseSchema aid ]
+                            div [ style [ ( "padding-left", "0%" ) ] ] [ renderResponseSchema aid ]
 
                         Nothing ->
                             text ""
