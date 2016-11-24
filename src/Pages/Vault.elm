@@ -553,12 +553,14 @@ render model clientSettings =
                     style
                         [ ( "font-family", "Iosevka, monospace" )
                         , ( "font-size", "14px" )
-                        , ( "width", "100%" )
+                        , ( "width", "61.8%" )
+                        , ( "margin-left", "38.2%" )
                         , ( "height", "40px" )
-                        , ( "background", "white" )
-                        , ( "border-radius", "2px" )
-                        , ( "border", "1px solid #ddd" )
+                        , ( "background", "rgba(210, 105, 30, 0.80)" )
+                        , ( "border-radius", "4px" )
+                        , ( "border", "2px solid rgb(210, 105, 30)" )
                         , ( "font-weight", "bold" )
+                        , ( "color", "white" )
                         ]
             in
                 div [ style [ ( "border-bottom", "1px solid #aaa" ) ] ]
@@ -569,8 +571,12 @@ render model clientSettings =
                             [ Html.form [ onSubmit (PerformRequest name) ]
                                 [ Html.h3 [] [ text label ]
                                 , Markdown.toHtml [] guide
-                                , div [ style [ ( "overflow", "auto" ) ] ]
-                                    [ FragForm.render
+                                , Html.h3 [] [ text "Request schema" ]
+                                , div [ style [ ( "margin-bottom", "10px" ) ] ]
+                                    [ if schema == JS.empty then
+                                        text "no data required"
+                                    else
+                                        FragForm.render
                                         { validationErrors = Dict.empty
                                         , schema = schema
                                         , data = data
@@ -584,6 +590,7 @@ render model clientSettings =
                                         ]
                                         [ text buttonText ]
                                     ]
+                                , Html.h3 [] [ text "Response schema" ]
                                 , div [] [ renderResponseSchema responseSchema ]
                                 , div [] childNodes
                                 ]
