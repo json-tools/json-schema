@@ -36,6 +36,15 @@ render : Context msg -> Html.Html msg
 render context =
     renderSchema context [] context.schema
 
+renderPath : Path -> Html.Html msg
+renderPath path =
+    Html.pre [ style
+        [ ( "font-weight", "bold" )
+        , ( "font-size", (toString (21 - (List.length path) * 3)) ++ "px" )
+        , ( "margin-bottom", "20px" )
+        , ( "margin-top", "30px" )
+        ]
+    ] [ text <| String.join "." path ]
 
 renderSchema : Context msg -> Path -> Schema -> Html.Html msg
 renderSchema context path node =
@@ -66,13 +75,7 @@ renderSchema context path node =
             in
                 if property.type_ == "object" || property.type_ == "array" then
                     div []
-                    [ div [ style
-                        [ ( "font-weight", "bold" )
-                        , ( "font-size", (toString (21 - (List.length path) * 3)) ++ "px" )
-                        , ( "margin-bottom", "20px" )
-                        , ( "margin-top", "30px" )
-                        ]
-                    ] [ text <| String.join " / " newPath ]
+                    [ renderPath newPath
                     , Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
                     , renderProperty context property required newPath
                     ]
@@ -190,7 +193,7 @@ renderArray context property required path =
 
         renderItem index =
             div [ ]
-                [ text ("#" ++ index)
+                [ renderPath <| path ++ [index]
                 , renderProperty
                     context
                     property
@@ -270,7 +273,7 @@ renderInput context property required path =
                     (case property.type_ of
                         "integer" ->
                             s
-                                |> replace Regex.All (regex "[^0-9]") (\_ -> "") 
+                                |> replace Regex.All (regex "[^0-9]") (\_ -> "")
                                 |> String.toInt
                                 |> (\r -> case r of
                                     Ok r ->

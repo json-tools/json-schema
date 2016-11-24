@@ -192,7 +192,8 @@ view model =
                     ]
                 ]
                 [ Html.label []
-                    [ text "Secret key: "
+                    [ Html.h1 [] [ text "Automation Cloud Test Console" ]
+                    , text "Secret key: "
                     , Html.input
                         [ onInput SetAuth
                         , Attrs.value model.clientSettings.secretKey

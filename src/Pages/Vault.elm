@@ -571,7 +571,7 @@ render model clientSettings =
                             [ Html.form [ onSubmit (PerformRequest name) ]
                                 [ Html.h3 [] [ text label ]
                                 , Markdown.toHtml [] guide
-                                , Html.h3 [] [ text "Request schema" ]
+                                , Html.h4 [] [ text "Request schema" ]
                                 , div [ style [ ( "margin-bottom", "10px" ) ] ]
                                     [ if schema == JS.empty then
                                         text "no data required"
@@ -590,7 +590,7 @@ render model clientSettings =
                                         ]
                                         [ text buttonText ]
                                     ]
-                                , Html.h3 [] [ text "Response schema" ]
+                                , Html.h4 [] [ text "Response schema" ]
                                 , div [] [ renderResponseSchema responseSchema ]
                                 , div [] childNodes
                                 ]

@@ -10,6 +10,7 @@
     "start": "webpack-dev-server --hot --inline --port 4000 --content-base src/",
     "build": "rimraf dist && webpack",
     "reinstall": "rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install",
+    "predeploy": "npm run build",
     "deploy": "gh-pages -d dist -a"
   },
   "devDependencies": {
