@@ -72,8 +72,8 @@ init ( persistedData, conf ) location =
     let
         defaultSettings =
             ClientSettings
-                "https://api.staging.automationcloud.net"
-                "https://vault.staging.automationcloud.net"
+                "https://api.sandbox.automationcloud.net"
+                "https://vault.sandbox.automationcloud.net"
                 ""
                 False
 
