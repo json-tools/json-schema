@@ -2,7 +2,7 @@ module Pages.Schema exposing (render, Msg, update, Model, init)
 
 import Types exposing (..)
 import Models exposing (ValidationErrors)
-import Json.Encode as Encode
+import Json.Encode as Encode exposing (Value)
 import Html exposing (div, span, button, text, input, ul, li)
 import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
@@ -132,6 +132,9 @@ renderProperty context prop required path =
         "integer" ->
             renderInput context prop required path
 
+        "boolean" ->
+            renderInput context prop required path
+
         "object" ->
             renderSchema context path prop
 
@@ -209,6 +212,9 @@ renderInput context property required path =
                     case property.type_ of
                         "integer" ->
                             "number"
+
+                        "boolean" ->
+                            "checkbox"
 
                         _ ->
                             "text"

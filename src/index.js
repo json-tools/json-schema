@@ -212,6 +212,37 @@ const conf =
             , response:
                 { type: 'object'
                 , id: '#show-job-response'
+                , properties:
+                    { rfiId: { type: 'string', format: 'uuid' }
+                    }
+                }
+            , description: ''
+            }]
+        , [ 'service/rfi-answer',
+            { method: 'PUT'
+            , pathname: '/rfis/:id'
+            , service: 'service'
+            , auth: true
+            , request:
+                { type: 'object'
+                , id: '#answer-rfi-request'
+                , properties:
+                    { id: { type: 'string', format: 'uuid' }
+                    , answer:
+                        { type: 'object'
+                        , properties:
+                            { confirm:
+                                { type: 'boolean'
+                                }
+                            }
+                        , required: [ 'confirm' ]
+                        }
+                    }
+                , required: [ 'id', 'answer' ]
+                }
+            , response:
+                { type: 'object'
+                , id: '#answer-rfi-response'
                 }
             , description: ''
             }]
