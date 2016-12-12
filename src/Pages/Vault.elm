@@ -455,7 +455,28 @@ render model clientSettings =
                                 ""
 
                             Just val ->
-                                encode 2 val
+                                encode 2 <| preprocess val r.pathname
+
+
+                preprocess : Value -> String -> Value
+                preprocess body pathnameTemplate =
+                    pathnameTemplate
+                        |> Regex.find Regex.All paramsMatcher
+                        |> List.map .match
+                        |> List.map (String.dropLeft 1)
+                        |> List.foldl Dict.remove (objectBody body)
+                        |> Dict.toList
+                        |> Encode.object
+
+
+                objectBody body =
+                    body
+                        |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                        |> Result.withDefault []
+                        |> Dict.fromList
+
+                paramsMatcher =
+                    Regex.regex ":\\w+"
 
                 pathname =
                     case Dict.get name model.inputs of
@@ -467,7 +488,7 @@ render model clientSettings =
 
                 interpolate str val =
                     Regex.replace Regex.All
-                        (Regex.regex ":\\w+")
+                        paramsMatcher
                         (\{ match } ->
                             val
                                 |> Decode.decodeValue (Decode.at [ String.dropLeft 1 match ] Decode.string)

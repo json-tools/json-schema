@@ -7,6 +7,7 @@ import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (null)
 import String
 import Regex
+import Dict
 
 
 
@@ -49,31 +50,45 @@ performRequest clientSettings body req =
             String.toUpper req.method
 
         pathname =
-            case method of
-                "GET" ->
-                    interpolate req.pathname body
+            interpolate req.pathname body
 
-                "DELETE" ->
-                    interpolate req.pathname body
-
-                _ ->
-                    req.pathname
+        paramsMatcher =
+            Regex.regex ":\\w+"
 
         interpolate str val =
             Regex.replace Regex.All
-                (Regex.regex ":\\w+")
+                paramsMatcher
                 (\{ match } ->
                     (Maybe.withDefault null val)
                         |> Decode.decodeValue (Decode.at [ String.dropLeft 1 match ] Decode.string)
                         |> Result.withDefault ""
                 )
                 str
+
+        objectBody =
+            body
+                |> Maybe.withDefault null
+                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                |> Result.withDefault []
+                |> Dict.fromList
+
+        processedBody =
+            req.pathname
+                |> Debug.log "pathName"
+                |> Regex.find Regex.All paramsMatcher
+                |> List.map .match
+                |> List.map (String.dropLeft 1)
+                |> List.foldl Dict.remove objectBody
+                |> Dict.toList
+                |> Encode.object
+                |> Debug.log "processedBody"
+
     in
         Http.request
             { method = method
             , headers = buildHeaders req clientSettings |> List.map (\(k, v) -> header k v)
             , url = serviceUrl ++ pathname
-            , body = Http.jsonBody <| Maybe.withDefault null body
+            , body = Http.jsonBody <| processedBody
             , expect = Http.expectStringResponse (\r -> Ok r)
             , timeout = Nothing
             , withCredentials = False
