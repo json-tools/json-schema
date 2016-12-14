@@ -322,12 +322,16 @@ update msg model clientSettings =
                             ! []
 
                     "service/show-job" ->
-                        { model
-                            | inputs =
-                                model.inputs
-                                    |> set "service/rfi-anwser" [ "id" ] (get "service/create-job" [ "rfiId" ])
-                        }
-                            ! []
+                        let
+                            rfiId = get "service/show-job" [ "rfiId" ]
+                        in
+                            { model
+                                | inputs =
+                                    model.inputs
+                                        |> set "service/rfi-answer" [ "id" ] rfiId
+                                        |> set "service/rfi-show" [ "id" ] rfiId
+                            }
+                                ! []
 
                     _ ->
                         model ! []
@@ -734,7 +738,12 @@ render model clientSettings =
                 "service/show-job"
                 []
             , renderBlock
-                "7. Respond to RFI"
+                "7. See RFI details"
+                "Show RFI"
+                "service/rfi-show"
+                []
+            , renderBlock
+                "8. Respond to RFI"
                 "Answer"
                 "service/rfi-answer"
                 []

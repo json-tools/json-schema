@@ -158,7 +158,7 @@ renderProperty context prop required path =
             renderInput context prop required path
 
         "boolean" ->
-            renderInput context prop required path
+            renderInput context prop False path
 
         "object" ->
             renderSchema context path prop
