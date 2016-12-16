@@ -318,10 +318,29 @@ defaultFor : Schema -> Value
 defaultFor schema =
     case schema.type_ of
         "object" ->
-            Encode.object []
+            schema.required
+                |> Set.toList
+                |> List.map (\propName ->
+                    ( propName
+                    , case getDefinition schema.properties propName of
+                        Just s ->
+                            defaultFor s
+
+                        Nothing ->
+                            Encode.null
+                        
+                    )
+                )
+                |> Encode.object
 
         "array" ->
             Encode.list []
+
+        "integer" ->
+            Encode.int 0
+
+        "boolean" ->
+            Encode.bool False
 
         _ ->
             Encode.string ""

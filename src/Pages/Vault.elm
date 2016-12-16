@@ -41,7 +41,7 @@ init conf =
         -- responses
         Dict.empty
         -- inputs
-        Dict.empty
+        (extractInputs conf.endpoints)
         -- schemas
         (extractInputSchemas conf.endpoints)
         -- outputSchemas
@@ -64,6 +64,11 @@ extractInputSchemas endpoints =
         |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty ))
         |> Dict.fromList
 
+extractInputs : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Value
+extractInputs endpoints =
+    endpoints
+        |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty |> JS.defaultFor ))
+        |> Dict.fromList
 
 extractOutputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
 extractOutputSchemas endpoints =
@@ -173,6 +178,15 @@ update msg model clientSettings =
 
                         Nothing ->
                             model.schemas
+
+                --- applyServiceSchemaInput name inputs =
+                ---     case findService name of
+                ---         Just serv ->
+                ---             inputs
+                ---                 |> Dict.insert "service/create-job" (JS.registerProperty "input" (JS.fromValue serv.schema |> Result.withDefault JS.empty) target)
+
+                ---         Nothing ->
+                ---             inputs
 
                 findService : String -> Maybe Service
                 findService name =
