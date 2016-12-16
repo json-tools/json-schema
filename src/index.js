@@ -239,3 +239,27 @@ function init(state) {
 }
 
 init(appState);
+
+window.wdsOk = function() {
+    const err = document.querySelector('body > #err');
+
+    if (err) {
+        document.body.removeChild(err);
+    }
+};
+
+window.wdsError = function(errors) {
+    const err = document.createElement('pre');
+    err.id = 'err';
+    err.innerHTML = errors.join('\n\n');
+    err.style.background = 'white';
+    err.style.color = 'black';
+    err.style.padding = '10px';
+    err.style.position = 'fixed';
+    err.style.top = 0;
+    err.style.bottom = 0;
+    err.style.left = 0;
+    err.style.right = 0;
+    err.style.overflow = 'auto';
+    document.body.appendChild(err);
+}
