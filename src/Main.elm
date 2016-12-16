@@ -143,8 +143,12 @@ update msg model =
             let
                 cs =
                     model.clientSettings
+
+                settings =
+                    { cs | secretKey = str }
             in
-                { model | clientSettings = { cs | secretKey = str } } ! []
+                { model | clientSettings = settings }
+                    ! [ storeConfig (PersistedData <| Just settings) ]
 
 
 

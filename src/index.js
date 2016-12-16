@@ -292,6 +292,7 @@ function init(state) {
     const clientApp = Elm.Main.fullscreen([appState, conf]);
 
     clientApp.ports.storeConfig.subscribe(function(state) {
+        console.log('storeConfig', state);
         localStorage.setItem('client-app-persisted-data-v3', JSON.stringify(state));
     });
 }
