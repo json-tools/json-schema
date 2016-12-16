@@ -3,12 +3,13 @@ module Pages.Vault exposing (init, render, update, Msg, Model)
 import Fragments.Form as FragForm
 import Http exposing (Error, Response)
 import Html exposing (text, div, button)
-import Html.Events exposing (onClick, onSubmit)
+import Html.Events exposing (onClick, onSubmit, onInput)
 import Html.Attributes as Attrs exposing (style)
 import Json.Encode as Encode exposing (encode, null)
 import Json.Decode as Decode exposing (value, Value, field)
 import Regex
 import Dict
+import Set
 import String
 import Layout exposing (boxStyle)
 import Types exposing (ClientSettings, RequestConfig, Config, ApiEndpointDefinition)
@@ -26,6 +27,7 @@ type alias Model =
     , services : List Service
     , endpoints : Endpoints
     , dependencies : Dependencies
+    , editAsJson : Set.Set String
     }
 
 
@@ -52,6 +54,8 @@ init conf =
         (Dict.fromList conf.endpoints)
         -- dependencies
         (extractDependencies conf.dependencies)
+        -- editAsJson
+        Set.empty
 
 
 extractInputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
@@ -93,12 +97,15 @@ type alias Dependencies =
 
 
 type Msg
-    = HttpResponse String (Response String)
+    = NoOp
+    | HttpResponse String (Response String)
     | HttpError String Error
     | PerformRequest String
     | UpdateData String Value
+    | UpdateJson String String
     | PerformPostAction String
     | SelectService String
+    | EditAsJson String Bool
 
 
 findEndpoint : String -> Endpoints -> Result String ApiEndpointDefinition
@@ -132,6 +139,9 @@ type alias Service =
 update : Msg -> Model -> ClientSettings -> ( Model, Cmd Msg )
 update msg model clientSettings =
     case msg of
+        NoOp ->
+            model ! []
+
         SelectService name ->
             let
                 set destName destPath x =
@@ -311,11 +321,37 @@ update msg model clientSettings =
                         }
                             ! []
 
+                    "service/show-job" ->
+                        let
+                            rfiId = get "service/show-job" [ "rfiId" ]
+                        in
+                            { model
+                                | inputs =
+                                    model.inputs
+                                        |> set "service/rfi-answer" [ "id" ] rfiId
+                                        |> set "service/rfi-show" [ "id" ] rfiId
+                            }
+                                ! []
+
                     _ ->
                         model ! []
 
         UpdateData reqType v ->
             { model | inputs = Dict.insert reqType v model.inputs } ! []
+
+        UpdateJson reqType json ->
+            case Decode.decodeString Decode.value json of
+                Ok data -> 
+                    { model | error = "", inputs = Dict.insert reqType data model.inputs } ! []
+                Err error ->
+                    { model | error = error } ! []
+
+        EditAsJson reqType isJson ->
+            { model | editAsJson = if isJson then
+                Set.insert reqType model.editAsJson
+            else
+                Set.remove reqType model.editAsJson
+                } ! []
 
 
 codeStyle : Html.Attribute msg
@@ -423,7 +459,28 @@ render model clientSettings =
                                 ""
 
                             Just val ->
-                                encode 2 val
+                                encode 2 <| preprocess val r.pathname
+
+
+                preprocess : Value -> String -> Value
+                preprocess body pathnameTemplate =
+                    pathnameTemplate
+                        |> Regex.find Regex.All paramsMatcher
+                        |> List.map .match
+                        |> List.map (String.dropLeft 1)
+                        |> List.foldl Dict.remove (objectBody body)
+                        |> Dict.toList
+                        |> Encode.object
+
+
+                objectBody body =
+                    body
+                        |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                        |> Result.withDefault []
+                        |> Dict.fromList
+
+                paramsMatcher =
+                    Regex.regex ":\\w+"
 
                 pathname =
                     case Dict.get name model.inputs of
@@ -435,7 +492,7 @@ render model clientSettings =
 
                 interpolate str val =
                     Regex.replace Regex.All
-                        (Regex.regex ":\\w+")
+                        paramsMatcher
                         (\{ match } ->
                             val
                                 |> Decode.decodeValue (Decode.at [ String.dropLeft 1 match ] Decode.string)
@@ -572,9 +629,32 @@ render model clientSettings =
                                 [ Html.h3 [] [ text label ]
                                 , Markdown.toHtml [] guide
                                 , Html.h4 [] [ text "Request schema" ]
+                                , if schema == JS.empty then
+                                    text ""
+                                else
+                                    div [ style [ ( "padding", "10px" ) ] ]
+                                        [ text "Edit mode: "
+                                        , Html.span [ style [ ( "cursor", "pointer" ), ( "border", "1px solid #ccc" ), ( "background", "#eee" ), ( "padding", "5px" ) ], onClick <| EditAsJson name False ] [ text "form 🐌" ]
+                                        , text  " "
+                                        , Html.span [ style [ ( "cursor", "pointer" ), ( "border", "1px solid #ccc" ), ( "background", "#eee" ), ( "padding", "5px" ) ], onClick <| EditAsJson name True ] [ text "json 🐞" ]
+                                        ]
                                 , div [ style [ ( "margin-bottom", "10px" ) ] ]
                                     [ if schema == JS.empty then
                                         text "no data required"
+                                    else if Set.member name model.editAsJson then
+                                        Html.textarea
+                                            [ onInput <| UpdateJson name
+                                            , style
+                                                [ ( "font-family", "Iosevka, Fira Code, Pragmata Pro, menlo, monospace" )
+                                                , ( "font-size", "10px" )
+                                                , ( "padding", "10px" )
+                                                , ( "width", "100%" )
+                                                , ( "box-sizing", "border-box" )
+                                                , ( "height", "300px" )
+                                                ]
+                                            ] [
+                                                text <| Encode.encode 2 data
+                                                ]
                                     else
                                         FragForm.render
                                         { validationErrors = Dict.empty
@@ -656,6 +736,16 @@ render model clientSettings =
                 "6. Poll for job status"
                 "Poll"
                 "service/show-job"
+                []
+            , renderBlock
+                "7. See RFI details"
+                "Show RFI"
+                "service/rfi-show"
+                []
+            , renderBlock
+                "8. Respond to RFI"
+                "Answer"
+                "service/rfi-answer"
                 []
             ]
 

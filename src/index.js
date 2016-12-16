@@ -212,6 +212,64 @@ const conf =
             , response:
                 { type: 'object'
                 , id: '#show-job-response'
+                , properties:
+                    { rfiId: { type: 'string', format: 'uuid' }
+                    }
+                }
+            , description: ''
+            }]
+        , [ 'service/rfi-show',
+            { method: 'GET'
+            , pathname: '/rfis/:id'
+            , service: 'service'
+            , auth: true
+            , request:
+                { type: 'object'
+                , id: '#answer-rfi-request'
+                , properties:
+                    { id:
+                        { type: 'string'
+                        , description: 'RFI id to show'
+                        , format: 'uuid'
+                        }
+                    }
+                }
+            , response:
+                { type: 'object'
+                , id: '#answer-rfi-response'
+                }
+            , description: ''
+            }]
+        , [ 'service/rfi-answer',
+            { method: 'PUT'
+            , pathname: '/rfis/:id'
+            , service: 'service'
+            , auth: true
+            , request:
+                { type: 'object'
+                , id: '#answer-rfi-request'
+                , properties:
+                    { id:
+                        { type: 'string'
+                        , description: 'RFI id to respond to'
+                        , format: 'uuid' }
+                    , answer:
+                        { type: 'object'
+                        , description: 'RFI answer schema.\n > NOTE: this is custom RFI schema and it can be replaced with general purpose response before we go live'
+                        , properties:
+                            { confirm:
+                                { type: 'boolean'
+                                , description: 'Answer with `confirm: true` if actual price is ok'
+                                }
+                            }
+                        , required: [ 'confirm' ]
+                        }
+                    }
+                , required: [ 'id', 'answer' ]
+                }
+            , response:
+                { type: 'object'
+                , id: '#answer-rfi-response'
                 }
             , description: ''
             }]

@@ -157,6 +157,9 @@ renderProperty context prop required path =
         "integer" ->
             renderInput context prop required path
 
+        "boolean" ->
+            renderInput context prop False path
+
         "object" ->
             renderSchema context path prop
 
@@ -238,6 +241,9 @@ renderInput context property required path =
                         "integer" ->
                             "text"
 
+                        "boolean" ->
+                            "checkbox"
+
                         _ ->
                             "text"
 
@@ -285,11 +291,16 @@ renderInput context property required path =
                                             Encode.null
                                 )
 
+                        "boolean" ->
+                            JS.getBool context.schema path context.data
+                                |> not
+                                |> Encode.bool
+
                         _ ->
                             Encode.string s
                     )
-    in
-        input
+
+        attributes =
             [ Attrs.required required
               -- , Attrs.name name
             , Attrs.title title
@@ -305,7 +316,22 @@ renderInput context property required path =
             , Attrs.value <|
                 if property.type_ == "integer" then
                     JS.getInt context.schema path context.data |> toString
+                else if property.type_ == "boolean" then
+                    String.join "_" path
                 else
                     JS.getString context.schema path context.data
             ]
+            ++ (
+                if property.type_ == "boolean" then
+                    [ Attrs.checked <|
+                        JS.getBool context.schema path context.data
+                    , onClick <|
+                        update ""
+                    ]
+                else
+                    []
+            )
+    in
+        input
+            attributes
             []

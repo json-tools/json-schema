@@ -1,4 +1,4 @@
-module JsonSchema exposing (Schema, ArrayItemDefinition(ArrayItemDefinition), Properties, empty, setValue, getValue, mapProperties, getString, getInt, getLength, defaultFor, fromValue, fromString, registerProperty)
+module JsonSchema exposing (Schema, ArrayItemDefinition(ArrayItemDefinition), Properties, empty, setValue, getValue, mapProperties, getString, getInt, getBool, getLength, defaultFor, fromValue, fromString, registerProperty)
 
 import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
@@ -294,6 +294,11 @@ getInt schema path value =
         |> Decode.decodeValue Decode.int
         |> Result.withDefault 0
 
+getBool : Schema -> List String -> Value -> Bool
+getBool schema path value =
+    getValue schema path value
+        |> Decode.decodeValue Decode.bool
+        |> Result.withDefault False
 
 getString : Schema -> List String -> Value -> String
 getString schema path value =
