@@ -289,7 +289,7 @@ if (appState.clientSettings) {
 }
 
 function init(state) {
-    const clientApp = Elm.Main.fullscreen([appState, conf]);
+    const clientApp = Elm.Main.fullscreen([appState, conf, __VERSION__]);
 
     clientApp.ports.storeConfig.subscribe(function(state) {
         console.log('storeConfig', state);

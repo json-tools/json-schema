@@ -1,3 +1,4 @@
+const pkg = require('./package.json');
 var path              = require( 'path' );
 var webpack           = require( 'webpack' );
 var merge             = require( 'webpack-merge' );
@@ -33,6 +34,9 @@ var commonConfig = {
   },
 
   plugins: [
+    new webpack.DefinePlugin({
+      __VERSION__: JSON.stringify(pkg.version)
+    }),
     new HtmlWebpackPlugin({
       template: 'src/index.html',
       inject:   'body',
@@ -56,7 +60,7 @@ if ( TARGET_ENV === 'development' ) {
 
     devServer: {
       inline:   true,
-      progress: true
+      // progress: true
     },
 
     module: {
@@ -64,7 +68,8 @@ if ( TARGET_ENV === 'development' ) {
         {
           test:    /\.elm$/,
           exclude: [/elm-stuff/, /node_modules/],
-          loader:  'elm-hot!elm-webpack?verbose=true&warn=true'
+          //loader:  'elm-hot!elm-webpack?verbose=false&warn=true'
+          loader:  'elm-hot!elm-webpack?warn=true'
         }
       ]
     }

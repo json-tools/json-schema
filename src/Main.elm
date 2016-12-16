@@ -12,7 +12,7 @@ import Pages.Vault
 import UrlParser exposing (Parser, (</>), int, oneOf, s, string)
 
 
-main : Program ( PersistedData, Config ) Model Msg
+main : Program ( PersistedData, Config, String ) Model Msg
 main =
     programWithFlags UrlChange
         { init = init
@@ -61,14 +61,15 @@ route =
 
 
 type alias Model =
-    { clientSettings : ClientSettings
+    { version : String
+    , clientSettings : ClientSettings
     , vault : Pages.Vault.Model
     , history : List Page
     }
 
 
-init : ( PersistedData, Config ) -> Navigation.Location -> ( Model, Cmd Msg )
-init ( persistedData, conf ) location =
+init : ( PersistedData, Config, String ) -> Navigation.Location -> ( Model, Cmd Msg )
+init ( persistedData, conf, version ) location =
     let
         defaultSettings =
             ClientSettings
@@ -86,6 +87,8 @@ init ( persistedData, conf ) location =
                     settings
     in
         Model
+            -- version
+            version
             -- clientSettings
             cfg
             -- vault
@@ -194,6 +197,7 @@ view model =
                     , ( "color", "white" )
                     , ( "font-weight", "bold" )
                     , ( "padding", "10px" )
+                    , ( "position", "relative" )
                     ]
                 ]
                 [ Html.label []
@@ -217,6 +221,16 @@ view model =
                             ]
                         ]
                         []
+                    , Html.span
+                        [ style
+                            [ ( "position", "absolute" )
+                            , ( "right", "10px" )
+                            , ( "top", "10px" )
+                            , ( "color", "#ebdbb2" )
+                            , ( "font-weight", "normal" )
+                            ]
+                        ]
+                        [ text <| "v" ++ model.version ]
                     ]
                 , div
                     [ style
