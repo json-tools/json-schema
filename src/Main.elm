@@ -203,6 +203,8 @@ view model =
                         [ onInput SetAuth
                         , Attrs.value model.clientSettings.secretKey
                         , Attrs.size 48
+                        , Attrs.name "secret-key"
+                        , Attrs.autocomplete True
                         , style
                             [ ( "font-family", "iosevka, menlo, monospace" )
                             , ( "font-size", "14px" )
