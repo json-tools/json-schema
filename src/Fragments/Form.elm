@@ -30,6 +30,7 @@ type alias Context msg =
 updateValue : Context msg -> Path -> Value -> Value
 updateValue ctx path val =
     JS.setValue ctx.schema path val ctx.data
+        |> Result.withDefault ctx.data
 
 
 render : Context msg -> Html.Html msg

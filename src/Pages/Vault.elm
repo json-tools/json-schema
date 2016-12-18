@@ -156,7 +156,7 @@ update msg model clientSettings =
                                 v
                                     |> Maybe.withDefault null
                                     |> JS.setValue (getSchema destName model) destPath x
-                                    |> Just
+                                    |> Result.toMaybe
                             )
 
                 id =
@@ -293,7 +293,7 @@ update msg model clientSettings =
                                 v
                                     |> Maybe.withDefault null
                                     |> JS.setValue (getSchema destName model) destPath x
-                                    |> Just
+                                    |> Result.toMaybe
                             )
             in
                 case name of
@@ -355,7 +355,7 @@ update msg model clientSettings =
 
         UpdateJson reqType json ->
             case Decode.decodeString Decode.value json of
-                Ok data -> 
+                Ok data ->
                     { model | error = "", inputs = Dict.insert reqType data model.inputs } ! []
                 Err error ->
                     { model | error = error } ! []

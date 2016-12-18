@@ -1,5 +1,29 @@
 module JsonSchema exposing (Schema, ArrayItemDefinition(ArrayItemDefinition), Properties, empty, setValue, getValue, mapProperties, getString, getInt, getBool, getLength, defaultFor, fromValue, fromString, registerProperty)
 
+{-| This library provides bunch of utility methods for parsing JSON values using
+schemas defined in json-schema format
+
+# Definition
+@docs Schema, ArrayItemDefinition, Properties
+
+# Schema creation
+@docs empty, fromString, fromValue
+
+# Schema manipulation
+@docs registerProperty
+
+# Reading value
+@docs defaultFor, getBool, getInt, getLength, getString, getValue
+
+# Writing value
+
+@docs setValue
+
+# Helpers
+@docs mapProperties
+
+-}
+
 import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
@@ -8,9 +32,13 @@ import Dict
 import String
 
 
+{-| Schema represents node of schema. Leaf types are `string`, `int` and `boolean`.
+Composite types are `array` (items definitions in `items`)  and `object` (properties definitions in `properties`)
+-}
 type alias Schema =
     { type_ : String
     , required : Set.Set String
+    , default : Maybe Value
     , description : String
     , format : Maybe String
     , ref : Maybe String
@@ -21,14 +49,20 @@ type alias Schema =
     }
 
 
+{-| ArrayItemDefinition
+-}
 type ArrayItemDefinition
     = ArrayItemDefinition Schema
 
 
+{-| Properties
+-}
 type Properties
     = Properties (List ( String, Schema ))
 
 
+{-| Empty schema object
+-}
 empty : Schema
 empty =
     Schema
@@ -36,6 +70,8 @@ empty =
         "any"
         -- required []
         Set.empty
+        -- default
+        Nothing
         -- description
         ""
         -- format
@@ -52,12 +88,16 @@ empty =
         (Properties [])
 
 
+{-| Build schema from JSON string
+-}
 fromString : String -> Result String Schema
 fromString str =
     Decode.decodeString decodeSchema str
         |> Result.andThen convert
 
 
+{-| Build schema from JSON value
+-}
 fromValue : Value -> Result String Schema
 fromValue val =
     Decode.decodeValue decodeSchema val
@@ -67,15 +107,16 @@ fromValue val =
 decodeSchema : Decoder Schema
 decodeSchema =
     succeed Schema
-        |: (withDefault "" (field "type" string))
-        |: (withDefault Set.empty (field "required" <| DecodeExtra.set string))
+        |: (withDefault "" <| field "type" string)
+        |: (withDefault Set.empty <| field "required" (DecodeExtra.set string))
+        |: (maybe <| field "default" Decode.value)
         |: (withDefault "" (field "description" string))
-        |: (maybe (field "format" string))
-        |: (maybe (field "$ref" string))
-        |: (maybe (field "enum" (Decode.list string)))
-        |: (maybe (field "items" (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema))))
-        |: (withDefault (Properties []) (field "properties" (lazy (\_ -> decodeProperties))))
-        |: (withDefault (Properties []) (field "definitions" (lazy (\_ -> decodeProperties))))
+        |: (maybe <| field "format" string)
+        |: (maybe <| field "$ref" string)
+        |: (maybe <| field "enum" (Decode.list string))
+        |: (maybe <| field "items" (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema)))
+        |: (withDefault (Properties []) <| field "properties" (lazy (\_ -> decodeProperties)))
+        |: (withDefault (Properties []) <| field "definitions" (lazy (\_ -> decodeProperties)))
 
 
 decodeProperties : Decoder Properties
@@ -194,112 +235,132 @@ convert rootSchema =
         walk rootSchema
 
 
-setValue : Schema -> List String -> Value -> Value -> Value
+{-| Set value of node
+-}
+setValue : Schema -> List String -> Value -> Value -> Result String Value
 setValue schema subPath finalValue dataNode =
-    let
-        result =
-            case subPath of
-                [] ->
-                    finalValue
+    case subPath of
+        [] ->
+            (Ok finalValue)
 
-                key :: tail ->
+        key :: tail ->
+            case schema.type_ of
+                "object" ->
                     let
-                        subSchema =
-                            (getDefinition schema.properties key)
-                    in
-                        case schema.type_ of
-                            "object" ->
-                                let
-                                    node =
-                                        (decodeDict dataNode)
+                        nodeDict =
+                            decodeDict dataNode
 
-                                    value =
-                                        withDefaultFor schema (Dict.get key node)
-                                in
-                                    Dict.insert key
-                                        (case subSchema of
-                                            Just prop ->
-                                                setValue
-                                                    prop
-                                                    tail
-                                                    finalValue
-                                                    value
+                        value =
+                            nodeDict
+                                |> Dict.get key
+                                |> withDefaultFor schema
 
-                                            Nothing ->
-                                                finalValue
-                                        )
-                                        node
-                                        |> encodeDict
-
-                            "array" ->
-                                let
-                                    i =
-                                        Debug.log "array index is"
-                                            (String.toInt key |> Result.withDefault 0)
-
-                                    list =
-                                        (decodeList dataNode)
-
-                                    len =
-                                        List.length list
-
-                                    update list =
-                                        let
-                                            updated =
-                                                List.indexedMap
-                                                    (\index item ->
-                                                        if index == i then
-                                                            case schema.items of
-                                                                Just (ArrayItemDefinition prop) ->
-                                                                    setValue
-                                                                        prop
-                                                                        tail
-                                                                        finalValue
-                                                                        item
-
-                                                                Nothing ->
-                                                                    -- TODO: this should be Err
-                                                                    finalValue
-                                                        else
-                                                            item
-                                                    )
-                                                    list
-                                        in
-                                            updated
-                                in
-                                    (if len > i then
-                                        Debug.log "just upd" list
-                                     else
-                                        (case schema.items of
-                                            Just (ArrayItemDefinition prop) ->
-                                                list
-                                                    ++ [ defaultFor prop ]
-
-                                            Nothing ->
-                                                list
-                                        )
-                                    )
-                                        |> update
-                                        |> Encode.list
-
-                            _ ->
+                        updatedValue prop =
+                            setValue
+                                prop
+                                tail
                                 finalValue
+                                value
+
+                    in
+                        case getDefinition schema.properties key of
+                            Just prop ->
+                                case updatedValue prop of
+                                    (Ok val) ->
+                                        nodeDict
+                                            |> Dict.insert key val
+                                            |> encodeDict
+                                            |> (\v -> (Ok v))
+                                    (Err e) ->
+                                        (Err e)
+                                
+
+                            Nothing ->
+                                (Err "Key not found")
+
+
+                "array" ->
+                    let
+                        index =
+                            String.toInt key |> Result.withDefault 0
+
+                        nodeList =
+                            decodeList dataNode
+
+                    in
+                        case schema.items of
+                            Nothing ->
+                                (Err "No items definition")
+
+                            Just (ArrayItemDefinition prop) ->
+                                case getListItem index nodeList of
+                                    Just oldItem ->
+                                        case setValue prop tail finalValue oldItem of
+                                            (Ok newValue) ->
+                                                setListItem index newValue nodeList
+                                                    |> Encode.list
+                                                    |> (\v -> (Ok v))
+
+                                            (Err e) ->
+                                                (Err e)
+
+
+                                    Nothing ->
+                                        nodeList ++ [ defaultFor prop ] 
+                                            |> Encode.list
+                                            |> (\v -> (Ok v))
+
+                _ ->
+                    (Ok finalValue)
+
+getListItem : Int -> List a -> Maybe a
+getListItem index list =
+    let
+        (length, result) =
+            List.foldl
+                (\item (i, result) ->
+                    if index == i then
+                        (i + 1, Just item)
+                    else
+                        (i + 1, result)
+                )
+                (0, Nothing)
+                list
     in
         result
 
 
+setListItem : Int -> a -> List a -> List a
+setListItem index a list =
+    List.indexedMap
+        (\i item ->
+            if index == i then
+                a
+            else
+                item
+        )
+        list
+
+{-| Return int leaf
+-}
 getInt : Schema -> List String -> Value -> Int
 getInt schema path value =
     getValue schema path value
         |> Decode.decodeValue Decode.int
         |> Result.withDefault 0
 
+
+{-| Return boolean leaf
+-}
 getBool : Schema -> List String -> Value -> Bool
 getBool schema path value =
     getValue schema path value
         |> Decode.decodeValue Decode.bool
         |> Result.withDefault False
 
+
+{-| Return string leaf
+-}
 getString : Schema -> List String -> Value -> String
 getString schema path value =
     getValue schema path value
@@ -307,6 +368,8 @@ getString schema path value =
         |> Result.withDefault ""
 
 
+{-| Return length of array node
+-}
 getLength : Schema -> List String -> Value -> Int
 getLength schema path value =
     getValue schema path value
@@ -314,36 +377,56 @@ getLength schema path value =
         |> List.length
 
 
+{-| Return default (initial) value for schema node. When default value for node
+is not specified, then default calculated based on type:
+
+    - "boolean" -> False
+    - "integer" -> 0
+    - "array" -> []
+    - "object" -> {props listed in required}
+-}
 defaultFor : Schema -> Value
 defaultFor schema =
-    case schema.type_ of
-        "object" ->
+    let
+        defaultChildProp propName =
+            ( propName
+            , case getDefinition schema.properties propName of
+                Just s ->
+                    defaultFor s
+
+                Nothing ->
+                    Encode.null
+            )
+
+        objectFromRequiredProps =
             schema.required
                 |> Set.toList
-                |> List.map (\propName ->
-                    ( propName
-                    , case getDefinition schema.properties propName of
-                        Just s ->
-                            defaultFor s
+                |> List.map defaultChildProp
 
-                        Nothing ->
-                            Encode.null
-                        
-                    )
-                )
-                |> Encode.object
+        defaultDefault =
+            case schema.type_ of
+                "object" ->
+                    Encode.object objectFromRequiredProps
 
-        "array" ->
-            Encode.list []
+                "array" ->
+                    Encode.list []
 
-        "integer" ->
-            Encode.int 0
+                "integer" ->
+                    Encode.int 0
 
-        "boolean" ->
-            Encode.bool False
+                "boolean" ->
+                    Encode.bool False
 
-        _ ->
-            Encode.string ""
+                -- "any", "string" (assume those are strings)
+                _ ->
+                    Encode.string ""
+    in
+        case schema.default of
+            Just default ->
+                default
+
+            Nothing ->
+                defaultDefault
 
 
 encodeDict : Dict.Dict String Value -> Value
@@ -376,6 +459,8 @@ getDefinition (Properties defs) name =
         defs
 
 
+{-| getValue
+-}
 getValue : Schema -> List String -> Value -> Value
 getValue schema path inputData =
     (case path of
@@ -425,11 +510,15 @@ withDefaultFor schema =
     Maybe.withDefault <| defaultFor schema
 
 
+{-| Iterate through properties
+-}
 mapProperties : Properties -> (( String, Schema ) -> a) -> List a
 mapProperties (Properties props) fn =
     List.map fn props
 
 
+{-| Register property
+-}
 registerProperty : String -> Schema -> Schema -> Schema
 registerProperty name prop schema =
     let

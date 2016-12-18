@@ -28,9 +28,6 @@ port storeConfig : PersistedData -> Cmd msg
 toHash : Page -> String
 toHash page =
     case page of
-        Home ->
-            "#home"
-
         Settings ->
             "#settings"
 
@@ -48,8 +45,7 @@ toHash page =
 route : Parser (Page -> a) a
 route =
     oneOf
-        [ UrlParser.map Home (s "home")
-        , UrlParser.map Settings (s "settings")
+        [ UrlParser.map Settings (s "settings")
         , UrlParser.map SecureVault (s "secure-vault")
           --, map Blog (s "blog" </> int)
           --, map Search (s "search" </> string)
@@ -243,9 +239,6 @@ view model =
                 ]
             , div [ style <| centerStyle "column" "stretch" ]
                 (case model.history of
-                    Home :: h ->
-                        [ text "Welcome to Automation Cloud Test Client" ]
-
                     Settings :: h ->
                         [ Html.map PagesSettingsMsg <|
                             Pages.Settings.render model.clientSettings
