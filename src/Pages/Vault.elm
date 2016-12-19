@@ -633,6 +633,16 @@ render model clientSettings =
                         , ( "font-weight", "bold" )
                         , ( "color", "white" )
                         ]
+
+                isJsonEditingMode =
+                    Set.member name model.editAsJson
+
+
+                modeButtonStyles isJson =
+                    if isJson == isJsonEditingMode then
+                        [ ( "border", "1px solid #9e9e9e" ), ( "background", "#9e9e9e" ), ( "padding", "5px" ), ( "color", "white" ) ]
+                    else
+                        [ ( "cursor", "pointer" ), ( "border", "1px solid #ccc" ), ( "background", "#eee" ), ( "padding", "5px" ) ]
             in
                 div [ style [ ( "border-bottom", "1px solid #aaa" ) ] ]
                     [ div [ style [ ( "display", "flex" ), ( "flex-direction", "row" ) ] ]
@@ -648,14 +658,14 @@ render model clientSettings =
                                 else
                                     div [ style [ ( "padding", "10px" ) ] ]
                                         [ text "Edit mode: "
-                                        , Html.span [ style [ ( "cursor", "pointer" ), ( "border", "1px solid #ccc" ), ( "background", "#eee" ), ( "padding", "5px" ) ], onClick <| EditAsJson name False ] [ text "form 🐌" ]
+                                        , Html.span [ style <| modeButtonStyles False, onClick <| EditAsJson name False ] [ text "form 🐌" ]
                                         , text  " "
-                                        , Html.span [ style [ ( "cursor", "pointer" ), ( "border", "1px solid #ccc" ), ( "background", "#eee" ), ( "padding", "5px" ) ], onClick <| EditAsJson name True ] [ text "json 🐞" ]
+                                        , Html.span [ style <| modeButtonStyles True, onClick <| EditAsJson name True ] [ text "json 🐞" ]
                                         ]
                                 , div [ style [ ( "margin-bottom", "10px" ) ] ]
                                     [ if schema == JS.empty then
                                         text "no data required"
-                                    else if Set.member name model.editAsJson then
+                                    else if isJsonEditingMode then
                                         Html.textarea
                                             [ onInput <| UpdateJson name
                                             , style
