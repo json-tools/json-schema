@@ -1,4 +1,21 @@
-module JsonSchema exposing (Schema, ArrayItemDefinition(ArrayItemDefinition), Properties, empty, setValue, getValue, mapProperties, getString, getInt, getBool, getLength, defaultFor, fromValue, fromString, registerProperty)
+module JsonSchema
+    exposing
+        ( Schema
+        , ArrayItemDefinition(ArrayItemDefinition)
+        , Properties
+        , empty
+        , fromValue
+        , fromString
+        , registerProperty
+        , setValue
+        , getValue
+        , defaultFor
+        , getString
+        , getInt
+        , getBool
+        , getLength
+        , mapProperties
+        )
 
 {-| This library provides bunch of utility methods for parsing JSON values using
 schemas defined in json-schema format
@@ -261,23 +278,21 @@ setValue schema subPath finalValue dataNode =
                                 tail
                                 finalValue
                                 value
-
                     in
                         case getDefinition schema.properties key of
                             Just prop ->
                                 case updatedValue prop of
-                                    (Ok val) ->
+                                    Ok val ->
                                         nodeDict
                                             |> Dict.insert key val
                                             |> encodeDict
                                             |> (\v -> (Ok v))
-                                    (Err e) ->
+
+                                    Err e ->
                                         (Err e)
-                                
 
                             Nothing ->
                                 (Err "Key not found")
-
 
                 "array" ->
                     let
@@ -286,7 +301,6 @@ setValue schema subPath finalValue dataNode =
 
                         nodeList =
                             decodeList dataNode
-
                     in
                         case schema.items of
                             Nothing ->
@@ -296,35 +310,36 @@ setValue schema subPath finalValue dataNode =
                                 case getListItem index nodeList of
                                     Just oldItem ->
                                         case setValue prop tail finalValue oldItem of
-                                            (Ok newValue) ->
+                                            Ok newValue ->
                                                 setListItem index newValue nodeList
                                                     |> Encode.list
                                                     |> (\v -> (Ok v))
 
-                                            (Err e) ->
+                                            Err e ->
                                                 (Err e)
 
-
                                     Nothing ->
-                                        nodeList ++ [ defaultFor prop ] 
+                                        nodeList
+                                            ++ [ defaultFor prop ]
                                             |> Encode.list
                                             |> (\v -> (Ok v))
 
                 _ ->
                     (Ok finalValue)
 
+
 getListItem : Int -> List a -> Maybe a
 getListItem index list =
     let
-        (length, result) =
+        ( length, result ) =
             List.foldl
-                (\item (i, result) ->
+                (\item ( i, result ) ->
                     if index == i then
-                        (i + 1, Just item)
+                        ( i + 1, Just item )
                     else
-                        (i + 1, result)
+                        ( i + 1, result )
                 )
-                (0, Nothing)
+                ( 0, Nothing )
                 list
     in
         result
@@ -340,6 +355,7 @@ setListItem index a list =
                 item
         )
         list
+
 
 {-| Return int leaf
 -}

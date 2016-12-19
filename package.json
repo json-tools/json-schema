@@ -1,9 +1,8 @@
 {
-  "name": "automation-cloud-client",
+  "name": "elm-json-schema",
   "private": true,
   "version": "3.2.0",
   "description": "",
-  "main": "index.js",
   "author": "",
   "license": "ISC",
   "scripts": {
