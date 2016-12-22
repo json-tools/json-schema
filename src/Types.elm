@@ -2,7 +2,18 @@ module Types exposing (..)
 
 import JsonSchema
 import Json.Decode exposing (Value)
+import Http exposing (Response, Error)
 
+type LogEntry
+    = LogRequest RequestSettings
+    | LogResponse (Response String)
+    | LogError Error
+
+type alias RequestSettings =
+    { definition : ApiEndpointDefinition
+    , clientSettings : ClientSettings
+    , data : Maybe Value
+    }
 
 type alias ClientSettings =
     { service : String

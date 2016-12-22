@@ -12,7 +12,15 @@ import Dict
 import Set
 import String
 import Layout exposing (boxStyle)
-import Types exposing (ClientSettings, RequestConfig, Config, ApiEndpointDefinition)
+import Types
+    exposing
+        ( ClientSettings
+        , RequestConfig
+        , Config
+        , ApiEndpointDefinition
+        , LogEntry(..)
+        , RequestSettings
+        )
 import Markdown
 import JsonSchema as JS exposing (Schema, ArrayItemDefinition)
 import Util exposing (performRequest, buildHeaders)
@@ -28,6 +36,7 @@ type alias Model =
     , endpoints : Endpoints
     , dependencies : Dependencies
     , editAsJson : Set.Set String
+    , auditLog : List LogEntry
     }
 
 
@@ -56,6 +65,8 @@ init conf =
         (extractDependencies conf.dependencies)
         -- editAsJson
         Set.empty
+        -- auditLog
+        []
 
 
 extractInputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
@@ -64,11 +75,13 @@ extractInputSchemas endpoints =
         |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty ))
         |> Dict.fromList
 
+
 extractInputs : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Value
 extractInputs endpoints =
     endpoints
         |> List.map (\( name, x ) -> ( name, JS.fromValue x.request |> Result.withDefault JS.empty |> JS.defaultFor ))
         |> Dict.fromList
+
 
 extractOutputSchemas : List ( String, ApiEndpointDefinition ) -> Dict.Dict String Schema
 extractOutputSchemas endpoints =
@@ -184,10 +197,8 @@ update msg model clientSettings =
                 ---         Just serv ->
                 ---             inputs
                 ---                 |> Dict.insert "service/create-job" (JS.registerProperty "input" (JS.fromValue serv.schema |> Result.withDefault JS.empty) target)
-
                 ---         Nothing ->
                 ---             inputs
-
                 findService : String -> Maybe Service
                 findService name =
                     model.services
@@ -210,17 +221,29 @@ update msg model clientSettings =
         HttpResponse name r ->
             let
                 updatedModel =
-                    { model | responses = model.responses |> Dict.insert name r }
+                    { model
+                        | responses = model.responses |> Dict.insert name r
+                        , auditLog = (LogResponse r) :: model.auditLog
+                    }
             in
                 update (PerformPostAction name) updatedModel clientSettings
 
         HttpError name err ->
-            case err of
-                Http.BadStatus resp ->
-                    { model | responses = model.responses |> Dict.insert name resp } ! []
+            let
+                auditLog = (LogError err) :: model.auditLog
+            in
+                case err of
+                    Http.BadStatus resp ->
+                        { model
+                            | responses = model.responses |> Dict.insert name resp
+                            , auditLog = auditLog
+                        } ! []
 
-                _ ->
-                    { model | error = toString err } ! []
+                    _ ->
+                        { model
+                            | error = toString err
+                            , auditLog = auditLog
+                        } ! []
 
         PerformRequest name ->
             let
@@ -236,19 +259,25 @@ update msg model clientSettings =
                         { model | error = s } ! []
 
                     Ok request ->
-                        { model | error = "" }
-                            ! [ request
-                                    |> performRequest clientSettings body
-                                    |> Http.send
-                                        (\res ->
-                                            case res of
-                                                Ok r ->
-                                                    HttpResponse name r
+                        let
+                            req =
+                                RequestSettings request clientSettings body
+                        in
+                            { model
+                                | error = ""
+                                , auditLog = (LogRequest req) :: model.auditLog
+                            }
+                                ! [ performRequest req
+                                        |> Http.send
+                                            (\res ->
+                                                case res of
+                                                    Ok r ->
+                                                        HttpResponse name r
 
-                                                Err err ->
-                                                    HttpError name err
-                                        )
-                              ]
+                                                    Err err ->
+                                                        HttpError name err
+                                            )
+                                  ]
 
         PerformPostAction name ->
             let
@@ -313,13 +342,13 @@ update msg model clientSettings =
                             key =
                                 get "vault/create-pan" [ "key" ]
                         in
-                        { model
-                            | inputs =
-                                model.inputs
-                                    |> set "vault/create-fake-pan" [ "key" ] key
-                                    |> set "vault/create-fake-pan" [ "panId" ] panId
-                        }
-                            ! []
+                            { model
+                                | inputs =
+                                    model.inputs
+                                        |> set "vault/create-fake-pan" [ "key" ] key
+                                        |> set "vault/create-fake-pan" [ "panId" ] panId
+                            }
+                                ! []
 
                     "service/list-services" ->
                         { model
@@ -337,7 +366,8 @@ update msg model clientSettings =
 
                     "service/show-job" ->
                         let
-                            rfiId = get "service/show-job" [ "rfiId" ]
+                            rfiId =
+                                get "service/show-job" [ "rfiId" ]
                         in
                             { model
                                 | inputs =
@@ -357,15 +387,19 @@ update msg model clientSettings =
             case Decode.decodeString Decode.value json of
                 Ok data ->
                     { model | error = "", inputs = Dict.insert reqType data model.inputs } ! []
+
                 Err error ->
                     { model | error = error } ! []
 
         EditAsJson reqType isJson ->
-            { model | editAsJson = if isJson then
-                Set.insert reqType model.editAsJson
-            else
-                Set.remove reqType model.editAsJson
-                } ! []
+            { model
+                | editAsJson =
+                    if isJson then
+                        Set.insert reqType model.editAsJson
+                    else
+                        Set.remove reqType model.editAsJson
+            }
+                ! []
 
 
 codeStyle : Html.Attribute msg
@@ -405,7 +439,7 @@ renderResponseSchema schema =
                             ]
                             [ Html.code [ style [ ( "font-weight", "bold" ) ] ] [ text name ]
                             , Html.br [] []
-                            , Html.span [ style [("color", "dimgrey")] ] [ text prop.type_ ]
+                            , Html.span [ style [ ( "color", "dimgrey" ) ] ] [ text prop.type_ ]
                             ]
                         , div
                             [ style
@@ -475,7 +509,6 @@ render model clientSettings =
                             Just val ->
                                 encode 2 <| preprocess val r.pathname
 
-
                 preprocess : Value -> String -> Value
                 preprocess body pathnameTemplate =
                     pathnameTemplate
@@ -485,7 +518,6 @@ render model clientSettings =
                         |> List.foldl Dict.remove (objectBody body)
                         |> Dict.toList
                         |> Encode.object
-
 
                 objectBody body =
                     body
@@ -637,7 +669,6 @@ render model clientSettings =
                 isJsonEditingMode =
                     Set.member name model.editAsJson
 
-
                 modeButtonStyles isJson =
                     if isJson == isJsonEditingMode then
                         [ ( "border", "1px solid #9e9e9e" ), ( "background", "#9e9e9e" ), ( "padding", "5px" ), ( "color", "white" ) ]
@@ -655,17 +686,17 @@ render model clientSettings =
                                 , Html.h4 [] [ text "Request schema" ]
                                 , if schema == JS.empty then
                                     text ""
-                                else
+                                  else
                                     div [ style [ ( "padding", "10px" ) ] ]
                                         [ text "Edit mode: "
                                         , Html.span [ style <| modeButtonStyles False, onClick <| EditAsJson name False ] [ text "form 🐌" ]
-                                        , text  " "
+                                        , text " "
                                         , Html.span [ style <| modeButtonStyles True, onClick <| EditAsJson name True ] [ text "json 🐞" ]
                                         ]
                                 , div [ style [ ( "margin-bottom", "10px" ) ] ]
                                     [ if schema == JS.empty then
                                         text "no data required"
-                                    else if isJsonEditingMode then
+                                      else if isJsonEditingMode then
                                         Html.textarea
                                             [ onInput <| UpdateJson name
                                             , style
@@ -676,16 +707,16 @@ render model clientSettings =
                                                 , ( "box-sizing", "border-box" )
                                                 , ( "height", "300px" )
                                                 ]
-                                            ] [
-                                                text <| Encode.encode 2 data
-                                                ]
-                                    else
+                                            ]
+                                            [ text <| Encode.encode 2 data
+                                            ]
+                                      else
                                         FragForm.render
-                                        { validationErrors = Dict.empty
-                                        , schema = schema
-                                        , data = data
-                                        , onInput = UpdateData name
-                                        }
+                                            { validationErrors = Dict.empty
+                                            , schema = schema
+                                            , data = data
+                                            , onInput = UpdateData name
+                                            }
                                     ]
                                 , div []
                                     [ button

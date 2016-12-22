@@ -5,6 +5,9 @@ import Html exposing (div, span, button, text, form, input, ul, li, hr, a)
 import Navigation exposing (programWithFlags)
 import Html.Attributes as Attrs exposing (style, href)
 import Html.Events exposing (onClick, onInput)
+import Json.Encode as Encode
+import Json.Decode as Decode
+import Http
 import Messages exposing (Msg, Msg(..))
 import Pages exposing (Page, Page(..))
 import Pages.Settings
@@ -34,6 +37,9 @@ toHash page =
         SecureVault ->
             "#secure-vault"
 
+        AuditLog ->
+            "#audit-log"
+
 
 
 -- Blog id ->
@@ -47,6 +53,7 @@ route =
     oneOf
         [ UrlParser.map Settings (s "settings")
         , UrlParser.map SecureVault (s "secure-vault")
+        , UrlParser.map AuditLog (s "audit-log")
           --, map Blog (s "blog" </> int)
           --, map Search (s "search" </> string)
         ]
@@ -238,21 +245,84 @@ view model =
                     [ text "This key is used to authenticate all API requests. Contact API administrator (in slack) to obtain your secret key." ]
                 ]
             , div [ style <| centerStyle "column" "stretch" ]
-                (case model.history of
+                [ case model.history of
                     Settings :: h ->
-                        [ Html.map PagesSettingsMsg <|
+                        Html.map PagesSettingsMsg <|
                             Pages.Settings.render model.clientSettings
-                        ]
 
                     SecureVault :: h ->
-                        [ Html.map PagesVaultMsg <|
+                        Html.map PagesVaultMsg <|
                             Pages.Vault.render model.vault model.clientSettings
-                        ]
+
+                    AuditLog :: h ->
+                        model.vault.auditLog
+                            |> List.reverse
+                            |> List.map viewLogEntry
+                            |> Html.ol []
 
                     _ ->
-                        [ text "" ]
-                )
+                        text ""
+                ]
             ]
+
+
+viewLogEntry : LogEntry -> Html.Html msg
+viewLogEntry logEntry =
+    let
+        logLine =
+            case logEntry of
+                LogRequest req ->
+                    Html.pre []
+                        [ text <|
+                            "Request "
+                                ++ req.definition.method
+                                ++ " "
+                                ++ (if req.definition.service == "vault" then
+                                        req.clientSettings.vault ++ req.definition.pathname
+                                    else
+                                        req.clientSettings.service ++ req.definition.pathname
+                                   )
+                                ++ " "
+                                ++ (Maybe.withDefault Encode.null req.data |> Encode.encode 4)
+                        ]
+
+                LogResponse res ->
+                    Html.pre
+                        [ style
+                            [ ( "max-height", "300px" )
+                            , ( "overflow", "auto" )
+                            , ( "background", "#eee" )
+                            , ( "padding", "10px" )
+                            ]
+                        ]
+                        [ text <|
+                            "Response "
+                                ++ (toString res.status)
+                                ++ " "
+                                ++ (res.body
+                                        |> Decode.decodeString Decode.value
+                                        |> Result.withDefault Encode.null
+                                        |> Encode.encode 4
+                                   )
+                        ]
+
+                LogError err ->
+                    case err of
+                        Http.BadStatus e ->
+                            Html.pre []
+                                [ text <|
+                                    "ErrResponse "
+                                        ++ (e.body
+                                                |> Decode.decodeString Decode.value
+                                                |> Result.withDefault Encode.null
+                                                |> Encode.encode 4
+                                           )
+                                ]
+
+                        _ ->
+                            div [] [ text <| "ErrResponse " ++ (toString err) ]
+    in
+        Html.li [] [ logLine ]
 
 
 viewLink : String -> String -> String -> Html.Html Msg

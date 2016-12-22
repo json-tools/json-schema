@@ -2,7 +2,7 @@ module Util exposing (buildAuthHeader, performRequest, buildHeaders)
 
 import Http exposing (Error, Response, Request, Header, header)
 import Vendor.Base64 as Base64
-import Types exposing (ClientSettings, RequestConfig, ApiEndpointDefinition)
+import Types exposing (ClientSettings, RequestConfig, ApiEndpointDefinition, RequestSettings)
 import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (null)
 import String
@@ -36,21 +36,21 @@ buildHeaders req clientSettings =
             |> contentTypeHeader
 
 
-performRequest : ClientSettings -> Maybe Value -> ApiEndpointDefinition -> Request (Response String)
-performRequest clientSettings body req =
+performRequest : RequestSettings -> Request (Response String)
+performRequest { clientSettings, data, definition } =
     let
 
         serviceUrl =
-            if req.service == "vault" then
+            if definition.service == "vault" then
                 clientSettings.vault
             else
                 clientSettings.service
 
         method =
-            String.toUpper req.method
+            String.toUpper definition.method
 
         pathname =
-            interpolate req.pathname body
+            interpolate definition.pathname data
 
         paramsMatcher =
             Regex.regex ":\\w+"
@@ -66,14 +66,14 @@ performRequest clientSettings body req =
                 str
 
         objectBody =
-            body
+            data
                 |> Maybe.withDefault null
                 |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
                 |> Result.withDefault []
                 |> Dict.fromList
 
         processedBody =
-            req.pathname
+            definition.pathname
                 |> Debug.log "pathName"
                 |> Regex.find Regex.All paramsMatcher
                 |> List.map .match
@@ -86,7 +86,7 @@ performRequest clientSettings body req =
     in
         Http.request
             { method = method
-            , headers = buildHeaders req clientSettings |> List.map (\(k, v) -> header k v)
+            , headers = buildHeaders definition clientSettings |> List.map (\(k, v) -> header k v)
             , url = serviceUrl ++ pathname
             , body = Http.jsonBody <| processedBody
             , expect = Http.expectStringResponse (\r -> Ok r)
