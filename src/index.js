@@ -241,7 +241,7 @@ const conf =
             , description: ''
             }]
         , [ 'service/rfi-answer',
-            { method: 'PUT'
+            { method: 'POST'
             , pathname: '/rfis/:id'
             , service: 'service'
             , auth: true
