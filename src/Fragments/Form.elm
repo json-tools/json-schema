@@ -37,15 +37,19 @@ render : Context msg -> Html.Html msg
 render context =
     renderSchema context [] context.schema
 
+
 renderPath : Path -> Html.Html msg
 renderPath path =
-    Html.pre [ style
-        [ ( "font-weight", "bold" )
-        , ( "font-size", (toString (21 - (List.length path) * 3)) ++ "px" )
-        , ( "margin-bottom", "20px" )
-        , ( "margin-top", "30px" )
+    Html.pre
+        [ style
+            [ ( "font-weight", "bold" )
+            , ( "font-size", toString (21 - List.length path * 3) ++ "px" )
+            , ( "margin-bottom", "20px" )
+            , ( "margin-top", "30px" )
+            ]
         ]
-    ] [ text <| String.join "." path ]
+        [ text <| String.join "." path ]
+
 
 renderSchema : Context msg -> Path -> Schema -> Html.Html msg
 renderSchema context path node =
@@ -76,60 +80,60 @@ renderSchema context path node =
             in
                 if property.type_ == "object" || property.type_ == "array" then
                     div []
-                    [ renderPath newPath
-                    , Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
-                    , renderProperty context property required newPath
-                    ]
+                        [ renderPath newPath
+                        , Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
+                        , renderProperty context property required newPath
+                        ]
                 else
-                div [ style [ ( "display", "flex" ), ("margin-bottom","20px") ] ]
-                    [ div
-                        [ style
-                            [ ( "flex-shrink", "0" )
-                            , ( "text-align", "right" )
-                            , ( "padding", "10px" )
-                            , ( "box-sizing", "border-box" )
-                            , ( "width", "38.2%" )
-                            , ( "background", "rgba(10, 150, 140, 0.04)" )
-                            ]
-                        ]
-                        [ text
-                            (if required then
-                                "* "
-                             else
-                                ""
-                            )
-                        , Html.code [ style [ ("font-weight", "bold") ] ] [ text name ]
-                        , Html.br [] []
-                        , Html.span [ style [ ( "color", "dimgrey" ) ] ] [ text type_ ]
-                        ]
-                    , div [ style
-                            [ ("padding", "10px")
-                            , ( "box-sizing", "border-box" )
-                            , ( "width", "61.8%" )
-                            ]
-                        ]
-                        [ if String.isEmpty property.description then
-                            text ""
-                        else
-                            Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
-
-                        ,  renderProperty context property required newPath
-                        , if hasError then
-                            span
-                                [ style
-                                    [ ( "display", "inline-block" )
-                                    , ( "font-style", "italic" )
-                                    , ( "background", "lightyellow" )
-                                    , ( "color", "red" )
-                                      -- , ( "font-weight", "bold" )
-                                    , ( "margin-top", "5px" )
-                                    ]
+                    div [ style [ ( "display", "flex" ), ( "margin-bottom", "20px" ) ] ]
+                        [ div
+                            [ style
+                                [ ( "flex-shrink", "0" )
+                                , ( "text-align", "right" )
+                                , ( "padding", "10px" )
+                                , ( "box-sizing", "border-box" )
+                                , ( "width", "38.2%" )
+                                , ( "background", "rgba(10, 150, 140, 0.04)" )
                                 ]
-                                [ text validationError ]
-                          else
-                            text ""
+                            ]
+                            [ text
+                                (if required then
+                                    "* "
+                                 else
+                                    ""
+                                )
+                            , Html.code [ style [ ( "font-weight", "bold" ) ] ] [ text name ]
+                            , Html.br [] []
+                            , Html.span [ style [ ( "color", "dimgrey" ) ] ] [ text type_ ]
+                            ]
+                        , div
+                            [ style
+                                [ ( "padding", "10px" )
+                                , ( "box-sizing", "border-box" )
+                                , ( "width", "61.8%" )
+                                ]
+                            ]
+                            [ if String.isEmpty property.description then
+                                text ""
+                              else
+                                Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
+                            , renderProperty context property required newPath
+                            , if hasError then
+                                span
+                                    [ style
+                                        [ ( "display", "inline-block" )
+                                        , ( "font-style", "italic" )
+                                        , ( "background", "lightyellow" )
+                                        , ( "color", "red" )
+                                          -- , ( "font-weight", "bold" )
+                                        , ( "margin-top", "5px" )
+                                        ]
+                                    ]
+                                    [ text validationError ]
+                              else
+                                text ""
+                            ]
                         ]
-                    ]
     in
         div [] <| JS.mapProperties node.properties renderRow
 
@@ -196,8 +200,8 @@ renderArray context property required path =
             ]
 
         renderItem index =
-            div [ ]
-                [ renderPath <| path ++ [index]
+            div []
+                [ renderPath <| path ++ [ index ]
                 , renderProperty
                     context
                     property
@@ -282,15 +286,17 @@ renderInput context property required path =
                             s
                                 |> replace Regex.All (regex "[^0-9]") (\_ -> "")
                                 |> String.toInt
-                                |> (\r -> case r of
-                                    Ok r ->
-                                        Encode.int r
-                                    Err x ->
-                                        let
-                                            a = Debug.log "error" x
-                                        in
-                                            Encode.null
-                                )
+                                |> \r ->
+                                    case r of
+                                        Ok r ->
+                                            Encode.int r
+
+                                        Err x ->
+                                            let
+                                                a =
+                                                    Debug.log "error" x
+                                            in
+                                                Encode.null
 
                         "boolean" ->
                             JS.getBool context.schema path context.data
@@ -322,16 +328,14 @@ renderInput context property required path =
                 else
                     JS.getString context.schema path context.data
             ]
-            ++ (
-                if property.type_ == "boolean" then
+                ++ if property.type_ == "boolean" then
                     [ Attrs.checked <|
                         JS.getBool context.schema path context.data
                     , onClick <|
                         update ""
                     ]
-                else
+                   else
                     []
-            )
     in
         input
             attributes

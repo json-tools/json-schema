@@ -127,7 +127,7 @@ decodeSchema =
         |: (withDefault "" <| field "type" string)
         |: (withDefault Set.empty <| field "required" (DecodeExtra.set string))
         |: (maybe <| field "default" Decode.value)
-        |: (withDefault "" (field "description" string))
+        |: withDefault "" (field "description" string)
         |: (maybe <| field "format" string)
         |: (maybe <| field "$ref" string)
         |: (maybe <| field "enum" (Decode.list string))
@@ -214,7 +214,7 @@ convert rootSchema =
                         Nothing ->
                             checkItems node
 
-                        Just enum ->
+                        Just _ ->
                             { node | type_ = "string" }
 
                 checkItems node =
@@ -222,7 +222,7 @@ convert rootSchema =
                         Nothing ->
                             checkProperties node node.properties
 
-                        Just items ->
+                        Just _ ->
                             { node | type_ = "array" }
 
                 checkProperties node (Properties p) =
@@ -286,7 +286,7 @@ setValue schema subPath finalValue dataNode =
                                         nodeDict
                                             |> Dict.insert key val
                                             |> encodeDict
-                                            |> (\v -> (Ok v))
+                                            |> \v -> Ok v
 
                                     Err e ->
                                         (Err e)
@@ -313,7 +313,7 @@ setValue schema subPath finalValue dataNode =
                                             Ok newValue ->
                                                 setListItem index newValue nodeList
                                                     |> Encode.list
-                                                    |> (\v -> (Ok v))
+                                                    |> \v -> Ok v
 
                                             Err e ->
                                                 (Err e)
@@ -322,7 +322,7 @@ setValue schema subPath finalValue dataNode =
                                         nodeList
                                             ++ [ defaultFor prop ]
                                             |> Encode.list
-                                            |> (\v -> (Ok v))
+                                            |> \v -> Ok v
 
                 _ ->
                     (Ok finalValue)
@@ -331,7 +331,7 @@ setValue schema subPath finalValue dataNode =
 getListItem : Int -> List a -> Maybe a
 getListItem index list =
     let
-        ( length, result ) =
+        ( _, result ) =
             List.foldl
                 (\item ( i, result ) ->
                     if index == i then
@@ -479,7 +479,7 @@ getDefinition (Properties defs) name =
 -}
 getValue : Schema -> List String -> Value -> Value
 getValue schema path inputData =
-    (case path of
+    case path of
         [] ->
             inputData
 
@@ -502,7 +502,7 @@ getValue schema path inputData =
                     let
                         i =
                             --Debug.log "array index is"
-                            (String.toInt key |> Result.withDefault 0)
+                            String.toInt key |> Result.withDefault 0
                     in
                         case schema.items of
                             Just (ArrayItemDefinition def) ->
@@ -518,7 +518,6 @@ getValue schema path inputData =
 
                 _ ->
                     inputData
-    )
 
 
 withDefaultFor : Schema -> Maybe Value -> Value
