@@ -1,7 +1,6 @@
 module Fragments.Form exposing (render, Context)
 
 import Types exposing (..)
-import Models exposing (ValidationErrors)
 import Json.Encode as Encode exposing (Value)
 import Html exposing (div, span, text, input)
 import Html.Events exposing (onClick, onInput)
@@ -9,7 +8,7 @@ import Html.Attributes as Attrs exposing (style)
 import Dict
 import Set
 import String
-import JsonSchema as JS
+import JsonSchema as JS exposing (Schema)
 import Layout exposing (boxStyle)
 import Markdown
 import Regex exposing (replace, regex)
@@ -20,8 +19,7 @@ type alias Path =
 
 
 type alias Context msg =
-    { validationErrors : ValidationErrors
-    , schema : Schema
+    { schema : Schema
     , data : Value
     , onInput : Value -> msg
     }
@@ -64,19 +62,6 @@ renderSchema context path node =
 
                 newPath =
                     path ++ [ name ]
-
-                validationError =
-                    Dict.get newPath context.validationErrors
-                        |> Maybe.withDefault ""
-
-                hasError =
-                    Dict.member newPath context.validationErrors
-
-                rowStyle =
-                    if hasError then
-                        boxStyle ++ [ ( "border-color", "red" ) ]
-                    else
-                        boxStyle
             in
                 if property.type_ == "object" || property.type_ == "array" then
                     div []
@@ -118,20 +103,6 @@ renderSchema context path node =
                               else
                                 Markdown.toHtml [ Attrs.class "markdown-doc" ] property.description
                             , renderProperty context property required newPath
-                            , if hasError then
-                                span
-                                    [ style
-                                        [ ( "display", "inline-block" )
-                                        , ( "font-style", "italic" )
-                                        , ( "background", "lightyellow" )
-                                        , ( "color", "red" )
-                                          -- , ( "font-weight", "bold" )
-                                        , ( "margin-top", "5px" )
-                                        ]
-                                    ]
-                                    [ text validationError ]
-                              else
-                                text ""
                             ]
                         ]
     in
