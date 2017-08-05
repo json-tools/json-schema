@@ -9,6 +9,7 @@
     "start": "webpack-dev-server --hot --inline --port 4000 --content-base src/"
   },
   "devDependencies": {
-    "elm": "^0.18.0"
+    "elm": "^0.18.0",
+    "elm-test": "^0.18.7"
   }
 }

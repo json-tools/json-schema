@@ -1,6 +1,6 @@
 module Tests exposing (all)
 
-import JsonSchema as JS exposing (Schema, empty)
+import Json.Schema as JS exposing (Schema, empty)
 
 
 --import Json.Decode as Decode exposing (decodeString, value)
@@ -61,11 +61,13 @@ all =
                 \() ->
                     blankRoot
                         |> JS.setValue simpleSchema [ "foo" ] (string "bar")
+                        |> Result.withDefault blankRoot
                         |> Expect.equal (object [ ( "foo", string "bar" ) ])
             , test "simple object with int" <|
                 \() ->
                     blankRoot
                         |> JS.setValue simpleIntSchema [ "foo" ] (int 0)
+                        |> Result.withDefault blankRoot
                         |> JS.getValue simpleIntSchema [ "foo" ]
                         |> Expect.equal (int 0)
             , test "nested object" <|
@@ -75,8 +77,9 @@ all =
             , test "nested array" <|
                 \() ->
                     let
-                        set =
-                            JS.setValue nestedArraySchema
+                        set path val target =
+                            JS.setValue nestedArrayObjectSchema path val target
+                                |> Result.withDefault blankRoot
 
                         get =
                             JS.getString nestedArraySchema
@@ -90,8 +93,9 @@ all =
             , test "nested array of objects" <|
                 \() ->
                     let
-                        set =
-                            JS.setValue nestedArrayObjectSchema
+                        set path val target =
+                            JS.setValue nestedArrayObjectSchema path val target
+                                |> Result.withDefault blankRoot
 
                         get =
                             JS.getString nestedArrayObjectSchema

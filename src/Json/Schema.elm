@@ -49,8 +49,11 @@ import Dict
 import String
 
 
-{-| Schema represents node of schema. Leaf types are `string`, `int` and `boolean`.
-Composite types are `array` (items definitions in `items`)  and `object` (properties definitions in `properties`)
+{-| Schema represents a node of schema.
+Leaf types are `string`, `int`, and `boolean`.
+Composite types are `array` and `object`.
+Array item type defined in `items`.
+Object properties defined in `properties`.
 -}
 type alias Schema =
     { type_ : String
@@ -66,19 +69,20 @@ type alias Schema =
     }
 
 
-{-| ArrayItemDefinition
+{-| ArrayItemDefinition - wrapper type for recursive schema node,
+defines type of array items
 -}
 type ArrayItemDefinition
     = ArrayItemDefinition Schema
 
 
-{-| Properties
+{-| Properties - list of properties definitions for node with type = object
 -}
 type Properties
     = Properties (List ( String, Schema ))
 
 
-{-| Empty schema object
+{-| Empty schema object, handy as default or initial value
 -}
 empty : Schema
 empty =
@@ -105,7 +109,13 @@ empty =
         (Properties [])
 
 
-{-| Build schema from JSON string
+{-| Build schema from JSON string.
+
+    """
+        { "properties": { "foo": { "type": "string" } }
+    """
+        |> fromString
+        |> Result.withDefault empty
 -}
 fromString : String -> Result String Schema
 fromString str =
@@ -113,7 +123,7 @@ fromString str =
         |> Result.andThen convert
 
 
-{-| Build schema from JSON value
+{-| Build schema from JSON value.
 -}
 fromValue : Value -> Result String Schema
 fromValue val =
@@ -253,6 +263,10 @@ convert rootSchema =
 
 
 {-| Set value of node
+
+    object []
+        |> JS.setValue simpleSchema [ "foo" ] ( string "bar" )
+        |> Expect.equal ( object [ ( "foo", string "bar" ) ] )
 -}
 setValue : Schema -> List String -> Value -> Value -> Result String Value
 setValue schema subPath finalValue dataNode =
