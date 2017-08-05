@@ -17,7 +17,7 @@ module Json.Schema
         , mapProperties
         )
 
-{-| This library provides bunch of utility methods for parsing JSON values using
+{-| This library provides bunch of utility methods to work with JSON values using
 schemas defined in json-schema format
 
 # Definition
