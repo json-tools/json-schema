@@ -1,31 +1,14 @@
 {
   "name": "elm-json-schema",
-  "private": true,
-  "version": "3.3.0",
+  "private": false,
+  "version": "3.4.0",
   "description": "",
   "author": "",
   "license": "ISC",
   "scripts": {
-    "start": "webpack-dev-server --hot --inline --port 4000 --content-base src/",
-    "build": "rimraf dist && webpack",
-    "reinstall": "rimraf node_modules && npm uninstall -g elm && npm i -g elm && npm i && elm package install",
-    "predeploy": "npm version minor && npm run build",
-    "deploy": "gh-pages -d dist -a"
+    "start": "webpack-dev-server --hot --inline --port 4000 --content-base src/"
   },
   "devDependencies": {
-    "copy-webpack-plugin": "^4.0.1",
-    "elm": "^0.18.0",
-    "elm-hot-loader": "^0.5.2",
-    "elm-webpack-loader": "^3.0.6",
-    "extract-text-webpack-plugin": "^1.0.1",
-    "file-loader": "^0.9.0",
-    "gh-pages": "^0.12.0",
-    "html-webpack-plugin": "^2.17.0",
-    "jquery": "^3.1.0",
-    "rimraf": "^2.5.2",
-    "url-loader": "^0.5.7",
-    "webpack": "^1.13.1",
-    "webpack-dev-server": "^1.14.1",
-    "webpack-merge": "^0.16.0"
+    "elm": "^0.18.0"
   }
 }
