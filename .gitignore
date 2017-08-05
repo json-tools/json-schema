@@ -6,3 +6,4 @@ dist
 npm-debug.log
 index.html
 deps
+documentation.json

@@ -1,4 +1,4 @@
-module JsonSchema
+module Json.Schema
     exposing
         ( Schema
         , ArrayItemDefinition(ArrayItemDefinition)
