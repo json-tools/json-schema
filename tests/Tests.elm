@@ -61,8 +61,7 @@ all =
                 \() ->
                     blankRoot
                         |> JS.setValue simpleSchema [ "foo" ] (string "bar")
-                        |> Result.withDefault blankRoot
-                        |> Expect.equal (object [ ( "foo", string "bar" ) ])
+                        |> Expect.equal (Ok (object [ ( "foo", string "bar" ) ]))
             , test "simple object with int" <|
                 \() ->
                     blankRoot
@@ -78,7 +77,7 @@ all =
                 \() ->
                     let
                         set path val target =
-                            JS.setValue nestedArrayObjectSchema path val target
+                            JS.setValue nestedArraySchema path val target
                                 |> Result.withDefault blankRoot
 
                         get =
