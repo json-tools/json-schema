@@ -105,6 +105,16 @@ all =
                             |> set [ "fooes", "2", "baz" ] (string "huh")
                             |> get [ "fooes", "1", "baz" ]
                             |> Expect.equal "bah"
+            , test "error when property does not exist" <|
+                \() ->
+                    let
+                        set =
+                            JS.setValue simpleSchema
+                    in
+                        blankRoot
+                            |> set [ "some", "wrong", "path" ] (string "x")
+                            |> Expect.equal (Err "Key 'some' not found")
+
             ]
         ]
 
