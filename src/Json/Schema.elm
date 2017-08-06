@@ -111,11 +111,8 @@ empty =
 
 {-| Build schema from JSON string.
 
-    """
-        { "properties": { "foo": { "type": "string" } }
-    """
+    "{\"properties\": {\"foo\": {\"type\": \"string\"}}"
         |> fromString
-        |> Result.withDefault empty
 -}
 fromString : String -> Result String Schema
 fromString str =
@@ -124,6 +121,15 @@ fromString str =
 
 
 {-| Build schema from JSON value.
+
+    Encode.object
+        [ ( "properties", Encode.object
+            [ ( "foo", Encode.object
+                [ ( "type", Encode.string "string")
+                ]
+            ) ]
+        ) ]
+            |> fromValue
 -}
 fromValue : Value -> Result String Schema
 fromValue val =
@@ -410,10 +416,10 @@ getLength schema path value =
 {-| Return default (initial) value for schema node. When default value for node
 is not specified, then default calculated based on type:
 
-    - "boolean" -> False
-    - "integer" -> 0
-    - "array" -> []
-    - "object" -> {props listed in required}
+  - "boolean" -> False
+  - "integer" -> 0
+  - "array" -> []
+  - "object" -> {props listed in required}
 -}
 defaultFor : Schema -> Value
 defaultFor schema =
