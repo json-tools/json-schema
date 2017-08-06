@@ -271,8 +271,12 @@ convert rootSchema =
 {-| Set value of node
 
     Encode.object []
-        |> setValue simpleSchema [ "foo" ] ( Encode.string "bar" )
-        |> Expect.equal ( Ok ( object [ ( "foo", Encode.string "bar" ) ] ) )
+        |> setValue
+            simpleSchema
+            [ "foo" ]
+            ( Encode.string "bar" )
+        |> Expect.equal
+            ( Ok ( object [ ( "foo", Encode.string "bar" ) ] ) )
 -}
 setValue : Schema -> List String -> Value -> Value -> Result String Value
 setValue schema subPath finalValue dataNode =
