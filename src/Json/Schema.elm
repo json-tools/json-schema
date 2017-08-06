@@ -273,8 +273,8 @@ convert rootSchema =
     Encode.object []
         |> setValue
             simpleSchema
-            [ "foo" ]
-            ( Encode.string "bar" )
+            [ "foo" ] -- path in schema
+            ( Encode.string "bar" ) -- value to set
         |> Expect.equal
             ( Ok ( object [ ( "foo", Encode.string "bar" ) ] ) )
 -}
@@ -316,7 +316,7 @@ setValue schema subPath finalValue dataNode =
                                         Err e
 
                             Nothing ->
-                                Err "Key not found"
+                                Err ("Key '" ++ key ++ "' not found")
 
                 "array" ->
                     let
