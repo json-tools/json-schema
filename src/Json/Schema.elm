@@ -270,15 +270,15 @@ convert rootSchema =
 
 {-| Set value of node
 
-    object []
-        |> JS.setValue simpleSchema [ "foo" ] ( string "bar" )
-        |> Expect.equal ( object [ ( "foo", string "bar" ) ] )
+    Encode.object []
+        |> setValue simpleSchema [ "foo" ] ( Encode.string "bar" )
+        |> Expect.equal ( Ok ( object [ ( "foo", Encode.string "bar" ) ] ) )
 -}
 setValue : Schema -> List String -> Value -> Value -> Result String Value
 setValue schema subPath finalValue dataNode =
     case subPath of
         [] ->
-            (Ok finalValue)
+            Ok finalValue
 
         key :: tail ->
             case schema.type_ of
@@ -309,10 +309,10 @@ setValue schema subPath finalValue dataNode =
                                             |> \v -> Ok v
 
                                     Err e ->
-                                        (Err e)
+                                        Err e
 
                             Nothing ->
-                                (Err "Key not found")
+                                Err "Key not found"
 
                 "array" ->
                     let
@@ -321,10 +321,11 @@ setValue schema subPath finalValue dataNode =
 
                         nodeList =
                             decodeList dataNode
+
                     in
                         case schema.items of
                             Nothing ->
-                                (Err "No items definition")
+                                Err "No items definition"
 
                             Just (ArrayItemDefinition prop) ->
                                 case getListItem index nodeList of
@@ -336,7 +337,7 @@ setValue schema subPath finalValue dataNode =
                                                     |> \v -> Ok v
 
                                             Err e ->
-                                                (Err e)
+                                                Err e
 
                                     Nothing ->
                                         nodeList
