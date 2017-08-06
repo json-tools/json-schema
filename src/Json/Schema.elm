@@ -45,7 +45,7 @@ import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
-import Dict
+import Dict exposing (Dict)
 import String
 
 
@@ -459,12 +459,12 @@ defaultFor schema =
                 defaultDefault
 
 
-encodeDict : Dict.Dict String Value -> Value
+encodeDict : Dict String Value -> Value
 encodeDict dict =
     Encode.object (Dict.toList dict)
 
 
-decodeDict : Value -> Dict.Dict String Value
+decodeDict : Value -> Dict String Value
 decodeDict val =
     Decode.decodeValue (Decode.dict Decode.value) val
         |> Result.withDefault Dict.empty
