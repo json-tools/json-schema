@@ -282,7 +282,24 @@ setValue : Schema -> List String -> Value -> Value -> Result String Value
 setValue schema subPath finalValue dataNode =
     case subPath of
         [] ->
-            Ok finalValue
+            case schema.type_ of
+                "int" ->
+                    case Decode.decodeValue Decode.int finalValue of
+                        Ok _ ->
+                            Ok finalValue
+
+                        Err x ->
+                            Err x
+
+                "string" ->
+                    case Decode.decodeValue Decode.string finalValue of
+                        Ok s ->
+                            Ok <| Encode.string s
+
+                        Err x ->
+                            Err x
+                _ ->
+                    Ok finalValue
 
         key :: tail ->
             case schema.type_ of
@@ -350,7 +367,7 @@ setValue schema subPath finalValue dataNode =
                                             |> \v -> Ok v
 
                 _ ->
-                    (Ok finalValue)
+                    Ok finalValue
 
 
 getListItem : Int -> List a -> Maybe a
