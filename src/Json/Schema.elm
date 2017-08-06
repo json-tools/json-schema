@@ -341,7 +341,7 @@ setValue schema subPath finalValue dataNode =
 
                                     Nothing ->
                                         nodeList
-                                            ++ [ defaultFor prop ]
+                                            ++ [ defaultFor prop |> setValue prop tail finalValue |> Result.withDefault (defaultFor prop) ]
                                             |> Encode.list
                                             |> \v -> Ok v
 
