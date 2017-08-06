@@ -114,15 +114,11 @@ all =
                         blankRoot
                             |> set [ "some", "wrong", "path" ] (string "x")
                             |> Expect.equal (Err "Key 'some' not found")
-            , only <| test "error when property type does not match" <|
+            , test "error when property type does not match" <|
                 \() ->
-                    let
-                        set =
-                            JS.setValue simpleSchema
-                    in
-                        blankRoot
-                            |> set [ "foo" ] (int 647)
-                            |> Expect.equal (Err "Expecting a String but instead got: 647")
+                    blankRoot
+                        |> JS.setValue simpleSchema [ "foo" ] (int 647)
+                        |> Expect.equal (Err "Expecting a String but instead got: 647")
             ]
         ]
 
