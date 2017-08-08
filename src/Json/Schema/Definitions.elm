@@ -35,10 +35,39 @@ type alias StringValidations =
 
 decoder : Decoder Schema
 decoder =
-    string
-        |> field "type"
-        |> maybe
-        |> andThen typedDecoder
+    let
+        singleType =
+            string
+                |> field "type"
+                |> maybe
+                |> andThen typedDecoder
+
+        multipleTypes =
+            string
+                |> Decode.list
+                |> field "type"
+                |> andThen multipleTypesDecoder
+    in
+        Decode.oneOf [ multipleTypes, singleType ]
+
+
+multipleTypesDecoder : List String -> Decoder Schema
+multipleTypesDecoder list =
+    let
+        decodeNullableType _ =
+            Decode.map2 Undefined
+                numValidationsDecoder
+                strValidationsDecoder
+    in
+        case list of
+            [ x, "null" ] ->
+                decodeNullableType x
+            [ "null", x ] ->
+                decodeNullableType x
+            [ x ] ->
+                typedDecoder <| Just x
+            _ ->
+                Decode.map IntegerSchema numValidationsDecoder
 
 
 typedDecoder : Maybe String -> Decoder Schema

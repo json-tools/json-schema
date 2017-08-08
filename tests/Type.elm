@@ -1,7 +1,7 @@
 module Type exposing (all)
 
 import Json.Schema as JS exposing (empty)
-import Test exposing (Test, describe, test)
+import Test exposing (Test, describe, test, only)
 import Json.Schema.Definitions
     exposing
         ( Schema
@@ -82,7 +82,46 @@ all =
                         )
         , test "undefined schema" <|
             \() ->
-                [ ]
+                []
+                    |> decodeSchema
+                    |> shouldResultWithSchema
+                        (Undefined
+                            (NumberValidations
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                            (StringValidations
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                        )
+        , test "list of one" <|
+            \() ->
+                [ ( "type"
+                  , Encode.list [ Encode.string "string" ]
+                  )
+                ]
+                    |> decodeSchema
+                    |> shouldResultWithSchema
+                        (StringSchema
+                            (StringValidations
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                        )
+        , test "nullable type" <|
+            \() ->
+                [ ( "type"
+                  , [ "string", "null" ]
+                        |> List.map Encode.string
+                        |> Encode.list
+                  )
+                ]
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (Undefined
