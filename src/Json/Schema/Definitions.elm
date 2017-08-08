@@ -1,8 +1,8 @@
 module Json.Schema.Definitions
     exposing
-        ( Schema(IntegerSchema, Undefined)
+        ( Schema(IntegerSchema, FloatSchema, Undefined)
         , decoder
-        , IntSchema
+        , NumSchema
         )
 
 import Json.Decode as Decode exposing (Decoder, maybe, nullable, field, andThen, string, float, int, succeed)
@@ -10,11 +10,12 @@ import Json.Decode.Pipeline exposing (decode, optional)
 
 
 type Schema
-    = IntegerSchema IntSchema
+    = IntegerSchema NumSchema
+    | FloatSchema NumSchema
     | Undefined
 
 
-type alias IntSchema =
+type alias NumSchema =
     { multipleOf : Maybe Float
     , maximum : Maybe Float
     , exclusiveMaximum : Maybe Float
@@ -33,16 +34,19 @@ typedDecoder : String -> Decoder Schema
 typedDecoder t =
     case t of
         "integer" ->
-            intSchemaDecoder
+            numSchemaDecoder
                 |> andThen (\r -> succeed <| IntegerSchema r)
+        "number" ->
+            numSchemaDecoder
+                |> andThen (\r -> succeed <| FloatSchema r)
 
         _ ->
             succeed Undefined
 
 
-intSchemaDecoder : Decoder IntSchema
-intSchemaDecoder =
-    decode IntSchema
+numSchemaDecoder : Decoder NumSchema
+numSchemaDecoder =
+    decode NumSchema
         |> optional "multipleOf" (nullable float) Nothing
         |> optional "maximum" (nullable float) Nothing
         |> optional "exclusiveMaximum" (nullable float) Nothing

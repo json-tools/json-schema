@@ -2,7 +2,7 @@ module Type exposing (all)
 
 import Json.Schema as JS exposing (empty)
 import Test exposing (Test, describe, test)
-import Json.Schema.Definitions exposing (Schema(IntegerSchema, Undefined), IntSchema)
+import Json.Schema.Definitions exposing (Schema(IntegerSchema, FloatSchema, Undefined), NumSchema)
 import Expect
 import Json.Encode as Encode exposing (Value)
 
@@ -16,7 +16,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (IntegerSchema
-                            (IntSchema
+                            (NumSchema
                                 Nothing
                                 Nothing
                                 Nothing
@@ -36,12 +36,26 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (IntegerSchema
-                            (IntSchema
+                            (NumSchema
                                 (Just 2.0)
                                 (Just 2.0)
                                 (Just 2.0)
                                 (Just 1.0)
                                 (Just 1.0)
+                            )
+                        )
+        , test "number schema" <|
+            \() ->
+                [ ( "type", Encode.string "number" ) ]
+                    |> decodeSchema
+                    |> shouldResultWithSchema
+                        (FloatSchema
+                            (NumSchema
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
                             )
                         )
         ]
