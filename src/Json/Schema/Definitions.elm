@@ -14,7 +14,7 @@ type Schema
     = IntegerSchema NumberValidations
     | FloatSchema NumberValidations
     | StringSchema StringValidations
-    | Undefined
+    | Undefined NumberValidations StringValidations
 
 
 type alias NumberValidations =
@@ -45,6 +45,7 @@ typedDecoder t =
         "integer" ->
             numValidationsDecoder
                 |> andThen (\r -> succeed <| IntegerSchema r)
+
         "number" ->
             numValidationsDecoder
                 |> andThen (\r -> succeed <| FloatSchema r)
@@ -54,7 +55,13 @@ typedDecoder t =
                 |> andThen (\r -> succeed <| StringSchema r)
 
         _ ->
-            succeed Undefined
+            numValidationsDecoder
+                |> andThen (\numValidations ->
+                    strValidationsDecoder
+                        |> andThen (\strValidations ->
+                            succeed <| Undefined numValidations strValidations
+                        )
+                )
 
 
 numValidationsDecoder : Decoder NumberValidations

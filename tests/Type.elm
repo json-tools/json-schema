@@ -80,6 +80,25 @@ all =
                                 Nothing
                             )
                         )
+        , test "undefined schema" <|
+            \() ->
+                [ ( "type", Encode.string "any" ) ]
+                    |> decodeSchema
+                    |> shouldResultWithSchema
+                        (Undefined
+                            (NumberValidations
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                            (StringValidations
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                        )
         ]
 
 
