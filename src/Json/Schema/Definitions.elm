@@ -45,25 +45,18 @@ typedDecoder : Maybe String -> Decoder Schema
 typedDecoder t =
     case t of
         Just "integer" ->
-            numValidationsDecoder
-                |> andThen (\r -> succeed <| IntegerSchema r)
+            Decode.map IntegerSchema numValidationsDecoder
 
         Just "number" ->
-            numValidationsDecoder
-                |> andThen (\r -> succeed <| FloatSchema r)
+            Decode.map FloatSchema numValidationsDecoder
 
         Just "string" ->
-            strValidationsDecoder
-                |> andThen (\r -> succeed <| StringSchema r)
+            Decode.map StringSchema strValidationsDecoder
 
         _ ->
-            numValidationsDecoder
-                |> andThen (\numValidations ->
-                    strValidationsDecoder
-                        |> andThen (\strValidations ->
-                            succeed <| Undefined numValidations strValidations
-                        )
-                )
+            Decode.map2 Undefined
+                numValidationsDecoder
+                strValidationsDecoder
 
 
 numValidationsDecoder : Decoder NumberValidations
