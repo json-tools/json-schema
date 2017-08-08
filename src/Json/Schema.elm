@@ -45,6 +45,7 @@ import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
+import Json.Schema.Definitions
 import Dict exposing (Dict)
 import String
 
@@ -131,10 +132,10 @@ fromString str =
         ) ]
             |> fromValue
 -}
-fromValue : Value -> Result String Schema
+fromValue : Value -> Result String Json.Schema.Definitions.Schema
 fromValue val =
-    Decode.decodeValue decodeSchema val
-        |> Result.andThen convert
+    Decode.decodeValue Json.Schema.Definitions.decoder val
+        --|> Result.andThen convert
 
 
 decodeSchema : Decoder Schema
