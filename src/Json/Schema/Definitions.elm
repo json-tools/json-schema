@@ -35,22 +35,24 @@ type alias StringValidations =
 
 decoder : Decoder Schema
 decoder =
-    field "type" string
+    string
+        |> field "type"
+        |> maybe
         |> andThen typedDecoder
 
 
-typedDecoder : String -> Decoder Schema
+typedDecoder : Maybe String -> Decoder Schema
 typedDecoder t =
     case t of
-        "integer" ->
+        Just "integer" ->
             numValidationsDecoder
                 |> andThen (\r -> succeed <| IntegerSchema r)
 
-        "number" ->
+        Just "number" ->
             numValidationsDecoder
                 |> andThen (\r -> succeed <| FloatSchema r)
 
-        "string" ->
+        Just "string" ->
             strValidationsDecoder
                 |> andThen (\r -> succeed <| StringSchema r)
 

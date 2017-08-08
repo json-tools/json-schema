@@ -82,7 +82,7 @@ all =
                         )
         , test "undefined schema" <|
             \() ->
-                [ ( "type", Encode.string "any" ) ]
+                [ ]
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (Undefined
