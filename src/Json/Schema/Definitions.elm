@@ -15,8 +15,11 @@ type Schema
 
 
 type alias IntSchema =
-    { maximum : Maybe Float
+    { multipleOf : Maybe Float
+    , maximum : Maybe Float
+    , exclusiveMaximum : Maybe Float
     , minimum : Maybe Float
+    , exclusiveMinimum : Maybe Float
     }
 
 
@@ -40,5 +43,8 @@ typedDecoder t =
 intSchemaDecoder : Decoder IntSchema
 intSchemaDecoder =
     decode IntSchema
+        |> optional "multipleOf" (nullable float) Nothing
         |> optional "maximum" (nullable float) Nothing
+        |> optional "exclusiveMaximum" (nullable float) Nothing
         |> optional "minimum" (nullable float) Nothing
+        |> optional "exclusiveMinimum" (nullable float) Nothing

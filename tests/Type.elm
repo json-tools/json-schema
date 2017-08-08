@@ -14,19 +14,47 @@ all =
             \() ->
                 [ ( "type", Encode.string "integer" ) ]
                     |> decodeSchema
-                    |> shouldResultWithBlankIntSchema
+                    |> shouldResultWithSchema
+                        (IntegerSchema
+                            (IntSchema
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                        )
+        , test "integer schema with validations" <|
+            \() ->
+                [ ( "type", Encode.string "integer" )
+                , ( "multipleOf", Encode.float 2.0 )
+                , ( "maximum", Encode.float 2.0 )
+                , ( "exclusiveMaximum", Encode.float 2.0 )
+                , ( "minimum", Encode.float 1.0 )
+                , ( "exclusiveMinimum", Encode.float 1.0 )
+                ]
+                    |> decodeSchema
+                    |> shouldResultWithSchema
+                        (IntegerSchema
+                            (IntSchema
+                                (Just 2.0)
+                                (Just 2.0)
+                                (Just 2.0)
+                                (Just 1.0)
+                                (Just 1.0)
+                            )
+                        )
         ]
 
 
-shouldResultWithBlankIntSchema : Result x Schema -> Expect.Expectation
-shouldResultWithBlankIntSchema =
-    IntSchema Nothing Nothing
-        |> IntegerSchema
+shouldResultWithSchema : Schema -> Result x Schema -> Expect.Expectation
+shouldResultWithSchema s =
+    s
         |> Ok
         |> Expect.equal
 
 
-decodeSchema : List (String, Value) -> Result String Schema
+decodeSchema : List ( String, Value ) -> Result String Schema
 decodeSchema list =
     list
         |> Encode.object
