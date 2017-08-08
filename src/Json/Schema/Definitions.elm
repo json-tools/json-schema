@@ -1,8 +1,9 @@
 module Json.Schema.Definitions
     exposing
-        ( Schema(IntegerSchema, FloatSchema, Undefined)
+        ( Schema(IntegerSchema, StringSchema, FloatSchema, Undefined)
         , decoder
-        , NumSchema
+        , NumberValidations
+        , StringValidations
         )
 
 import Json.Decode as Decode exposing (Decoder, maybe, nullable, field, andThen, string, float, int, succeed)
@@ -10,17 +11,25 @@ import Json.Decode.Pipeline exposing (decode, optional)
 
 
 type Schema
-    = IntegerSchema NumSchema
-    | FloatSchema NumSchema
+    = IntegerSchema NumberValidations
+    | FloatSchema NumberValidations
+    | StringSchema StringValidations
     | Undefined
 
 
-type alias NumSchema =
+type alias NumberValidations =
     { multipleOf : Maybe Float
     , maximum : Maybe Float
     , exclusiveMaximum : Maybe Float
     , minimum : Maybe Float
     , exclusiveMinimum : Maybe Float
+    }
+
+
+type alias StringValidations =
+    { maxLength : Maybe Int
+    , minLength : Maybe Int
+    , pattern : Maybe String
     }
 
 
@@ -34,21 +43,33 @@ typedDecoder : String -> Decoder Schema
 typedDecoder t =
     case t of
         "integer" ->
-            numSchemaDecoder
+            numValidationsDecoder
                 |> andThen (\r -> succeed <| IntegerSchema r)
         "number" ->
-            numSchemaDecoder
+            numValidationsDecoder
                 |> andThen (\r -> succeed <| FloatSchema r)
+
+        "string" ->
+            strValidationsDecoder
+                |> andThen (\r -> succeed <| StringSchema r)
 
         _ ->
             succeed Undefined
 
 
-numSchemaDecoder : Decoder NumSchema
-numSchemaDecoder =
-    decode NumSchema
+numValidationsDecoder : Decoder NumberValidations
+numValidationsDecoder =
+    decode NumberValidations
         |> optional "multipleOf" (nullable float) Nothing
         |> optional "maximum" (nullable float) Nothing
         |> optional "exclusiveMaximum" (nullable float) Nothing
         |> optional "minimum" (nullable float) Nothing
         |> optional "exclusiveMinimum" (nullable float) Nothing
+
+
+strValidationsDecoder : Decoder StringValidations
+strValidationsDecoder =
+    decode StringValidations
+        |> optional "maxLength" (nullable int) Nothing
+        |> optional "minLength" (nullable int) Nothing
+        |> optional "pattern" (nullable string) Nothing

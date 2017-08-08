@@ -2,7 +2,17 @@ module Type exposing (all)
 
 import Json.Schema as JS exposing (empty)
 import Test exposing (Test, describe, test)
-import Json.Schema.Definitions exposing (Schema(IntegerSchema, FloatSchema, Undefined), NumSchema)
+import Json.Schema.Definitions
+    exposing
+        ( Schema
+            ( IntegerSchema
+            , FloatSchema
+            , StringSchema
+            , Undefined
+            )
+        , NumberValidations
+        , StringValidations
+        )
 import Expect
 import Json.Encode as Encode exposing (Value)
 
@@ -16,7 +26,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (IntegerSchema
-                            (NumSchema
+                            (NumberValidations
                                 Nothing
                                 Nothing
                                 Nothing
@@ -36,7 +46,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (IntegerSchema
-                            (NumSchema
+                            (NumberValidations
                                 (Just 2.0)
                                 (Just 2.0)
                                 (Just 2.0)
@@ -50,9 +60,21 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (FloatSchema
-                            (NumSchema
+                            (NumberValidations
                                 Nothing
                                 Nothing
+                                Nothing
+                                Nothing
+                                Nothing
+                            )
+                        )
+        , test "string schema" <|
+            \() ->
+                [ ( "type", Encode.string "string" ) ]
+                    |> decodeSchema
+                    |> shouldResultWithSchema
+                        (StringSchema
+                            (StringValidations
                                 Nothing
                                 Nothing
                                 Nothing
