@@ -39,6 +39,7 @@ all =
                                 )
                             )
                             Nothing
+                            Nothing
                         )
         , test "integer schema with validations" <|
             \() ->
@@ -63,6 +64,7 @@ all =
                                 )
                             )
                             Nothing
+                            Nothing
                         )
         , test "number schema" <|
             \() ->
@@ -81,6 +83,7 @@ all =
                                 )
                             )
                             Nothing
+                            Nothing
                         )
         , test "string schema" <|
             \() ->
@@ -96,6 +99,7 @@ all =
                                     Nothing
                                 )
                             )
+                            Nothing
                             Nothing
                         )
         , test "undefined schema" <|
@@ -120,6 +124,7 @@ all =
                                 )
                             )
                             Nothing
+                            Nothing
                         )
         , test "list of one" <|
             \() ->
@@ -138,6 +143,7 @@ all =
                                     Nothing
                                 )
                             )
+                            Nothing
                             Nothing
                         )
         , test "nullable type" <|
@@ -166,6 +172,7 @@ all =
                                     Nothing
                                 )
                             )
+                            Nothing
                             Nothing
                         )
         ]

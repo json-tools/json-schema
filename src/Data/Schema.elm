@@ -23,7 +23,17 @@ type alias Schema =
     { meta : Meta
     , validation : Validation
     , definitions : Maybe Schemata
+    , items : Maybe Items
     }
+
+
+type Schemata
+    = Schemata (List ( String, Schema ))
+
+
+type Items
+    = ItemDefinition Schema
+    | ArrayOfItems (List Schema)
 
 
 type Validation
@@ -51,10 +61,19 @@ decoder =
         validationDecoder =
             Decode.oneOf [ multipleTypes, singleType ]
     in
-        Decode.map3 Schema
+        Decode.map4 Schema
             metaDecoder
             validationDecoder
             (maybe <| field "definitions" schemataDecoder)
+            (maybe <| field "items" itemsDecoder)
+
+
+itemsDecoder : Decoder Items
+itemsDecoder =
+    Decode.oneOf
+        [ Decode.map ItemDefinition <| lazy <| \_ -> decoder
+        , Decode.map ArrayOfItems ( list <| lazy <| \_ -> decoder )
+        ]
 
 
 multipleTypesDecoder : List String -> Decoder Validation
@@ -106,10 +125,6 @@ type alias Meta =
     , default : Maybe Value
     , examples : Maybe (List Value)
     }
-
-
-type Schemata
-    = Schemata (List ( String, Schema ))
 
 
 metaDecoder : Decoder Meta
