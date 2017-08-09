@@ -39,7 +39,6 @@ all =
                                 )
                             )
                             Nothing
-                            Nothing
                         )
         , test "integer schema with validations" <|
             \() ->
@@ -64,7 +63,6 @@ all =
                                 )
                             )
                             Nothing
-                            Nothing
                         )
         , test "number schema" <|
             \() ->
@@ -83,7 +81,6 @@ all =
                                 )
                             )
                             Nothing
-                            Nothing
                         )
         , test "string schema" <|
             \() ->
@@ -99,7 +96,6 @@ all =
                                     Nothing
                                 )
                             )
-                            Nothing
                             Nothing
                         )
         , test "undefined schema" <|
@@ -124,7 +120,6 @@ all =
                                 )
                             )
                             Nothing
-                            Nothing
                         )
         , test "list of one" <|
             \() ->
@@ -143,7 +138,6 @@ all =
                                     Nothing
                                 )
                             )
-                            Nothing
                             Nothing
                         )
         , test "nullable type" <|
@@ -173,13 +167,16 @@ all =
                                 )
                             )
                             Nothing
-                            Nothing
                         )
         ]
 
 withEmptyMeta : Meta
 withEmptyMeta =
-    Meta Nothing Nothing Nothing Nothing
+    Meta
+        Nothing
+        Nothing
+        Nothing
+        Nothing
 
 shouldResultWithSchema : Schema -> Result x Schema -> Expect.Expectation
 shouldResultWithSchema s =

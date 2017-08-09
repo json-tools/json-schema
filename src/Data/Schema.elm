@@ -23,7 +23,11 @@ type alias Schema =
     { meta : Meta
     , validation : Validation
     , definitions : Maybe Schemata
-    , items : Maybe Items
+    }
+
+
+type alias ArrayStuff =
+    { items : Maybe Items
     }
 
 
@@ -40,8 +44,18 @@ type Validation
     = IntegerSchema NumberValidations
     | FloatSchema NumberValidations
     | StringSchema StringValidations
+    | ArraySchema ArrayValidations
     | Undefined NumberValidations StringValidations
 
+
+type alias ArrayValidations =
+    { items : Maybe Items
+    }
+
+arrayValidationsDecoder : Decoder ArrayValidations
+arrayValidationsDecoder =
+    Decode.map ArrayValidations
+        (maybe <| field "items" itemsDecoder)
 
 decoder : Decoder Schema
 decoder =
@@ -61,11 +75,10 @@ decoder =
         validationDecoder =
             Decode.oneOf [ multipleTypes, singleType ]
     in
-        Decode.map4 Schema
+        Decode.map3 Schema
             metaDecoder
             validationDecoder
             (maybe <| field "definitions" schemataDecoder)
-            (maybe <| field "items" itemsDecoder)
 
 
 itemsDecoder : Decoder Items
@@ -113,6 +126,12 @@ typedDecoder t =
             Decode.map StringSchema
                 StringValidations.decoder
 
+        -- the following case fails with runtime
+        --   TypeError: decoder.callback is not a function
+        -- Just "array" ->
+            -- Decode.map ArraySchema
+                -- arrayValidationsDecoder
+
         _ ->
             Decode.map2 Undefined
                 NumberValidations.decoder
@@ -129,13 +148,13 @@ type alias Meta =
 
 metaDecoder : Decoder Meta
 metaDecoder =
-    decode Meta
-        |> optional "title" (maybe string) Nothing
-        |> optional "description" (maybe string) Nothing
-        |> optional "default" (maybe value) Nothing
-        |> optional "examples" (maybe <| list <| value) Nothing
+    Decode.map4 Meta
+        (maybe <| field "title" string)
+        (maybe <| field "description" string)
+        (maybe <| field "default" value)
+        (maybe <| field "examples" <| list value)
 
 
 schemataDecoder : Decoder Schemata
 schemataDecoder =
-    Decode.map Schemata (Decode.keyValuePairs (lazy (\_ -> decoder)))
+    Decode.map Schemata <| Decode.keyValuePairs (lazy (\_ -> decoder))
