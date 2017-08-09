@@ -1,4 +1,4 @@
-module Data.Schema exposing (Schema(IntegerSchema, FloatSchema, StringSchema, Undefined), Schemata(Schemata), Meta, decoder)
+module Data.Schema exposing (Schema, Validation(IntegerSchema, FloatSchema, StringSchema, Undefined), Schemata(Schemata), Meta, decoder)
 
 import Data.NumberValidations as NumberValidations exposing (NumberValidations)
 import Data.StringValidations as StringValidations exposing (StringValidations)
@@ -17,14 +17,20 @@ import Json.Decode as Decode
         , value
         )
 import Json.Decode.Pipeline exposing (decode, optional)
-import Json.Decode.Extra as DecodeExtra exposing ((|:))
 
 
-type Schema
-    = IntegerSchema Meta NumberValidations
-    | FloatSchema Meta NumberValidations
-    | StringSchema Meta StringValidations
-    | Undefined Meta NumberValidations StringValidations
+type alias Schema =
+    { meta : Meta
+    , validation : Validation
+    , definitions : Maybe Schemata
+    }
+
+
+type Validation
+    = IntegerSchema NumberValidations
+    | FloatSchema NumberValidations
+    | StringSchema StringValidations
+    | Undefined NumberValidations StringValidations
 
 
 decoder : Decoder Schema
@@ -38,19 +44,24 @@ decoder =
 
         multipleTypes =
             string
-                |> Decode.list
+                |> list
                 |> field "type"
                 |> andThen multipleTypesDecoder
+
+        validationDecoder =
+            Decode.oneOf [ multipleTypes, singleType ]
     in
-        Decode.oneOf [ multipleTypes, singleType ]
+        Decode.map3 Schema
+            metaDecoder
+            validationDecoder
+            (maybe <| field "definitions" schemataDecoder)
 
 
-multipleTypesDecoder : List String -> Decoder Schema
+multipleTypesDecoder : List String -> Decoder Validation
 multipleTypesDecoder list =
     let
         decodeNullableType _ =
-            Decode.map3 Undefined
-                metaDecoder
+            Decode.map2 Undefined
                 NumberValidations.decoder
                 StringValidations.decoder
     in
@@ -65,24 +76,26 @@ multipleTypesDecoder list =
                 typedDecoder <| Just x
 
             _ ->
-                Decode.map2 IntegerSchema metaDecoder NumberValidations.decoder
+                Decode.map IntegerSchema NumberValidations.decoder
 
 
-typedDecoder : Maybe String -> Decoder Schema
+typedDecoder : Maybe String -> Decoder Validation
 typedDecoder t =
     case t of
         Just "integer" ->
-            Decode.map2 IntegerSchema metaDecoder NumberValidations.decoder
+            Decode.map IntegerSchema
+                NumberValidations.decoder
 
         Just "number" ->
-            Decode.map2 FloatSchema metaDecoder NumberValidations.decoder
+            Decode.map FloatSchema
+                NumberValidations.decoder
 
         Just "string" ->
-            Decode.map2 StringSchema metaDecoder StringValidations.decoder
+            Decode.map StringSchema
+                StringValidations.decoder
 
         _ ->
-            Decode.map3 Undefined
-                metaDecoder
+            Decode.map2 Undefined
                 NumberValidations.decoder
                 StringValidations.decoder
 
@@ -101,13 +114,13 @@ type Schemata
 
 metaDecoder : Decoder Meta
 metaDecoder =
-    succeed Meta
-        |: (maybe <| field "title" string)
-        |: (maybe <| field "description" string)
-        |: (maybe <| field "default" value)
-        |: (maybe <| field "examples" (list <| value))
+    decode Meta
+        |> optional "title" (maybe string) Nothing
+        |> optional "description" (maybe string) Nothing
+        |> optional "default" (maybe value) Nothing
+        |> optional "examples" (maybe <| list <| value) Nothing
 
 
 schemataDecoder : Decoder Schemata
 schemataDecoder =
-    Decode.map Schemata <| Decode.keyValuePairs <| lazy  <| \_ -> decoder
+    Decode.map Schemata (Decode.keyValuePairs (lazy (\_ -> decoder)))

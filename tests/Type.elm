@@ -4,13 +4,14 @@ import Json.Schema as JS exposing (empty)
 import Test exposing (Test, describe, test, only)
 import Data.Schema
     exposing
-        ( Schema
+        ( Validation
             ( IntegerSchema
             , FloatSchema
             , StringSchema
             , Undefined
             )
         , Meta
+        , Schema
         )
 import Data.NumberValidations exposing (NumberValidations)
 import Data.StringValidations exposing (StringValidations)
@@ -26,15 +27,18 @@ all =
                 [ ( "type", Encode.string "integer" ) ]
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (IntegerSchema
+                        (Schema
                             withEmptyMeta
-                            (NumberValidations
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
+                            (IntegerSchema
+                                (NumberValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
                             )
+                            Nothing
                         )
         , test "integer schema with validations" <|
             \() ->
@@ -47,63 +51,75 @@ all =
                 ]
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (IntegerSchema
+                        (Schema
                             withEmptyMeta
-                            (NumberValidations
-                                (Just 2.0)
-                                (Just 2.0)
-                                (Just 2.0)
-                                (Just 1.0)
-                                (Just 1.0)
+                            (IntegerSchema
+                                (NumberValidations
+                                    (Just 2.0)
+                                    (Just 2.0)
+                                    (Just 2.0)
+                                    (Just 1.0)
+                                    (Just 1.0)
+                                )
                             )
+                            Nothing
                         )
         , test "number schema" <|
             \() ->
                 [ ( "type", Encode.string "number" ) ]
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (FloatSchema
+                        (Schema
                             withEmptyMeta
-                            (NumberValidations
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
+                            (FloatSchema
+                                (NumberValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
                             )
+                            Nothing
                         )
         , test "string schema" <|
             \() ->
                 [ ( "type", Encode.string "string" ) ]
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (StringSchema
+                        (Schema
                             withEmptyMeta
-                            (StringValidations
-                                Nothing
-                                Nothing
-                                Nothing
+                            (StringSchema
+                                (StringValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
                             )
+                            Nothing
                         )
         , test "undefined schema" <|
             \() ->
                 []
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (Undefined
+                        (Schema
                             withEmptyMeta
-                            (NumberValidations
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
+                            (Undefined
+                                (NumberValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
+                                (StringValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
                             )
-                            (StringValidations
-                                Nothing
-                                Nothing
-                                Nothing
-                            )
+                            Nothing
                         )
         , test "list of one" <|
             \() ->
@@ -113,13 +129,16 @@ all =
                 ]
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (StringSchema
+                        (Schema
                             withEmptyMeta
-                            (StringValidations
-                                Nothing
-                                Nothing
-                                Nothing
+                            (StringSchema
+                                (StringValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
                             )
+                            Nothing
                         )
         , test "nullable type" <|
             \() ->
@@ -131,20 +150,23 @@ all =
                 ]
                     |> decodeSchema
                     |> shouldResultWithSchema
-                        (Undefined
+                        (Schema
                             withEmptyMeta
-                            (NumberValidations
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
-                                Nothing
+                            (Undefined
+                                (NumberValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
+                                (StringValidations
+                                    Nothing
+                                    Nothing
+                                    Nothing
+                                )
                             )
-                            (StringValidations
-                                Nothing
-                                Nothing
-                                Nothing
-                            )
+                            Nothing
                         )
         ]
 
