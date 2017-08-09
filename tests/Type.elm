@@ -2,7 +2,7 @@ module Type exposing (all)
 
 import Json.Schema as JS exposing (empty)
 import Test exposing (Test, describe, test, only)
-import Json.Schema.Definitions
+import Data.Schema
     exposing
         ( Schema
             ( IntegerSchema
@@ -10,9 +10,10 @@ import Json.Schema.Definitions
             , StringSchema
             , Undefined
             )
-        , NumberValidations
-        , StringValidations
+        , Meta
         )
+import Data.NumberValidations exposing (NumberValidations)
+import Data.StringValidations exposing (StringValidations)
 import Expect
 import Json.Encode as Encode exposing (Value)
 
@@ -26,6 +27,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (IntegerSchema
+                            withEmptyMeta
                             (NumberValidations
                                 Nothing
                                 Nothing
@@ -46,6 +48,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (IntegerSchema
+                            withEmptyMeta
                             (NumberValidations
                                 (Just 2.0)
                                 (Just 2.0)
@@ -60,6 +63,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (FloatSchema
+                            withEmptyMeta
                             (NumberValidations
                                 Nothing
                                 Nothing
@@ -74,6 +78,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (StringSchema
+                            withEmptyMeta
                             (StringValidations
                                 Nothing
                                 Nothing
@@ -86,6 +91,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (Undefined
+                            withEmptyMeta
                             (NumberValidations
                                 Nothing
                                 Nothing
@@ -108,6 +114,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (StringSchema
+                            withEmptyMeta
                             (StringValidations
                                 Nothing
                                 Nothing
@@ -125,6 +132,7 @@ all =
                     |> decodeSchema
                     |> shouldResultWithSchema
                         (Undefined
+                            withEmptyMeta
                             (NumberValidations
                                 Nothing
                                 Nothing
@@ -140,6 +148,9 @@ all =
                         )
         ]
 
+withEmptyMeta : Meta
+withEmptyMeta =
+    Meta Nothing Nothing Nothing Nothing
 
 shouldResultWithSchema : Schema -> Result x Schema -> Expect.Expectation
 shouldResultWithSchema s =
