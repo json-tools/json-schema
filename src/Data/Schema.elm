@@ -1,5 +1,16 @@
-module Data.Schema exposing (Schema, Validation(IntegerSchema, FloatSchema, StringSchema, Undefined), Schemata(Schemata), Meta, decoder)
+module Data.Schema
+    exposing
+        ( Schema
+        , Validation(IntegerSchema, FloatSchema, StringSchema, Undefined)
+        , Schemata(Schemata)
+        , Meta
+        , decoder
+        , Type(AnyType, SingleType, NullableType, UnionType)
+        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+        , stringToType
+        )
 
+import Util exposing (resultToDecoder, foldResults)
 import Data.NumberValidations as NumberValidations exposing (NumberValidations)
 import Data.StringValidations as StringValidations exposing (StringValidations)
 import Json.Decode as Decode
@@ -7,6 +18,7 @@ import Json.Decode as Decode
         ( Value
         , Decoder
         , succeed
+        , fail
         , lazy
         , maybe
         , nullable
@@ -20,9 +32,7 @@ import Json.Decode.Pipeline exposing (decode, optional)
 
 
 type alias Schema =
-    { meta : Meta
-    , validation : Validation
-    , definitions : Maybe Schemata
+    { type_ : Type
     }
 
 
@@ -52,90 +62,114 @@ type alias ArrayValidations =
     { items : Maybe Items
     }
 
+
 arrayValidationsDecoder : Decoder ArrayValidations
 arrayValidationsDecoder =
     Decode.map ArrayValidations
         (maybe <| field "items" itemsDecoder)
+
 
 decoder : Decoder Schema
 decoder =
     let
         singleType =
             string
-                |> field "type"
-                |> maybe
-                |> andThen typedDecoder
+                |> andThen singleTypeDecoder
 
         multipleTypes =
             string
                 |> list
-                |> field "type"
                 |> andThen multipleTypesDecoder
-
-        validationDecoder =
-            Decode.oneOf [ multipleTypes, singleType ]
     in
-        Decode.map3 Schema
-            metaDecoder
-            validationDecoder
-            (maybe <| field "definitions" schemataDecoder)
+        decode Schema
+            |> optional "type"
+                (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
+                AnyType
+
+
+
+-- (maybe <| field "definitions" schemataDecoder)
 
 
 itemsDecoder : Decoder Items
 itemsDecoder =
     Decode.oneOf
         [ Decode.map ItemDefinition <| lazy <| \_ -> decoder
-        , Decode.map ArrayOfItems ( list <| lazy <| \_ -> decoder )
+        , Decode.map ArrayOfItems (list <| lazy <| \_ -> decoder)
         ]
 
 
-multipleTypesDecoder : List String -> Decoder Validation
-multipleTypesDecoder list =
-    let
-        decodeNullableType _ =
-            Decode.map2 Undefined
-                NumberValidations.decoder
-                StringValidations.decoder
-    in
-        case list of
-            [ x, "null" ] ->
-                decodeNullableType x
-
-            [ "null", x ] ->
-                decodeNullableType x
-
-            [ x ] ->
-                typedDecoder <| Just x
-
-            _ ->
-                Decode.map IntegerSchema NumberValidations.decoder
+type Type
+    = AnyType
+    | SingleType SingleType
+    | NullableType SingleType
+    | UnionType (List SingleType)
 
 
-typedDecoder : Maybe String -> Decoder Validation
-typedDecoder t =
-    case t of
-        Just "integer" ->
-            Decode.map IntegerSchema
-                NumberValidations.decoder
+type SingleType
+    = IntegerType
+    | NumberType
+    | StringType
+    | ArrayType
+    | ObjectType
+    | NullType
 
-        Just "number" ->
-            Decode.map FloatSchema
-                NumberValidations.decoder
 
-        Just "string" ->
-            Decode.map StringSchema
-                StringValidations.decoder
+multipleTypesDecoder : List String -> Decoder Type
+multipleTypesDecoder lst =
+    case lst of
+        [ x, "null" ] ->
+            Decode.map NullableType <| singleTypeDecoder x
 
-        -- the following case fails with runtime
-        --   TypeError: decoder.callback is not a function
-        -- Just "array" ->
-            -- Decode.map ArraySchema
-                -- arrayValidationsDecoder
+        [ "null", x ] ->
+            Decode.map NullableType <| singleTypeDecoder x
+
+        [ x ] ->
+            Decode.map SingleType <| singleTypeDecoder x
+
+        otherList ->
+            otherList
+                |> List.sort
+                |> List.map stringToType
+                |> foldResults
+                |> Result.andThen (Ok << UnionType)
+                |> resultToDecoder
+
+
+
+stringToType : String -> Result String SingleType
+stringToType s =
+    case s of
+        "integer" ->
+            Ok IntegerType
+
+        "number" ->
+            Ok NumberType
+
+        "string" ->
+            Ok StringType
+
+        "array" ->
+            Ok ArrayType
+
+        "object" ->
+            Ok ObjectType
+
+        "null" ->
+            Ok NullType
 
         _ ->
-            Decode.map2 Undefined
-                NumberValidations.decoder
-                StringValidations.decoder
+            Err ("Unknown type: " ++ s)
+
+
+singleTypeDecoder : String -> Decoder SingleType
+singleTypeDecoder s =
+    case stringToType s of
+        Ok st ->
+            succeed st
+
+        Err msg ->
+            fail msg
 
 
 type alias Meta =
