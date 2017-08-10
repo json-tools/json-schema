@@ -1,7 +1,6 @@
 module Data.Schema
     exposing
         ( Schema
-        , Validation(IntegerSchema, FloatSchema, StringSchema, Undefined)
         , Schemata(Schemata)
         , Meta
         , decoder
@@ -82,25 +81,6 @@ type Schemata
 type Items
     = ItemDefinition Schema
     | ArrayOfItems (List Schema)
-
-
-type Validation
-    = IntegerSchema NumberValidations
-    | FloatSchema NumberValidations
-    | StringSchema StringValidations
-    | ArraySchema ArrayValidations
-    | Undefined NumberValidations StringValidations
-
-
-type alias ArrayValidations =
-    { items : Maybe Items
-    }
-
-
-arrayValidationsDecoder : Decoder ArrayValidations
-arrayValidationsDecoder =
-    Decode.map ArrayValidations
-        (maybe <| field "items" itemsDecoder)
 
 
 decoder : Decoder Schema
