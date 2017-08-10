@@ -20,7 +20,11 @@ import Json.Encode as Encode exposing (Value)
 
 
 all : Test
-all =
+all = describe "deprecated" []
+
+
+deprecated : Test
+deprecated =
     describe "schema.type"
         [ test "integer schema" <|
             \() ->
