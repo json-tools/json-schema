@@ -19,6 +19,10 @@ import Data.Schema
 
 blankSchema =
     { type_ = Nothing
+    , title = Nothing
+    , description = Nothing
+    , default = Nothing
+    , examples = Nothing
     }
 
 

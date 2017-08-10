@@ -33,6 +33,10 @@ import Json.Decode.Pipeline exposing (decode, optional)
 
 type alias Schema =
     { type_ : Type
+    , title : Maybe String
+    , description : Maybe String
+    , default : Maybe Value
+    , examples : Maybe (List Value)
     }
 
 
@@ -85,6 +89,10 @@ decoder =
             |> optional "type"
                 (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                 AnyType
+            |> optional "title" (nullable string) Nothing
+            |> optional "description" (nullable string) Nothing
+            |> optional "default" (nullable value) Nothing
+            |> optional "examples" (nullable <| list value) Nothing
 
 
 
