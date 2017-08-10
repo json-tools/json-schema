@@ -53,7 +53,11 @@ type alias Schema =
     , pattern : Maybe String
     -- array validations
     , items : Maybe Items
+    , additionalItems : Maybe SubSchema
     }
+
+
+type SubSchema = SubSchema Schema
 
 
 blankSchema =
@@ -72,6 +76,7 @@ blankSchema =
     , minLength = Nothing
     , pattern = Nothing
     , items = Nothing
+    , additionalItems = Nothing
     }
 
 type Schemata
@@ -117,9 +122,7 @@ decoder =
             |> optional "pattern" (nullable string) Nothing
             -- array
             |> optional "items" (nullable itemsDecoder) Nothing
-
-
-
+            |> optional "additionalItems" (nullable subschemaDecoder) Nothing
 
 
 itemsDecoder : Decoder Items
@@ -129,6 +132,10 @@ itemsDecoder =
         , Decode.map ArrayOfItems (list <| lazy <| \_ -> decoder)
         ]
 
+
+subschemaDecoder : Decoder SubSchema
+subschemaDecoder =
+    Decode.map SubSchema <| lazy <| \_ -> decoder
 
 type Type
     = AnyType
