@@ -16,7 +16,7 @@ all =
             \() ->
                 [ ( "type", Encode.string "integer" ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withType "integer"
                         )
@@ -24,7 +24,7 @@ all =
             \() ->
                 [ ( "type", Encode.string "number" ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withType "number"
                         )
@@ -32,7 +32,7 @@ all =
             \() ->
                 [ ( "type", Encode.string "string" ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withType "string"
                         )
@@ -40,7 +40,7 @@ all =
             \() ->
                 [ ( "type", Encode.string "object" ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withType "object"
                         )
@@ -48,7 +48,7 @@ all =
             \() ->
                 [ ( "type", Encode.string "array" ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withType "array"
                         )
@@ -56,7 +56,7 @@ all =
             \() ->
                 [ ( "type", Encode.string "null" ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withType "null"
                         )
@@ -68,7 +68,7 @@ all =
                     ]
                 ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withNullableType "integer"
                         )
@@ -80,7 +80,7 @@ all =
                     ]
                 ) ]
                     |> decodeSchema
-                    |> shouldResultWithSchema
+                    |> Expect.equal
                         (blankSchema
                             |> withUnionType [ "string", "integer" ]
                         )

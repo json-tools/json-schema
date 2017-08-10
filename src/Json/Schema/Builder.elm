@@ -7,6 +7,7 @@ module Json.Schema.Builder
         )
 
 import Set
+import Util exposing (foldResults)
 import Data.Schema
     exposing
         ( Schema
@@ -22,41 +23,28 @@ blankSchema =
 
 
 withType t schema =
-    let
-        st =
-            case stringToType t of
-                Ok r ->
-                    SingleType r
+    t
+        |> stringToType
+        |> Result.map (\x -> { schema | type_ = SingleType x })
 
-                _ ->
-                    AnyType
-
-
-    in
-        { schema | type_ = st }
 
 withNullableType t schema =
-    let
-        nt =
-            case stringToType t of
-                Ok NullType ->
-                    SingleType NullType
+    t
+        |> stringToType
+        |> Result.map (\r ->
+            case r of
+                NullType ->
+                    { schema | type_ = SingleType NullType }
 
-                Ok r ->
-                    NullableType r
+                r ->
+                    { schema | type_ = NullableType r }
+        )
 
-                _ ->
-                    AnyType
-
-
-    in
-        { schema | type_ = nt }
 
 
 withUnionType listTypes schema =
-    let
-        ut =
-            listTypes
-                |> List.map (stringToType >> (Result.withDefault NullType))
-    in
-        { schema | type_ = UnionType ut }
+    listTypes
+        |> List.sort
+        |> List.map stringToType
+        |> foldResults
+        |> Result.map (\x -> { schema | type_ = UnionType x })

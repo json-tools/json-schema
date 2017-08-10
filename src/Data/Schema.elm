@@ -10,6 +10,7 @@ module Data.Schema
         , stringToType
         )
 
+import Util exposing (resultToDecoder, foldResults)
 import Data.NumberValidations as NumberValidations exposing (NumberValidations)
 import Data.StringValidations as StringValidations exposing (StringValidations)
 import Json.Decode as Decode
@@ -128,34 +129,12 @@ multipleTypesDecoder lst =
 
         otherList ->
             otherList
+                |> List.sort
                 |> List.map stringToType
                 |> foldResults
                 |> Result.andThen (Ok << UnionType)
                 |> resultToDecoder
 
-
-foldResults : List (Result x y) -> Result x (List y)
-foldResults results =
-    results
-        |> List.foldl
-            (\t ->
-                Result.andThen
-                    (\r ->
-                        Result.andThen (\x -> Ok <| x :: r) t
-                    )
-            )
-            (Ok [])
-        |> Result.andThen (Ok << List.reverse)
-
-
-resultToDecoder : Result String a -> Decoder a
-resultToDecoder res =
-    case res of
-        Ok a ->
-            succeed a
-
-        Err e ->
-            fail e
 
 
 stringToType : String -> Result String SingleType
