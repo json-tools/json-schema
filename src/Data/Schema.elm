@@ -8,6 +8,7 @@ module Data.Schema
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
         , stringToType
+        , blankSchema
         )
 
 import Util exposing (resultToDecoder, foldResults)
@@ -25,6 +26,8 @@ import Json.Decode as Decode
         , field
         , andThen
         , string
+        , float
+        , int
         , list
         , value
         )
@@ -33,18 +36,44 @@ import Json.Decode.Pipeline exposing (decode, optional)
 
 type alias Schema =
     { type_ : Type
+    -- meta
     , title : Maybe String
     , description : Maybe String
     , default : Maybe Value
     , examples : Maybe (List Value)
     , definitions : Maybe Schemata
+    -- numeric validations
+    , multipleOf : Maybe Float
+    , maximum : Maybe Float
+    , exclusiveMaximum : Maybe Float
+    , minimum : Maybe Float
+    , exclusiveMinimum : Maybe Float
+    -- string validations
+    , maxLength : Maybe Int
+    , minLength : Maybe Int
+    , pattern : Maybe String
+    -- array validations
+    , items : Maybe Items
     }
 
 
-type alias ArrayStuff =
-    { items : Maybe Items
+blankSchema =
+    { type_ = Nothing
+    , title = Nothing
+    , description = Nothing
+    , default = Nothing
+    , examples = Nothing
+    , definitions = Nothing
+    , multipleOf = Nothing
+    , maximum = Nothing
+    , exclusiveMaximum = Nothing
+    , minimum = Nothing
+    , exclusiveMinimum = Nothing
+    , maxLength = Nothing
+    , minLength = Nothing
+    , pattern = Nothing
+    , items = Nothing
     }
-
 
 type Schemata
     = Schemata (List ( String, Schema ))
@@ -91,10 +120,23 @@ decoder =
                 (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                 AnyType
             |> optional "title" (nullable string) Nothing
+            -- meta
             |> optional "description" (nullable string) Nothing
             |> optional "default" (nullable value) Nothing
             |> optional "examples" (nullable <| list value) Nothing
             |> optional "definitions" (nullable schemataDecoder) Nothing
+            -- number
+            |> optional "multipleOf" (nullable float) Nothing
+            |> optional "maximum" (nullable float) Nothing
+            |> optional "exclusiveMaximum" (nullable float) Nothing
+            |> optional "minimum" (nullable float) Nothing
+            |> optional "exclusiveMinimum" (nullable float) Nothing
+            -- string
+            |> optional "maxLength" (nullable int) Nothing
+            |> optional "minLength" (nullable int) Nothing
+            |> optional "pattern" (nullable string) Nothing
+            -- array
+            |> optional "items" (nullable itemsDecoder) Nothing
 
 
 

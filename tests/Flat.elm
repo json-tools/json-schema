@@ -1,9 +1,8 @@
 module Flat exposing (all)
 
 import Test exposing (Test, describe, test, only)
-import Json.Schema.Builder exposing (
-    blankSchema, withType, withNullableType, withUnionType )
-import Data.Schema exposing (Schema, decoder)
+import Json.Schema.Builder exposing (withType, withNullableType, withUnionType )
+import Data.Schema exposing (Schema, decoder, blankSchema)
 import Expect
 import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (decodeValue)

@@ -1,7 +1,6 @@
 module Json.Schema.Builder
     exposing
-        ( blankSchema
-        , withType
+        ( withType
         , withNullableType
         , withUnionType
         )
@@ -14,17 +13,8 @@ import Data.Schema
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
         , stringToType
+        , blankSchema
         )
-
-
-blankSchema =
-    { type_ = Nothing
-    , title = Nothing
-    , description = Nothing
-    , default = Nothing
-    , examples = Nothing
-    , definitions = Nothing
-    }
 
 
 withType t schema =
