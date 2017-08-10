@@ -12,6 +12,7 @@ import Data.Schema
         ( Schema
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+        , stringToType
         )
 
 
@@ -23,24 +24,9 @@ blankSchema =
 withType t schema =
     let
         st =
-            case t of
-                "integer" ->
-                    SingleType IntegerType
-
-                "number" ->
-                    SingleType NumberType
-
-                "string" ->
-                    SingleType StringType
-
-                "object" ->
-                    SingleType ObjectType
-
-                "array" ->
-                    SingleType ArrayType
-
-                "null" ->
-                    SingleType NullType
+            case stringToType t of
+                Ok r ->
+                    SingleType r
 
                 _ ->
                     AnyType
@@ -52,24 +38,12 @@ withType t schema =
 withNullableType t schema =
     let
         nt =
-            case t of
-                "integer" ->
-                    NullableType IntegerType
-
-                "number" ->
-                    NullableType NumberType
-
-                "string" ->
-                    NullableType StringType
-
-                "object" ->
-                    NullableType ObjectType
-
-                "array" ->
-                    NullableType ArrayType
-
-                "null" ->
+            case stringToType t of
+                Ok NullType ->
                     SingleType NullType
+
+                Ok r ->
+                    NullableType r
 
                 _ ->
                     AnyType
@@ -83,28 +57,6 @@ withUnionType listTypes schema =
     let
         ut =
             listTypes
-                |> List.map (\t ->
-                    case t of
-                        "integer" ->
-                            IntegerType
-
-                        "number" ->
-                            NumberType
-
-                        "string" ->
-                            StringType
-
-                        "object" ->
-                            ObjectType
-
-                        "array" ->
-                            ArrayType
-
-                        "null" ->
-                            NullType
-
-                        _ ->
-                            NullType
-                    )
+                |> List.map (stringToType >> (Result.withDefault NullType))
     in
         { schema | type_ = UnionType ut }
