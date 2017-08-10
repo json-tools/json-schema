@@ -37,6 +37,7 @@ type alias Schema =
     , description : Maybe String
     , default : Maybe Value
     , examples : Maybe (List Value)
+    , definitions : Maybe Schemata
     }
 
 
@@ -93,10 +94,10 @@ decoder =
             |> optional "description" (nullable string) Nothing
             |> optional "default" (nullable value) Nothing
             |> optional "examples" (nullable <| list value) Nothing
+            |> optional "definitions" (nullable schemataDecoder) Nothing
 
 
 
--- (maybe <| field "definitions" schemataDecoder)
 
 
 itemsDecoder : Decoder Items

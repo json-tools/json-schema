@@ -23,6 +23,7 @@ blankSchema =
     , description = Nothing
     , default = Nothing
     , examples = Nothing
+    , definitions = Nothing
     }
 
 
