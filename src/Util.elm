@@ -6,14 +6,9 @@ foldResults : List (Result x y) -> Result x (List y)
 foldResults results =
     results
         |> List.foldl
-            (\t ->
-                Result.andThen
-                    (\r ->
-                        Result.andThen (\x -> Ok <| x :: r) t
-                    )
-            )
+            (\t -> Result.andThen (\r -> t |> Result.map (flip (::) r)))
             (Ok [])
-        |> Result.andThen (Ok << List.reverse)
+        |> Result.map List.reverse
 
 
 resultToDecoder : Result String a -> Decoder a
