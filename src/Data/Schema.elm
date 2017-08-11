@@ -8,6 +8,7 @@ module Data.Schema
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
         , stringToType
         , blankSchema
+        , SubSchema(SubSchema, NoSchema)
         )
 
 import Util exposing (resultToDecoder, foldResults)
@@ -54,15 +55,29 @@ type alias Schema =
     , pattern : Maybe String
     -- array validations
     , items : Maybe Items
-    , additionalItems : Maybe SubSchema
+    , additionalItems : SubSchema
     , maxItems : Maybe Int
     , minItems : Maybe Int
     , uniqueItems : Maybe Bool
-    , contains : Maybe SubSchema
+    , contains : SubSchema
+    , maxProperties : Maybe Int
+    , minProperties : Maybe Int
+    , required : List String
+    , properties : Maybe Schemata
+    , patternProperties : Maybe Schemata
+    , additionalProperties : SubSchema
+    , dependencies : List (String, Dependency)
+    , propertyNames : SubSchema
+    , enum : Maybe (List Value)
+    , const : Maybe Value
+    , allOf : Maybe (List SubSchema)
+    , anyOf : Maybe (List SubSchema)
+    , oneOf : Maybe (List SubSchema)
+    , not : SubSchema
     }
 
 
-type SubSchema = SubSchema Schema
+type SubSchema = SubSchema Schema | NoSchema
 
 
 blankSchema =
@@ -81,11 +96,25 @@ blankSchema =
     , minLength = Nothing
     , pattern = Nothing
     , items = Nothing
-    , additionalItems = Nothing
+    , additionalItems = NoSchema
     , maxItems = Nothing
     , minItems = Nothing
     , uniqueItems = Nothing
-    , contains = Nothing
+    , contains = NoSchema
+    , maxProperties = Nothing
+    , minProperties = Nothing
+    , required = []
+    , properties = Nothing
+    , patternProperties = Nothing
+    , additionalProperties = NoSchema
+    , dependencies = []
+    , propertyNames = NoSchema
+    , enum = Nothing
+    , const = Nothing
+    , allOf = Nothing
+    , anyOf = Nothing
+    , oneOf = Nothing
+    , not = NoSchema
     }
 
 
@@ -96,6 +125,10 @@ type Schemata
 type Items
     = ItemDefinition Schema
     | ArrayOfItems (List Schema)
+
+type Dependency
+    = ArrayPropNames (List String)
+    | PropSchema Schema
 
 
 decoder : Decoder Schema
@@ -131,20 +164,70 @@ decoder =
             |> optional "minLength" (nullable nonNegativeInt) Nothing
             |> optional "pattern" (nullable string) Nothing
             -- array
-            |> optional "items" (nullable itemsDecoder) Nothing
-            |> optional "additionalItems" (nullable subschemaDecoder) Nothing
+            |> optional "items" (nullable (lazy (\_ -> itemsDecoder))) Nothing
+            |> optional "additionalItems" (lazy (\_ -> subschemaDecoder)) NoSchema
             |> optional "maxItems" (nullable nonNegativeInt) Nothing
             |> optional "minItems" (nullable nonNegativeInt) Nothing
             |> optional "uniqueItems" (nullable bool) Nothing
-            |> optional "contains" (nullable subschemaDecoder) Nothing
+            |> optional "contains" (lazy (\_ -> subschemaDecoder)) NoSchema
+            |> optional "maxProperties" (nullable nonNegativeInt) Nothing
+            |> optional "minProperties" (nullable nonNegativeInt) Nothing
+            |> optional "required" (list string) []
+            |> optional "properties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
+            |> optional "patternProperties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
+            |> optional "additionalProperties" (lazy (\_ -> subschemaDecoder)) NoSchema
+            |> optional "dependencies" (lazy (\_ -> dependenciesDecoder)) []
+            |> optional "propertyNames" (lazy (\_ -> subschemaDecoder)) NoSchema
+            |> optional "enum" (nullable nonEmptyUniqueArrayOfValuesDecoder) Nothing
+            |> optional "const" (nullable value) Nothing
+            |> optional "allOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
+            |> optional "anyOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
+            |> optional "oneOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
+            |> optional "not" (lazy (\_ -> subschemaDecoder)) NoSchema
+
+
+nonEmptyListOfSchemas : Decoder (List SubSchema)
+nonEmptyListOfSchemas =
+    list subschemaDecoder
+        |> andThen failIfEmpty
+
+
+nonEmptyUniqueArrayOfValuesDecoder : Decoder (List Value)
+nonEmptyUniqueArrayOfValuesDecoder =
+    list value
+        |> andThen failIfValuesAreNotUnique
+        |> andThen failIfEmpty
+
+
+failIfValuesAreNotUnique : List Value -> Decoder (List Value)
+failIfValuesAreNotUnique l =
+    succeed l
+
+
+failIfEmpty : List a -> Decoder (List a)
+failIfEmpty l =
+    if List.isEmpty l then
+        fail "List is empty"
+    else
+        succeed l
 
 
 itemsDecoder : Decoder Items
 itemsDecoder =
     Decode.oneOf
-        [ Decode.map ItemDefinition <| lazy <| \_ -> decoder
-        , Decode.map ArrayOfItems (list <| lazy <| \_ -> decoder)
+        [ Decode.map ItemDefinition decoder
+        , Decode.map ArrayOfItems <| list decoder
         ]
+
+
+dependenciesDecoder : Decoder (List (String, Dependency))
+dependenciesDecoder =
+    Decode.oneOf
+        [ Decode.map ArrayPropNames (list string)
+        , Decode.map PropSchema decoder
+        ]
+            |> Decode.keyValuePairs
+
 
 nonNegativeInt : Decoder Int
 nonNegativeInt =
@@ -154,7 +237,7 @@ nonNegativeInt =
 
 subschemaDecoder : Decoder SubSchema
 subschemaDecoder =
-    Decode.map SubSchema <| lazy <| \_ -> decoder
+    Decode.map SubSchema decoder
 
 type Type
     = AnyType

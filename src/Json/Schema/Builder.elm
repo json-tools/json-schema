@@ -13,6 +13,7 @@ import Data.Schema
         ( Schema
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+        , SubSchema(SubSchema, NoSchema)
         , stringToType
         , blankSchema
         )
@@ -46,6 +47,6 @@ withUnionType listTypes schema =
         |> Result.map (\x -> { schema | type_ = UnionType x })
 
 
-withContains subschema schema =
-    { schema | contains = Just subschema }
+withContains s schema =
+    Ok { schema | contains = SubSchema s }
 

@@ -93,14 +93,12 @@ all =
                         (blankSchema
                             |> withUnionType [ "string", "integer" ]
                         )
-                        {-
         , test "contains={}" <|
             \() ->
-                [ ( "items", Encode.object [] ) ]
+                [ ( "contains", Encode.object [] ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (Ok { blankSchema | contains = Nothing })
-                        -}
+                        (blankSchema |> withContains blankSchema)
         ]
 
 
