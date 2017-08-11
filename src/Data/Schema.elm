@@ -9,6 +9,8 @@ module Data.Schema
         , stringToType
         , blankSchema
         , SubSchema(SubSchema, NoSchema)
+        , Items(ItemDefinition, ArrayOfItems, NoItems)
+        , Dependency(ArrayPropNames, PropSchema)
         )
 
 import Util exposing (resultToDecoder, foldResults)
@@ -54,7 +56,7 @@ type alias Schema =
     , minLength : Maybe Int
     , pattern : Maybe String
     -- array validations
-    , items : Maybe Items
+    , items : Items
     , additionalItems : SubSchema
     , maxItems : Maybe Int
     , minItems : Maybe Int
@@ -95,7 +97,7 @@ blankSchema =
     , maxLength = Nothing
     , minLength = Nothing
     , pattern = Nothing
-    , items = Nothing
+    , items = NoItems
     , additionalItems = NoSchema
     , maxItems = Nothing
     , minItems = Nothing
@@ -123,7 +125,8 @@ type Schemata
 
 
 type Items
-    = ItemDefinition Schema
+    = NoItems
+    | ItemDefinition Schema
     | ArrayOfItems (List Schema)
 
 type Dependency
@@ -152,7 +155,7 @@ decoder =
             |> optional "description" (nullable string) Nothing
             |> optional "default" (nullable value) Nothing
             |> optional "examples" (nullable <| list value) Nothing
-            |> optional "definitions" (nullable schemataDecoder) Nothing
+            |> optional "definitions" (nullable <| lazy <| \_ -> schemataDecoder) Nothing
             -- number
             |> optional "multipleOf" (nullable float) Nothing
             |> optional "maximum" (nullable float) Nothing
@@ -164,7 +167,7 @@ decoder =
             |> optional "minLength" (nullable nonNegativeInt) Nothing
             |> optional "pattern" (nullable string) Nothing
             -- array
-            |> optional "items" (nullable (lazy (\_ -> itemsDecoder))) Nothing
+            |> optional "items" (lazy (\_ -> itemsDecoder)) NoItems
             |> optional "additionalItems" (lazy (\_ -> subschemaDecoder)) NoSchema
             |> optional "maxItems" (nullable nonNegativeInt) Nothing
             |> optional "minItems" (nullable nonNegativeInt) Nothing
@@ -188,7 +191,7 @@ decoder =
 
 nonEmptyListOfSchemas : Decoder (List SubSchema)
 nonEmptyListOfSchemas =
-    list subschemaDecoder
+    list (lazy (\_ -> subschemaDecoder))
         |> andThen failIfEmpty
 
 
@@ -215,8 +218,8 @@ failIfEmpty l =
 itemsDecoder : Decoder Items
 itemsDecoder =
     Decode.oneOf
-        [ Decode.map ItemDefinition decoder
-        , Decode.map ArrayOfItems <| list decoder
+        [ Decode.map ArrayOfItems <| list decoder
+        , Decode.map ItemDefinition decoder
         ]
 
 
