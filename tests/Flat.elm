@@ -1,7 +1,13 @@
 module Flat exposing (all)
 
 import Test exposing (Test, describe, test, only)
-import Json.Schema.Builder exposing (withType, withNullableType, withUnionType )
+import Json.Schema.Builder
+    exposing
+        ( withType
+        , withNullableType
+        , withUnionType
+        , withContains
+        )
 import Data.Schema exposing (Schema, decoder, blankSchema)
 import Expect
 import Json.Encode as Encode exposing (Value)
@@ -61,11 +67,13 @@ all =
                         )
         , test "type=[null,integer]" <|
             \() ->
-                [ ( "type", Encode.list
-                    [ Encode.string "null"
-                    , Encode.string "integer"
-                    ]
-                ) ]
+                [ ( "type"
+                  , Encode.list
+                        [ Encode.string "null"
+                        , Encode.string "integer"
+                        ]
+                  )
+                ]
                     |> decodeSchema
                     |> Expect.equal
                         (blankSchema
@@ -73,17 +81,28 @@ all =
                         )
         , test "type=[string,integer]" <|
             \() ->
-                [ ( "type", Encode.list
-                    [ Encode.string "string"
-                    , Encode.string "integer"
-                    ]
-                ) ]
+                [ ( "type"
+                  , Encode.list
+                        [ Encode.string "string"
+                        , Encode.string "integer"
+                        ]
+                  )
+                ]
                     |> decodeSchema
                     |> Expect.equal
                         (blankSchema
                             |> withUnionType [ "string", "integer" ]
                         )
+                        {-
+        , test "contains={}" <|
+            \() ->
+                [ ( "items", Encode.object [] ) ]
+                    |> decodeSchema
+                    |> Expect.equal
+                        (Ok { blankSchema | contains = Nothing })
+                        -}
         ]
+
 
 shouldResultWithSchema : Schema -> Result x Schema -> Expect.Expectation
 shouldResultWithSchema s =

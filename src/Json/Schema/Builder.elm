@@ -3,6 +3,7 @@ module Json.Schema.Builder
         ( withType
         , withNullableType
         , withUnionType
+        , withContains
         )
 
 import Set
@@ -43,3 +44,8 @@ withUnionType listTypes schema =
         |> List.map stringToType
         |> foldResults
         |> Result.map (\x -> { schema | type_ = UnionType x })
+
+
+withContains subschema schema =
+    { schema | contains = Just subschema }
+

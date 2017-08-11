@@ -58,6 +58,7 @@ type alias Schema =
     , maxItems : Maybe Int
     , minItems : Maybe Int
     , uniqueItems : Maybe Bool
+    , contains : Maybe SubSchema
     }
 
 
@@ -65,7 +66,7 @@ type SubSchema = SubSchema Schema
 
 
 blankSchema =
-    { type_ = Nothing
+    { type_ = AnyType
     , title = Nothing
     , description = Nothing
     , default = Nothing
@@ -84,7 +85,9 @@ blankSchema =
     , maxItems = Nothing
     , minItems = Nothing
     , uniqueItems = Nothing
+    , contains = Nothing
     }
+
 
 type Schemata
     = Schemata (List ( String, Schema ))
@@ -133,6 +136,7 @@ decoder =
             |> optional "maxItems" (nullable nonNegativeInt) Nothing
             |> optional "minItems" (nullable nonNegativeInt) Nothing
             |> optional "uniqueItems" (nullable bool) Nothing
+            |> optional "contains" (nullable subschemaDecoder) Nothing
 
 
 itemsDecoder : Decoder Items
