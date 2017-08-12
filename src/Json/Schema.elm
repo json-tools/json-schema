@@ -49,6 +49,7 @@ import Json.Encode as Encode exposing (Value)
 import Data.Schema
 import Dict exposing (Dict)
 import String
+import Regex
 
 
 {-| Schema represents a node of schema.
@@ -610,6 +611,11 @@ validate value schema =
     [ validateMultipleOf
     , validateMaximum
     , validateMinimum
+    , validateExclusiveMaximum
+    , validateExclusiveMinimum
+    , validateMaxLength
+    , validateMinLength
+    , validatePattern
     ]
         |> failWithFirstError value schema
 
@@ -627,53 +633,105 @@ failWithFirstError value schema results =
     in
         List.foldl failIfError (Ok True) results
 
+
+validateMultipleOf : Value -> Data.Schema.Schema -> Result String Bool
+validateMultipleOf =
+    when .multipleOf Decode.float
+        (\multipleOf x ->
+            if isInt (x / multipleOf) then
+                Ok True
+            else
+                Err <| "Value is not the multiple of " ++ (toString multipleOf)
+        )
+
+
 validateMaximum : Value -> Data.Schema.Schema -> Result String Bool
-validateMaximum value schema =
-    case schema.maximum of
-        Just max ->
-            case Decode.decodeValue Decode.float value of
-                Ok x ->
-                    if x <= max then
-                        Ok True
-                    else
-                        Err <| "Value is above the maximum of " ++ (toString max)
-                Err s ->
-                    Err s
-        Nothing ->
-            Ok True
+validateMaximum =
+    when .maximum Decode.float
+        (\max x ->
+            if x <= max then
+                Ok True
+            else
+                Err <| "Value is above the maximum of " ++ (toString max)
+        )
 
 
 validateMinimum : Value -> Data.Schema.Schema -> Result String Bool
-validateMinimum value schema =
-    case schema.minimum of
-        Just min ->
-            case Decode.decodeValue Decode.float value of
-                Ok x ->
-                    if x >= min then
-                        Ok True
-                    else
-                        Err <| "Value is below the minimum of " ++ (toString min)
-                Err s ->
-                    Err s
-        Nothing ->
-            Ok True
+validateMinimum =
+    when .minimum Decode.float
+        (\min x ->
+            if x >= min then
+                Ok True
+            else
+                Err <| "Value is below the minimum of " ++ (toString min)
+        )
 
 
-validateMultipleOf : Value -> Data.Schema.Schema -> Result String Bool
-validateMultipleOf value schema =
-    case schema.multipleOf of
-        Just n ->
-            case Decode.decodeValue Decode.float value of
-                Ok x ->
-                    if isInt (x / n) then
-                        Ok True
-                    else
-                        Err <| "Value is not the multiple of " ++ (toString n)
-                Err s ->
-                    Err s
-        Nothing ->
-            Ok True
+validateExclusiveMaximum : Value -> Data.Schema.Schema -> Result String Bool
+validateExclusiveMaximum =
+    when .exclusiveMaximum Decode.float
+        (\max x ->
+            if x < max then
+                Ok True
+            else
+                Err <| "Value is not below the exclusive maximum of " ++ (toString max)
+        )
+
+
+validateExclusiveMinimum : Value -> Data.Schema.Schema -> Result String Bool
+validateExclusiveMinimum =
+    when .exclusiveMinimum Decode.float
+        (\min x ->
+            if x > min then
+                Ok True
+            else
+                Err <| "Value is not above the exclusive minimum of " ++ (toString min)
+        )
+
+validateMaxLength : Value -> Data.Schema.Schema -> Result String Bool
+validateMaxLength =
+    when .maxLength Decode.string
+        (\maxLength str ->
+            if String.length str <= maxLength then
+                Ok True
+            else
+                Err <| "String is longer than expected " ++ (toString maxLength)
+        )
+
+validateMinLength : Value -> Data.Schema.Schema -> Result String Bool
+validateMinLength =
+    when .minLength Decode.string
+        (\minLength str ->
+            if String.length str >= minLength then
+                Ok True
+            else
+                Err <| "String is shorter than expected " ++ (toString minLength)
+        )
+
+
+validatePattern : Value -> Data.Schema.Schema -> Result String Bool
+validatePattern =
+    when .pattern Decode.string
+        (\pattern str ->
+            if Regex.contains (Regex.regex pattern) str then
+                Ok True
+            else
+                Err <| "String does not match the regex pattern"
+        )
+
 
 isInt : Float -> Bool
 isInt x =
     x == (round >> toFloat) x
+
+
+when propOf decoder fn value schema =
+    case propOf schema of
+        Just v ->
+            Decode.decodeValue decoder value
+                |> Result.andThen (fn v)
+
+        Nothing ->
+            Ok True
+
+

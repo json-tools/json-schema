@@ -55,4 +55,64 @@ all = describe "validations"
                     |> validate (Encode.float 1.9)
                     |> Expect.equal (Err "Value is below the minimum of 2")
         ]
+    , describe "exclusiveMaximum"
+        [ test "success" <|
+            \() ->
+                { blankSchema | exclusiveMaximum = Just 2 }
+                    |> validate (Encode.float 1.9)
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                { blankSchema | exclusiveMaximum = Just 2 }
+                    |> validate (Encode.float 2)
+                    |> Expect.equal (Err "Value is not below the exclusive maximum of 2")
+        ]
+    , describe "exclusiveMinimum"
+        [ test "success" <|
+            \() ->
+                { blankSchema | exclusiveMinimum = Just 2 }
+                    |> validate (Encode.float 2.1)
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                { blankSchema | exclusiveMinimum = Just 2 }
+                    |> validate (Encode.float 2)
+                    |> Expect.equal (Err "Value is not above the exclusive minimum of 2")
+        ]
+    , describe "maxLength"
+        [ test "success" <|
+            \() ->
+                { blankSchema | maxLength = Just 3 }
+                    |> validate (Encode.string "foo")
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                { blankSchema | maxLength = Just 2 }
+                    |> validate (Encode.string "foo")
+                    |> Expect.equal (Err "String is longer than expected 2")
+        ]
+    , describe "minLength"
+        [ test "success" <|
+            \() ->
+                { blankSchema | minLength = Just 3 }
+                    |> validate (Encode.string "foo")
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                { blankSchema | minLength = Just 4 }
+                    |> validate (Encode.string "foo")
+                    |> Expect.equal (Err "String is shorter than expected 4")
+        ]
+    , describe "pattern"
+        [ test "success" <|
+            \() ->
+                { blankSchema | pattern = Just "o{2}" }
+                    |> validate (Encode.string "foo")
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                { blankSchema | pattern = Just "o{3}" }
+                    |> validate (Encode.string "foo")
+                    |> Expect.equal (Err "String does not match the regex pattern")
+        ]
     ]
