@@ -3,7 +3,8 @@ module Flat exposing (all)
 import Test exposing (Test, describe, test, only)
 import Json.Schema.Builder
     exposing
-        ( buildSchema
+        ( SchemaBuilder
+        , buildSchema
         , toSchema
         , withType
         , withNullableType
@@ -23,7 +24,7 @@ import Json.Schema.Builder
         , withAnyOf
         , withOneOf
         )
-import Data.Schema exposing (Schema, decoder, blankSchema)
+import Data.Schema as Schema exposing (Schema, decoder, blankSchema)
 import Expect
 import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (decodeValue)
@@ -35,56 +36,44 @@ all =
         [ test "type=integer" <|
             \() ->
                 [ ( "type", Encode.string "integer" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withType "integer"
-                            |> toSchema
                         )
         , test "type=number" <|
             \() ->
                 [ ( "type", Encode.string "number" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withType "number"
-                            |> toSchema
                         )
         , test "type=string" <|
             \() ->
                 [ ( "type", Encode.string "string" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withType "string"
-                            |> toSchema
                         )
         , test "type=object" <|
             \() ->
                 [ ( "type", Encode.string "object" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withType "object"
-                            |> toSchema
                         )
         , test "type=array" <|
             \() ->
                 [ ( "type", Encode.string "array" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withType "array"
-                            |> toSchema
                         )
         , test "type=null" <|
             \() ->
                 [ ( "type", Encode.string "null" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withType "null"
-                            |> toSchema
                         )
         , test "type=[null,integer]" <|
             \() ->
@@ -95,11 +84,9 @@ all =
                         ]
                   )
                 ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withNullableType "integer"
-                            |> toSchema
                         )
         , test "type=[string,integer]" <|
             \() ->
@@ -110,11 +97,9 @@ all =
                         ]
                   )
                 ]
-                    |> decodeSchema
-                    |> Expect.equal
+                    |> decodesInto
                         (buildSchema
                             |> withUnionType [ "string", "integer" ]
-                            |> toSchema
                         )
         , test "title=smth" <|
             \() ->
@@ -125,69 +110,80 @@ all =
         , test "definitions={foo=blankSchema}" <|
             \() ->
                 [ ( "definitions", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withDefinitions [ ( "foo", blankSchema ) ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withDefinitions [ ( "foo", blankSchema ) ]
+                        )
         , test "items=[blankSchema]" <|
             \() ->
                 [ ( "items", Encode.list <| [ Encode.object [] ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withItems [ blankSchema ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withItems [ blankSchema ]
+                        )
         , test "items=blankSchema" <|
             \() ->
                 [ ( "items", Encode.object [] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        ( blankSchema |> withItem blankSchema )
+                    |> decodesInto
+                        (buildSchema
+                            |> withItem blankSchema
+                        )
         , test "additionalItems=blankSchema" <|
             \() ->
                 [ ( "additionalItems", Encode.object [] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        ( blankSchema |> withAdditionalItems blankSchema )
+                    |> decodesInto
+                        (buildSchema
+                            |> withAdditionalItems blankSchema
+                        )
         , test "contains={}" <|
             \() ->
                 [ ( "contains", Encode.object [] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withContains blankSchema)
+                    |> decodesInto
+                        (buildSchema
+                            |> withContains blankSchema
+                        )
         , test "properties={foo=blankSchema}" <|
             \() ->
                 [ ( "properties", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withProperties [ ( "foo", blankSchema ) ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withProperties [ ( "foo", blankSchema ) ]
+                        )
         , test "patternProperties={foo=blankSchema}" <|
             \() ->
                 [ ( "patternProperties", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withPatternProperties [ ( "foo", blankSchema ) ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withPatternProperties [ ( "foo", blankSchema ) ]
+                        )
         , test "additionalProperties=blankSchema" <|
             \() ->
                 [ ( "additionalProperties", Encode.object [] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        ( blankSchema |> withAdditionalProperties blankSchema )
+                    |> decodesInto
+                        (buildSchema
+                            |> withAdditionalProperties blankSchema
+                        )
         , test "dependencies={foo=blankSchema}" <|
             \() ->
                 [ ( "dependencies", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withSchemaDependency "foo" blankSchema)
+                    |> decodesInto
+                        (buildSchema
+                            |> withSchemaDependency "foo" blankSchema
+                        )
         , test "dependencies={foo=[bar]}" <|
             \() ->
                 [ ( "dependencies", Encode.object [ ( "foo", Encode.list [ Encode.string "bar" ] ) ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withPropNamesDependency "foo" [ "bar" ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withPropNamesDependency "foo" [ "bar" ]
+                        )
         , test "propertyNames={}" <|
             \() ->
                 [ ( "propertyNames", Encode.object [ ( "type", Encode.string "string" ) ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withPropertyNames stringSchema)
+                    |> decodesInto
+                        (buildSchema
+                            |> withPropertyNames stringSchema
+                        )
         , test "enum=[]" <|
             \() ->
                 [ ( "enum", Encode.list [] ) ]
@@ -201,21 +197,24 @@ all =
         , test "allOf=[blankSchema]" <|
             \() ->
                 [ ( "allOf", Encode.list [ Encode.object [] ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withAllOf [ blankSchema ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withAllOf [ blankSchema ]
+                        )
         , test "oneOf=[blankSchema]" <|
             \() ->
                 [ ( "oneOf", Encode.list [ Encode.object [] ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withOneOf [ blankSchema ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withOneOf [ blankSchema ]
+                        )
         , test "anyOf=[blankSchema]" <|
             \() ->
                 [ ( "anyOf", Encode.list [ Encode.object [] ] ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (blankSchema |> withAnyOf [ blankSchema ])
+                    |> decodesInto
+                        (buildSchema
+                            |> withAnyOf [ blankSchema ]
+                        )
         ]
 
 
@@ -230,7 +229,15 @@ decodeSchema : List ( String, Value ) -> Result String Schema
 decodeSchema list =
     list
         |> Encode.object
-        |> decodeValue decoder
+        |> decodeValue Schema.decoder
+
+
+decodesInto : SchemaBuilder -> List ( String, Value ) -> Expect.Expectation
+decodesInto sb list =
+    list
+        |> Encode.object
+        |> decodeValue Schema.decoder
+        |> Expect.equal (sb |> toSchema)
 
 
 stringSchema : Schema

@@ -1,6 +1,7 @@
 module Json.Schema.Builder
     exposing
-        ( buildSchema
+        ( SchemaBuilder(SchemaBuilder)
+        , buildSchema
         , toSchema
         , withType
         , withNullableType
@@ -55,39 +56,35 @@ toSchema (SchemaBuilder sb) =
 withType t sb =
     t
         |> stringToType
-        |> Result.map (\x -> updateSchema sb (\s -> { s | type_ = SingleType x }))
+        |> Result.map (\x -> updateSchema (\s -> { s | type_ = SingleType x }) sb)
         |> (\r ->
             case r of
                 Ok x ->
                     x
 
                 Err s ->
-                    appendError sb s
+                    appendError s sb
             )
 
 
-setSchema (SchemaBuilder sb) s =
-    SchemaBuilder { sb | schema = s }
-
-
-updateSchema (SchemaBuilder sb) fn =
+updateSchema fn (SchemaBuilder sb) =
     SchemaBuilder { sb | schema = fn sb.schema }
 
 
-appendError (SchemaBuilder { errors, schema }) e =
+appendError e (SchemaBuilder { errors, schema }) =
     SchemaBuilder { errors = e :: errors, schema = schema }
 
 
-withNullableType t sb =
+withNullableType t =
     case stringToType t of
         Ok NullType ->
-            appendError sb "Nullable null is not allowed"
+            appendError "Nullable null is not allowed"
 
         Ok r ->
-            updateSchema sb (\s -> { s | type_ = NullableType r })
+            updateSchema (\s -> { s | type_ = NullableType r })
 
         Err s ->
-            appendError sb s
+            appendError s
 
 
 withUnionType listTypes sb =
@@ -95,68 +92,68 @@ withUnionType listTypes sb =
         |> List.sort
         |> List.map stringToType
         |> foldResults
-        |> Result.map (\s -> updateSchema sb (\x -> { x | type_ = UnionType s }))
+        |> Result.map (\s -> updateSchema (\x -> { x | type_ = UnionType s }) sb)
         |> (\x ->
             case x of
                 Err s ->
-                    appendError sb s
+                    appendError s sb
 
                 Ok x ->
                     x
            )
 
 
-withContains s schema =
-    Ok { schema | contains = SubSchema s }
+withContains sub =
+    updateSchema (\s -> { s | contains = SubSchema sub } )
 
 
-withDefinitions defs schema =
-    Ok { schema | definitions = Just (Schemata defs) }
+withDefinitions defs =
+    updateSchema (\s -> { s | definitions = Just (Schemata defs) } )
 
 
-withItems items schema =
-    Ok { schema | items = ArrayOfItems items }
+withItems items =
+    updateSchema (\s -> { s | items = ArrayOfItems items } )
 
 
-withItem item schema =
-    Ok { schema | items = ItemDefinition item }
+withItem item =
+    updateSchema (\s -> { s | items = ItemDefinition item } )
 
 
-withAdditionalItems ai schema =
-    Ok { schema | additionalItems = SubSchema ai }
+withAdditionalItems ai =
+    updateSchema (\schema -> { schema | additionalItems = SubSchema ai })
 
 
-withProperties defs schema =
-    Ok { schema | properties = Just (Schemata defs) }
+withProperties defs =
+    updateSchema (\schema -> { schema | properties = Just (Schemata defs) })
 
 
-withPatternProperties defs schema =
-    Ok { schema | patternProperties = Just (Schemata defs) }
+withPatternProperties defs =
+    updateSchema (\schema -> { schema | patternProperties = Just (Schemata defs) })
 
 
-withAdditionalProperties ap schema =
-    Ok { schema | additionalProperties = SubSchema ap }
+withAdditionalProperties ap =
+    updateSchema (\schema -> { schema | additionalProperties = SubSchema ap })
 
 
-withSchemaDependency name sd schema =
-    Ok { schema | dependencies = ( name, PropSchema sd ) :: schema.dependencies }
+withSchemaDependency name sd =
+    updateSchema (\schema -> { schema | dependencies = ( name, PropSchema sd ) :: schema.dependencies })
 
 
-withPropNamesDependency name pn schema =
-    Ok { schema | dependencies = ( name, ArrayPropNames pn ) :: schema.dependencies }
+withPropNamesDependency name pn =
+    updateSchema (\schema -> { schema | dependencies = ( name, ArrayPropNames pn ) :: schema.dependencies })
 
 
-withPropertyNames pn schema =
-    Ok { schema | propertyNames = SubSchema pn }
+withPropertyNames pn =
+    updateSchema (\schema -> { schema | propertyNames = SubSchema pn })
 
 
-withAllOf ls schema =
-    Ok { schema | allOf = Just (List.map SubSchema ls) }
+withAllOf ls =
+    updateSchema (\schema -> { schema | allOf = Just (List.map SubSchema ls) })
 
 
-withAnyOf ls schema =
-    Ok { schema | anyOf = Just (List.map SubSchema ls) }
+withAnyOf ls =
+    updateSchema (\schema -> { schema | anyOf = Just (List.map SubSchema ls) })
 
 
-withOneOf ls schema =
-    Ok { schema | oneOf = Just (List.map SubSchema ls) }
+withOneOf ls =
+    updateSchema (\schema -> { schema | oneOf = Just (List.map SubSchema ls) })
