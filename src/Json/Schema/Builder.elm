@@ -1,6 +1,8 @@
 module Json.Schema.Builder
     exposing
-        ( withType
+        ( buildSchema
+        , toSchema
+        , withType
         , withNullableType
         , withUnionType
         , withContains
@@ -35,10 +37,33 @@ import Data.Schema
         )
 
 
-withType t schema =
+type SchemaBuilder
+    = SchemaBuilder { errors : List String, schema : Schema }
+
+
+buildSchema =
+    SchemaBuilder { errors = [], schema = blankSchema }
+
+
+toSchema (SchemaBuilder sb) =
+    if List.isEmpty sb.errors then
+        Ok sb.schema
+    else
+        Err <| String.join "," sb.errors
+
+
+withType t (SchemaBuilder { errors, schema }) =
     t
         |> stringToType
         |> Result.map (\x -> { schema | type_ = SingleType x })
+        |> (\r ->
+            case r of
+                Ok x ->
+                    { errors = errors, schema = x }
+                Err s ->
+                    { errors = s :: errors, schema = schema }
+            )
+        |> SchemaBuilder
 
 
 withNullableType t schema =

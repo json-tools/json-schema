@@ -3,7 +3,9 @@ module Flat exposing (all)
 import Test exposing (Test, describe, test, only)
 import Json.Schema.Builder
     exposing
-        ( withType
+        ( buildSchema
+        , toSchema
+        , withType
         , withNullableType
         , withUnionType
         , withContains
@@ -35,48 +37,54 @@ all =
                 [ ( "type", Encode.string "integer" ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withType "integer"
+                            |> toSchema
                         )
         , test "type=number" <|
             \() ->
                 [ ( "type", Encode.string "number" ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withType "number"
+                            |> toSchema
                         )
         , test "type=string" <|
             \() ->
                 [ ( "type", Encode.string "string" ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withType "string"
+                            |> toSchema
                         )
         , test "type=object" <|
             \() ->
                 [ ( "type", Encode.string "object" ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withType "object"
+                            |> toSchema
                         )
         , test "type=array" <|
             \() ->
                 [ ( "type", Encode.string "array" ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withType "array"
+                            |> toSchema
                         )
         , test "type=null" <|
             \() ->
                 [ ( "type", Encode.string "null" ) ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withType "null"
+                            |> toSchema
                         )
         , test "type=[null,integer]" <|
             \() ->
@@ -225,6 +233,7 @@ decodeSchema list =
 
 stringSchema : Schema
 stringSchema =
-    blankSchema
+    buildSchema
         |> withType "string"
+        |> toSchema
         |> Result.withDefault blankSchema
