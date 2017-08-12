@@ -15,6 +15,7 @@ module Json.Schema
         , getBool
         , getLength
         , mapProperties
+        , validate
         )
 
 {-| This library provides bunch of utility methods to work with JSON values using
@@ -600,3 +601,63 @@ registerProperty name prop schema =
                 ( name, prop ) :: props
     in
         { schema | properties = Properties <| upgrade schema.properties }
+
+
+{-| Validate value agains schema
+-}
+validate : Value -> Data.Schema.Schema -> Result String Bool
+validate value schema =
+    [ validateMultipleOf
+    , validateMaximum
+    ]
+        |> List.map (\fn -> fn value schema)
+        |> failWithFirstError
+
+
+failWithFirstError : List (Result String Bool) -> Result String Bool
+failWithFirstError results =
+    let
+        failIfError result prevResult =
+            case prevResult of
+                Err _ ->
+                    prevResult
+
+                _ ->
+                    result
+    in
+        List.foldl failIfError (Ok True) results
+
+validateMaximum : Value -> Data.Schema.Schema -> Result String Bool
+validateMaximum value schema =
+    case schema.maximum of
+        Just max ->
+            case Decode.decodeValue Decode.float value of
+                Ok x ->
+                    if x <= max then
+                        Ok True
+                    else
+                        Err <| "Value is above the maximum of " ++ (toString max)
+                Err s ->
+                    Err s
+        Nothing ->
+            Ok True
+
+
+validateMultipleOf : Value -> Data.Schema.Schema -> Result String Bool
+validateMultipleOf value schema =
+    case schema.multipleOf of
+        Just n ->
+            case Decode.decodeValue Decode.float value of
+                Ok x ->
+                    if isInt (x / n) then
+                        Ok True
+                    else
+                        Err <| "Value is not the multiple of " ++ (toString n)
+                Err s ->
+                    Err s
+        Nothing ->
+            Ok True
+
+isInt : Float -> Bool
+isInt x =
+    x == (round >> toFloat) x

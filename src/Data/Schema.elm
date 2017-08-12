@@ -82,6 +82,7 @@ type alias Schema =
 type SubSchema = SubSchema Schema | NoSchema
 
 
+blankSchema : Schema
 blankSchema =
     { type_ = AnyType
     , title = Nothing

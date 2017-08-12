@@ -2,6 +2,7 @@ module Json.Schema.Builder
     exposing
         ( SchemaBuilder(SchemaBuilder)
         , buildSchema
+        , updateSchema
         , toSchema
         , withType
         , withNullableType
