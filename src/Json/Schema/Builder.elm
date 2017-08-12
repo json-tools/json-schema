@@ -52,40 +52,58 @@ toSchema (SchemaBuilder sb) =
         Err <| String.join "," sb.errors
 
 
-withType t (SchemaBuilder { errors, schema }) =
+withType t sb =
     t
         |> stringToType
-        |> Result.map (\x -> { schema | type_ = SingleType x })
+        |> Result.map (\x -> updateSchema sb (\s -> { s | type_ = SingleType x }))
         |> (\r ->
             case r of
                 Ok x ->
-                    { errors = errors, schema = x }
+                    x
+
                 Err s ->
-                    { errors = s :: errors, schema = schema }
+                    appendError sb s
             )
-        |> SchemaBuilder
 
 
-withNullableType t schema =
-    t
-        |> stringToType
-        |> Result.map (\r ->
-            case r of
-                NullType ->
-                    { schema | type_ = SingleType NullType }
-
-                r ->
-                    { schema | type_ = NullableType r }
-        )
+setSchema (SchemaBuilder sb) s =
+    SchemaBuilder { sb | schema = s }
 
 
+updateSchema (SchemaBuilder sb) fn =
+    SchemaBuilder { sb | schema = fn sb.schema }
 
-withUnionType listTypes schema =
+
+appendError (SchemaBuilder { errors, schema }) e =
+    SchemaBuilder { errors = e :: errors, schema = schema }
+
+
+withNullableType t sb =
+    case stringToType t of
+        Ok NullType ->
+            appendError sb "Nullable null is not allowed"
+
+        Ok r ->
+            updateSchema sb (\s -> { s | type_ = NullableType r })
+
+        Err s ->
+            appendError sb s
+
+
+withUnionType listTypes sb =
     listTypes
         |> List.sort
         |> List.map stringToType
         |> foldResults
-        |> Result.map (\x -> { schema | type_ = UnionType x })
+        |> Result.map (\s -> updateSchema sb (\x -> { x | type_ = UnionType s }))
+        |> (\x ->
+            case x of
+                Err s ->
+                    appendError sb s
+
+                Ok x ->
+                    x
+           )
 
 
 withContains s schema =

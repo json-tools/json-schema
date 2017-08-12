@@ -97,8 +97,9 @@ all =
                 ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withNullableType "integer"
+                            |> toSchema
                         )
         , test "type=[string,integer]" <|
             \() ->
@@ -111,8 +112,9 @@ all =
                 ]
                     |> decodeSchema
                     |> Expect.equal
-                        (blankSchema
+                        (buildSchema
                             |> withUnionType [ "string", "integer" ]
+                            |> toSchema
                         )
         , test "title=smth" <|
             \() ->
