@@ -43,4 +43,16 @@ all = describe "validations"
                     |> validate (Encode.float 2.1)
                     |> Expect.equal (Err "Value is above the maximum of 2")
         ]
+    , describe "minimum"
+        [ test "success" <|
+            \() ->
+                { blankSchema | minimum = Just 2 }
+                    |> validate (Encode.int 2)
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                { blankSchema | minimum = Just 2 }
+                    |> validate (Encode.float 1.9)
+                    |> Expect.equal (Err "Value is below the minimum of 2")
+        ]
     ]

@@ -609,6 +609,7 @@ validate : Value -> Data.Schema.Schema -> Result String Bool
 validate value schema =
     [ validateMultipleOf
     , validateMaximum
+    , validateMinimum
     ]
         |> failWithFirstError value schema
 
@@ -636,6 +637,22 @@ validateMaximum value schema =
                         Ok True
                     else
                         Err <| "Value is above the maximum of " ++ (toString max)
+                Err s ->
+                    Err s
+        Nothing ->
+            Ok True
+
+
+validateMinimum : Value -> Data.Schema.Schema -> Result String Bool
+validateMinimum value schema =
+    case schema.minimum of
+        Just min ->
+            case Decode.decodeValue Decode.float value of
+                Ok x ->
+                    if x >= min then
+                        Ok True
+                    else
+                        Err <| "Value is below the minimum of " ++ (toString min)
                 Err s ->
                     Err s
         Nothing ->
