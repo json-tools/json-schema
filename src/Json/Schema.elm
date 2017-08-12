@@ -610,20 +610,19 @@ validate value schema =
     [ validateMultipleOf
     , validateMaximum
     ]
-        |> List.map (\fn -> fn value schema)
-        |> failWithFirstError
+        |> failWithFirstError value schema
 
 
-failWithFirstError : List (Result String Bool) -> Result String Bool
-failWithFirstError results =
+failWithFirstError : Value -> Data.Schema.Schema -> List (Value -> Data.Schema.Schema -> Result String Bool) -> Result String Bool
+failWithFirstError value schema results =
     let
-        failIfError result prevResult =
+        failIfError fn prevResult =
             case prevResult of
                 Err _ ->
                     prevResult
 
                 _ ->
-                    result
+                    fn value schema
     in
         List.foldl failIfError (Ok True) results
 
