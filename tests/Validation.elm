@@ -8,6 +8,7 @@ import Json.Schema.Builder
         , withAdditionalItems
         , withContains
         , withProperties
+        , withPatternProperties
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -293,6 +294,28 @@ all =
                         |> withProperties
                             [ ( "foo", { blankSchema | maximum = Just 10 } )
                             , ( "bar", { blankSchema | maximum = Just 20 } )
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("bar", int 28) ]))
+                        |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
+            ]
+        , describe "patternProperties"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withPatternProperties
+                            [ ( "o{2}", { blankSchema | maximum = Just 10 } )
+                            , ( "a", { blankSchema | maximum = Just 20 } )
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withPatternProperties
+                            [ ( "o{2}", { blankSchema | maximum = Just 10 } )
+                            , ( "a", { blankSchema | maximum = Just 20 } )
                             ]
                         |> toSchema
                         |> Result.andThen (validate (Encode.object [ ("bar", int 28) ]))

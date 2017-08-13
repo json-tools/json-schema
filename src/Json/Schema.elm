@@ -633,6 +633,7 @@ validate value schema =
     , validateMinProperties
     , validateRequired
     , validateProperties
+    , validatePatternProperties
     ]
         |> failWithFirstError value schema
 
@@ -905,12 +906,38 @@ validateProperties =
             ) (Ok True) obj
         )
 
+validatePatternProperties : Value -> Data.Schema.Schema -> Result String Bool
+validatePatternProperties =
+    when .patternProperties (Decode.keyValuePairs Decode.value)
+        (\(Schemata patternProperties) obj ->
+            List.foldl (\(pattern, schema) res ->
+                if res == (Ok True) then
+                    obj
+                        |> getPropsByPattern pattern
+                        |> List.foldl (\(key, value) res ->
+                            if res == (Ok True) then
+                                validate value schema
+                                    |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
+                            else
+                                res
+                        ) (Ok True)
+                else
+                    res
+            ) (Ok True) patternProperties
+        )
+
 
 getSchema key (Schemata props) =
     props
         |> List.filter (\(k, _) -> k == key)
         |> List.map (\(_, s) -> s)
         |> List.head
+
+
+getPropsByPattern pattern props =
+    props
+        |> List.filter (\(k, _) -> Regex.contains (Regex.regex pattern) k)
+
 
 isUniqueItems list =
     let
