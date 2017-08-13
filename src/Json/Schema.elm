@@ -640,6 +640,7 @@ validate value schema =
     , validateDependencies
     , validatePropertyNames
     , validateEnum
+    , validateConst
     ]
         |> failWithFirstError value schema
 
@@ -1039,6 +1040,17 @@ validateEnum =
                 Ok True
             else
                 Err "Value is not present in enum"
+        )
+
+
+validateConst : Value -> Data.Schema.Schema -> Result String Bool
+validateConst =
+    when .const Decode.value
+        (\const val ->
+            if toString const == (toString val) then
+                Ok True
+            else
+                Err "Value doesn't equal const"
         )
 
 getSchema key (Schemata props) =

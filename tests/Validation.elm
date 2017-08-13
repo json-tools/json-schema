@@ -413,4 +413,16 @@ all =
                         |> validate (Encode.int 3)
                         |> Expect.equal (Err "Value is not present in enum")
             ]
+        , describe "const"
+            [ test "success" <|
+                \() ->
+                    { blankSchema | const = Just ( int 1 ) }
+                        |> validate (Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    { blankSchema | const = Just ( int 1 ) }
+                        |> validate (Encode.int 2)
+                        |> Expect.equal (Err "Value doesn't equal const")
+            ]
         ]
