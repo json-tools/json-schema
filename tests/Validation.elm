@@ -1,9 +1,9 @@
 module Validation exposing (all)
 
---import Json.Schema.Builder exposing (buildSchema)
+import Json.Schema.Builder exposing (buildSchema, withItem, withItems, withAdditionalItems, toSchema)
 import Data.Schema exposing (blankSchema)
 import Json.Schema exposing (validate)
-import Json.Encode as Encode
+import Json.Encode as Encode exposing (int)
 import Test exposing (Test, describe, test)
 import Expect
 
@@ -114,5 +114,67 @@ all = describe "validations"
                 { blankSchema | pattern = Just "o{3}" }
                     |> validate (Encode.string "foo")
                     |> Expect.equal (Err "String does not match the regex pattern")
+        ]
+    , describe "items: schema"
+        [ test "success" <|
+            \() ->
+                buildSchema
+                    |> withItem { blankSchema | maximum = Just 10 }
+                    |> toSchema
+                    |> Result.andThen (validate <| Encode.list [ int 1 ])
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                buildSchema
+                    |> withItem { blankSchema | maximum = Just 10 }
+                    |> toSchema
+                    |> Result.andThen (validate <| Encode.list [ int 1, int 11 ])
+                    |> Expect.equal (Err "Item at index 1: Value is above the maximum of 10")
+        ]
+    , describe "items: array of schema"
+        [ test "success" <|
+            \() ->
+                buildSchema
+                    |> withItems
+                        [ { blankSchema | maximum = Just 10 }
+                        , { blankSchema | maximum = Just 100 }
+                        ]
+                    |> toSchema
+                    |> Result.andThen (validate <| Encode.list [ int 1, int 20 ])
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                buildSchema
+                    |> withItems
+                        [ { blankSchema | maximum = Just 11 }
+                        , { blankSchema | maximum = Just 100 }
+                        ]
+                    |> toSchema
+                    |> Result.andThen (validate <| Encode.list [ int 100, int 2 ])
+                    |> Expect.equal (Err "Item at index 0: Value is above the maximum of 11")
+        ]
+    , describe "items: array of schema with additional items"
+        [ test "success" <|
+            \() ->
+                buildSchema
+                    |> withItems
+                        [ { blankSchema | maximum = Just 10 }
+                        , { blankSchema | maximum = Just 100 }
+                        ]
+                    |> withAdditionalItems { blankSchema | maximum = Just 1 }
+                    |> toSchema
+                    |> Result.andThen (validate <| Encode.list [ int 1, int 20, int 1 ])
+                    |> Expect.equal (Ok True)
+        , test "failure" <|
+            \() ->
+                buildSchema
+                    |> withItems
+                        [ { blankSchema | maximum = Just 11 }
+                        , { blankSchema | maximum = Just 100 }
+                        ]
+                    |> withAdditionalItems { blankSchema | maximum = Just 1 }
+                    |> toSchema
+                    |> Result.andThen (validate <| Encode.list [ int 2, int 2, int 100 ])
+                    |> Expect.equal (Err "Item at index 2: Value is above the maximum of 1")
         ]
     ]

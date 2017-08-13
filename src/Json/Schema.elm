@@ -46,7 +46,10 @@ import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
-import Data.Schema
+import Data.Schema exposing (
+    Items(ItemDefinition, ArrayOfItems)
+    , SubSchema(SubSchema, NoSchema)
+    )
 import Dict exposing (Dict)
 import String
 import Regex
@@ -616,6 +619,7 @@ validate value schema =
     , validateMaxLength
     , validateMinLength
     , validatePattern
+    , validateItems
     ]
         |> failWithFirstError value schema
 
@@ -718,6 +722,54 @@ validatePattern =
             else
                 Err <| "String does not match the regex pattern"
         )
+
+
+validateItems : Value -> Data.Schema.Schema -> Result String Bool
+validateItems value schema =
+    case schema.items of
+        ItemDefinition itemSchema ->
+            Decode.decodeValue (Decode.list Decode.value) value
+                |> Result.andThen
+                    (List.foldl (\item res ->
+                        case res of
+                            Ok index ->
+                                validate item itemSchema
+                                    |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
+                                    |> Result.map (\_ -> index + 1)
+
+                            _ ->
+                                res
+                        ) <| Ok 0)
+                |> Result.map (\_ -> True)
+
+        ArrayOfItems listItemSchemas ->
+            Decode.decodeValue (Decode.list Decode.value) value
+                |> Result.andThen
+                    (List.foldl (\item res ->
+                        case res of
+                            Ok index ->
+                                case List.drop index listItemSchemas |> List.head of
+                                    Just itemSchema ->
+                                        validate item itemSchema
+                                            |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
+                                            |> Result.map (\_ -> index + 1)
+
+                                    Nothing ->
+                                        case schema.additionalItems of
+                                            SubSchema itemSchema ->
+                                                validate item itemSchema
+                                                    |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
+                                                    |> Result.map (\_ -> index + 1)
+
+                                            NoSchema ->
+                                                Ok (index + 1)
+                            _ ->
+                                res
+                        ) <| Ok 0)
+                |> Result.map (\_ -> True)
+
+        _ ->
+            Ok True
 
 
 isInt : Float -> Bool
