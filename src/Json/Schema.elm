@@ -50,6 +50,7 @@ import Data.Schema
     exposing
         ( Items(ItemDefinition, ArrayOfItems)
         , SubSchema(SubSchema, NoSchema)
+        , Schemata(Schemata)
         )
 import Dict exposing (Dict)
 import String
@@ -631,6 +632,7 @@ validate value schema =
     , validateMaxProperties
     , validateMinProperties
     , validateRequired
+    , validateProperties
     ]
         |> failWithFirstError value schema
 
@@ -885,6 +887,30 @@ validateRequired =
                 else
                     Err <| "Object doesn't have all the required properties"
         )
+
+validateProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateProperties =
+    when .properties (Decode.keyValuePairs Decode.value)
+        (\properties obj ->
+            List.foldl (\(key, value) res ->
+                if res == (Ok True) then
+                    case getSchema key properties of
+                        Just schema ->
+                            validate value schema
+                                |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
+                        Nothing ->
+                            Ok True
+                else
+                    res
+            ) (Ok True) obj
+        )
+
+
+getSchema key (Schemata props) =
+    props
+        |> List.filter (\(k, _) -> k == key)
+        |> List.map (\(_, s) -> s)
+        |> List.head
 
 isUniqueItems list =
     let

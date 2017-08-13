@@ -7,6 +7,7 @@ import Json.Schema.Builder
         , withItems
         , withAdditionalItems
         , withContains
+        , withProperties
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -274,5 +275,27 @@ all =
                     { blankSchema | required = Just [ "foo", "bar" ] }
                         |> validate (Encode.object [ ("foo", int 1) ])
                         |> Expect.equal (Err "Object doesn't have all the required properties")
+            ]
+        , describe "properties"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "foo", { blankSchema | maximum = Just 10 } )
+                            , ( "bar", { blankSchema | maximum = Just 20 } )
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "foo", { blankSchema | maximum = Just 10 } )
+                            , ( "bar", { blankSchema | maximum = Just 20 } )
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("bar", int 28) ]))
+                        |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
             ]
         ]
