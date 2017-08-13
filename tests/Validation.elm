@@ -9,6 +9,7 @@ import Json.Schema.Builder
         , withContains
         , withProperties
         , withPatternProperties
+        , withAdditionalProperties
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -319,6 +320,38 @@ all =
                             ]
                         |> toSchema
                         |> Result.andThen (validate (Encode.object [ ("bar", int 28) ]))
+                        |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
+            ]
+        , describe "additionalProperties"
+            [ test "success: pattern" <|
+                \() ->
+                    buildSchema
+                        |> withPatternProperties
+                            [ ( "o{2}", { blankSchema | maximum = Just 100 } )
+                            ]
+                        |> withAdditionalProperties { blankSchema | maximum = Just 20 }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 2) ]))
+                        |> Expect.equal (Ok True)
+            , test "success: props" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "foo", { blankSchema | maximum = Just 100 } )
+                            ]
+                        |> withAdditionalProperties { blankSchema | maximum = Just 20 }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 2) ]))
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withPatternProperties
+                            [ ( "o{2}", { blankSchema | maximum = Just 100 } )
+                            ]
+                        |> withAdditionalProperties { blankSchema | maximum = Just 20 }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 200) ]))
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
             ]
         ]

@@ -634,6 +634,7 @@ validate value schema =
     , validateRequired
     , validateProperties
     , validatePatternProperties
+    , validateAdditionalProperties
     ]
         |> failWithFirstError value schema
 
@@ -855,7 +856,8 @@ validateContains =
 
 validateMaxProperties : Value -> Data.Schema.Schema -> Result String Bool
 validateMaxProperties =
-    when .maxProperties (Decode.keyValuePairs Decode.value)
+    when .maxProperties
+        (Decode.keyValuePairs Decode.value)
         (\maxProperties obj ->
             if List.length obj <= maxProperties then
                 Ok True
@@ -863,9 +865,11 @@ validateMaxProperties =
                 Err <| "Object has more properties than expected (maxProperties=" ++ (toString maxProperties) ++ ")"
         )
 
+
 validateMinProperties : Value -> Data.Schema.Schema -> Result String Bool
 validateMinProperties =
-    when .minProperties (Decode.keyValuePairs Decode.value)
+    when .minProperties
+        (Decode.keyValuePairs Decode.value)
         (\minProperties obj ->
             if List.length obj >= minProperties then
                 Ok True
@@ -876,12 +880,13 @@ validateMinProperties =
 
 validateRequired : Value -> Data.Schema.Schema -> Result String Bool
 validateRequired =
-    when .required (Decode.keyValuePairs Decode.value)
+    when .required
+        (Decode.keyValuePairs Decode.value)
         (\required obj ->
             let
                 keys =
                     obj
-                        |> List.map (\(key, _) -> key)
+                        |> List.map (\( key, _ ) -> key)
             in
                 if required |> List.all (\a -> List.member a keys) then
                     Ok True
@@ -889,54 +894,108 @@ validateRequired =
                     Err <| "Object doesn't have all the required properties"
         )
 
+
 validateProperties : Value -> Data.Schema.Schema -> Result String Bool
 validateProperties =
-    when .properties (Decode.keyValuePairs Decode.value)
+    when .properties
+        (Decode.keyValuePairs Decode.value)
         (\properties obj ->
-            List.foldl (\(key, value) res ->
-                if res == (Ok True) then
-                    case getSchema key properties of
-                        Just schema ->
-                            validate value schema
-                                |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
-                        Nothing ->
-                            Ok True
-                else
-                    res
-            ) (Ok True) obj
+            List.foldl
+                (\( key, value ) res ->
+                    if res == (Ok True) then
+                        case getSchema key properties of
+                            Just schema ->
+                                validate value schema
+                                    |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
+
+                            Nothing ->
+                                Ok True
+                    else
+                        res
+                )
+                (Ok True)
+                obj
         )
+
 
 validatePatternProperties : Value -> Data.Schema.Schema -> Result String Bool
 validatePatternProperties =
-    when .patternProperties (Decode.keyValuePairs Decode.value)
+    when .patternProperties
+        (Decode.keyValuePairs Decode.value)
         (\(Schemata patternProperties) obj ->
-            List.foldl (\(pattern, schema) res ->
-                if res == (Ok True) then
+            List.foldl
+                (\( pattern, schema ) res ->
+                    if res == (Ok True) then
+                        obj
+                            |> getPropsByPattern pattern
+                            |> List.foldl
+                                (\( key, value ) res ->
+                                    if res == (Ok True) then
+                                        validate value schema
+                                            |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
+                                    else
+                                        res
+                                )
+                                (Ok True)
+                    else
+                        res
+                )
+                (Ok True)
+                patternProperties
+        )
+
+
+validateAdditionalProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateAdditionalProperties v s =
+    let
+        rejectMatching :
+            Maybe Schemata
+            -> (String -> String -> Bool)
+            -> List ( String, Value )
+            -> List ( String, Value )
+        rejectMatching props fn obj =
+            case props of
+                Just (Schemata p) ->
+                    let
+                        keys =
+                            p |> List.map (\( k, _ ) -> k)
+                    in
+                        obj
+                            |> List.filter (\( key, _ ) -> List.any (\pr -> fn pr key |> not) keys)
+
+                Nothing ->
                     obj
-                        |> getPropsByPattern pattern
-                        |> List.foldl (\(key, value) res ->
+    in
+        whenSubschema .additionalProperties
+            (Decode.keyValuePairs Decode.value)
+            (\additionalProperties obj ->
+                obj
+                    |> rejectMatching s.properties (\a b -> a == b)
+                    |> rejectMatching s.patternProperties (\a b -> Regex.contains (Regex.regex a) b)
+                    |> List.foldl
+                        (\( key, value ) res ->
                             if res == (Ok True) then
-                                validate value schema
+                                validate value additionalProperties
                                     |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
                             else
                                 res
-                        ) (Ok True)
-                else
-                    res
-            ) (Ok True) patternProperties
-        )
+                        )
+                        (Ok True)
+            )
+            v
+            s
 
 
 getSchema key (Schemata props) =
     props
-        |> List.filter (\(k, _) -> k == key)
-        |> List.map (\(_, s) -> s)
+        |> List.filter (\( k, _ ) -> k == key)
+        |> List.map (\( _, s ) -> s)
         |> List.head
 
 
 getPropsByPattern pattern props =
     props
-        |> List.filter (\(k, _) -> Regex.contains (Regex.regex pattern) k)
+        |> List.filter (\( k, _ ) -> Regex.contains (Regex.regex pattern) k)
 
 
 isUniqueItems list =
