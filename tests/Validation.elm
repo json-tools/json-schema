@@ -10,6 +10,9 @@ import Json.Schema.Builder
         , withProperties
         , withPatternProperties
         , withAdditionalProperties
+        , withSchemaDependency
+        , withPropNamesDependency
+        , withPropertyNames
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -353,5 +356,49 @@ all =
                         |> toSchema
                         |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 200) ]))
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
+            ]
+        , describe "dependencies"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withSchemaDependency
+                            "foo"
+                            { blankSchema | required = Just [ "bar" ] }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Expect.equal (Ok True)
+            , test "failure when dependency is a schema" <|
+                \() ->
+                    buildSchema
+                        |> withSchemaDependency
+                            "foo"
+                            { blankSchema | required = Just [ "bar" ] }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 1) ]))
+                        |> Expect.equal (Err "Object doesn't have all the required properties")
+                        --|> Expect.equal (Err "Required property 'bar' is missing")
+            , test "failure when dependency is array of strings" <|
+                \() ->
+                    buildSchema
+                        |> withPropNamesDependency "foo" [ "bar" ]
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 1) ]))
+                        |> Expect.equal (Err "Object doesn't have all the required properties")
+            ]
+        , describe "propertyNames"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withPropertyNames { blankSchema | pattern = Just "^ba" }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("baz", int 1), ("bar", int 2) ]))
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withPropertyNames { blankSchema | pattern = Just "^ba" }
+                        |> toSchema
+                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Expect.equal (Err "Property 'foo' doesn't validate against peopertyNames schema: String does not match the regex pattern")
             ]
         ]

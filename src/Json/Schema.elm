@@ -51,6 +51,8 @@ import Data.Schema
         ( Items(ItemDefinition, ArrayOfItems)
         , SubSchema(SubSchema, NoSchema)
         , Schemata(Schemata)
+        , Dependency(ArrayPropNames, PropSchema)
+        , blankSchema
         )
 import Dict exposing (Dict)
 import String
@@ -635,6 +637,8 @@ validate value schema =
     , validateProperties
     , validatePatternProperties
     , validateAdditionalProperties
+    , validateDependencies
+    , validatePropertyNames
     ]
         |> failWithFirstError value schema
 
@@ -985,6 +989,45 @@ validateAdditionalProperties v s =
             v
             s
 
+
+validateDependencies : Value -> Data.Schema.Schema -> Result String Bool
+validateDependencies v s =
+    let
+        validateDep obj =
+            s.dependencies
+                |> List.foldl (\(depName, dep) res ->
+                    if res == (Ok True) && Dict.member depName (Dict.fromList obj) then
+                        case dep of
+                            PropSchema ss ->
+                                validate v ss
+
+                            ArrayPropNames keys ->
+                                validate v { blankSchema | required = Just keys }
+                    else
+                        res
+                ) (Ok True)
+    in
+        if List.isEmpty s.dependencies then
+            Ok True
+        else
+            v
+                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                |> Result.andThen validateDep
+
+
+validatePropertyNames : Value -> Data.Schema.Schema -> Result String Bool
+validatePropertyNames =
+    whenSubschema
+        .propertyNames (Decode.keyValuePairs Decode.value)
+        (\propertyNames obj ->
+            List.foldl (\(key, _) res ->
+                if res == (Ok True) then
+                    validate (Encode.string key) propertyNames
+                        |> Result.mapError (\e -> "Property '" ++ key ++ "' doesn't validate against peopertyNames schema: " ++ e)
+                else
+                    Ok True
+            ) (Ok True) obj
+        )
 
 getSchema key (Schemata props) =
     props
