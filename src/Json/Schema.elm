@@ -726,50 +726,50 @@ validatePattern =
 
 validateItems : Value -> Data.Schema.Schema -> Result String Bool
 validateItems value schema =
-    case schema.items of
-        ItemDefinition itemSchema ->
-            Decode.decodeValue (Decode.list Decode.value) value
-                |> Result.andThen
-                    (List.foldl (\item res ->
-                        case res of
-                            Ok index ->
-                                validate item itemSchema
-                                    |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
-                                    |> Result.map (\_ -> index + 1)
+    let
+        validateItem item schema index =
+            validate item schema
+                |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
+                |> Result.map (\_ -> index + 1)
+    in
+        case schema.items of
+            ItemDefinition itemSchema ->
+                Decode.decodeValue (Decode.list Decode.value) value
+                    |> Result.andThen
+                        (List.foldl (\item res ->
+                            case res of
+                                Ok index ->
+                                    validateItem item itemSchema index
 
-                            _ ->
-                                res
-                        ) <| Ok 0)
-                |> Result.map (\_ -> True)
+                                _ ->
+                                    res
+                            ) <| Ok 0)
+                    |> Result.map (\_ -> True)
 
-        ArrayOfItems listItemSchemas ->
-            Decode.decodeValue (Decode.list Decode.value) value
-                |> Result.andThen
-                    (List.foldl (\item res ->
-                        case res of
-                            Ok index ->
-                                case List.drop index listItemSchemas |> List.head of
-                                    Just itemSchema ->
-                                        validate item itemSchema
-                                            |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
-                                            |> Result.map (\_ -> index + 1)
+            ArrayOfItems listItemSchemas ->
+                Decode.decodeValue (Decode.list Decode.value) value
+                    |> Result.andThen
+                        (List.foldl (\item res ->
+                            case res of
+                                Ok index ->
+                                    case List.drop index listItemSchemas |> List.head of
+                                        Just itemSchema ->
+                                            validateItem item itemSchema index
 
-                                    Nothing ->
-                                        case schema.additionalItems of
-                                            SubSchema itemSchema ->
-                                                validate item itemSchema
-                                                    |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
-                                                    |> Result.map (\_ -> index + 1)
+                                        Nothing ->
+                                            case schema.additionalItems of
+                                                SubSchema itemSchema ->
+                                                    validateItem item itemSchema index
 
-                                            NoSchema ->
-                                                Ok (index + 1)
-                            _ ->
-                                res
-                        ) <| Ok 0)
-                |> Result.map (\_ -> True)
+                                                NoSchema ->
+                                                    Ok (index + 1)
+                                _ ->
+                                    res
+                            ) <| Ok 0)
+                    |> Result.map (\_ -> True)
 
-        _ ->
-            Ok True
+            _ ->
+                Ok True
 
 
 isInt : Float -> Bool
