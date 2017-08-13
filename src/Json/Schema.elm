@@ -639,6 +639,7 @@ validate value schema =
     , validateAdditionalProperties
     , validateDependencies
     , validatePropertyNames
+    , validateEnum
     ]
         |> failWithFirstError value schema
 
@@ -1027,6 +1028,17 @@ validatePropertyNames =
                 else
                     Ok True
             ) (Ok True) obj
+        )
+
+
+validateEnum : Value -> Data.Schema.Schema -> Result String Bool
+validateEnum =
+    when .enum Decode.value
+        (\enum val ->
+            if List.any (\item -> toString item == (toString val)) enum then
+                Ok True
+            else
+                Err "Value is not present in enum"
         )
 
 getSchema key (Schemata props) =

@@ -401,4 +401,16 @@ all =
                         |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
                         |> Expect.equal (Err "Property 'foo' doesn't validate against peopertyNames schema: String does not match the regex pattern")
             ]
+        , describe "enum"
+            [ test "success" <|
+                \() ->
+                    { blankSchema | enum = Just [ int 1, int 2 ] }
+                        |> validate (Encode.int 2)
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    { blankSchema | enum = Just [ int 1, int 2 ] }
+                        |> validate (Encode.int 3)
+                        |> Expect.equal (Err "Value is not present in enum")
+            ]
         ]
