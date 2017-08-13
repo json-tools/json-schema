@@ -64,7 +64,7 @@ type alias Schema =
     , contains : SubSchema
     , maxProperties : Maybe Int
     , minProperties : Maybe Int
-    , required : List String
+    , required : Maybe (List String)
     , properties : Maybe Schemata
     , patternProperties : Maybe Schemata
     , additionalProperties : SubSchema
@@ -106,7 +106,7 @@ blankSchema =
     , contains = NoSchema
     , maxProperties = Nothing
     , minProperties = Nothing
-    , required = []
+    , required = Nothing
     , properties = Nothing
     , patternProperties = Nothing
     , additionalProperties = NoSchema
@@ -176,7 +176,7 @@ decoder =
             |> optional "contains" (lazy (\_ -> subschemaDecoder)) NoSchema
             |> optional "maxProperties" (nullable nonNegativeInt) Nothing
             |> optional "minProperties" (nullable nonNegativeInt) Nothing
-            |> optional "required" (list string) []
+            |> optional "required" (nullable (list string)) Nothing
             |> optional "properties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
             |> optional "patternProperties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
             |> optional "additionalProperties" (lazy (\_ -> subschemaDecoder)) NoSchema

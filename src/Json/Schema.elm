@@ -630,6 +630,7 @@ validate value schema =
     , validateContains
     , validateMaxProperties
     , validateMinProperties
+    , validateRequired
     ]
         |> failWithFirstError value schema
 
@@ -867,6 +868,22 @@ validateMinProperties =
                 Ok True
             else
                 Err <| "Object has less properties than expected (minProperties=" ++ (toString minProperties) ++ ")"
+        )
+
+
+validateRequired : Value -> Data.Schema.Schema -> Result String Bool
+validateRequired =
+    when .required (Decode.keyValuePairs Decode.value)
+        (\required obj ->
+            let
+                keys =
+                    obj
+                        |> List.map (\(key, _) -> key)
+            in
+                if required |> List.all (\a -> List.member a keys) then
+                    Ok True
+                else
+                    Err <| "Object doesn't have all the required properties"
         )
 
 isUniqueItems list =

@@ -263,4 +263,16 @@ all =
                         |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
                         |> Expect.equal (Err "Object has less properties than expected (minProperties=3)")
             ]
+        , describe "required"
+            [ test "success" <|
+                \() ->
+                    { blankSchema | required = Just [ "foo", "bar" ] }
+                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    { blankSchema | required = Just [ "foo", "bar" ] }
+                        |> validate (Encode.object [ ("foo", int 1) ])
+                        |> Expect.equal (Err "Object doesn't have all the required properties")
+            ]
         ]
