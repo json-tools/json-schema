@@ -13,6 +13,9 @@ import Json.Schema.Builder
         , withSchemaDependency
         , withPropNamesDependency
         , withPropertyNames
+        , withType
+        , withNullableType
+        , withUnionType
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -424,5 +427,90 @@ all =
                     { blankSchema | const = Just ( int 1 ) }
                         |> validate (Encode.int 2)
                         |> Expect.equal (Err "Value doesn't equal const")
+            ]
+        , describe "type=string"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withType "string"
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.string "foo")
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withType "string"
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Err "Expecting a String but instead got: 1")
+            ]
+        , describe "type=number"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withType "number"
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withType "number"
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.string "bar")
+                        |> Expect.equal (Err "Expecting a Float but instead got: \"bar\"")
+            , test "failure with null" <|
+                \() ->
+                    buildSchema
+                        |> withType "number"
+                        |> toSchema
+                        |> Result.andThen (validate Encode.null)
+                        |> Expect.equal (Err "Expecting a Float but instead got: null")
+            ]
+        , describe "type=null,number"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withNullableType "number"
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "success with null" <|
+                \() ->
+                    buildSchema
+                        |> withNullableType "number"
+                        |> toSchema
+                        |> Result.andThen (validate Encode.null)
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withNullableType "number"
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.string "bar")
+                        |> Expect.equal (Err "Expecting a Float but instead got: \"bar\"")
+            ]
+        , describe "type=number,string"
+            [ test "success for number" <|
+                \() ->
+                    buildSchema
+                        |> withUnionType [ "number", "string" ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "success for string" <|
+                \() ->
+                    buildSchema
+                        |> withUnionType [ "number", "string" ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.string "str")
+                        |> Expect.equal (Ok True)
+            , test "failure for object" <|
+                \() ->
+                    buildSchema
+                        |> withUnionType [ "number", "string" ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.object [])
+                        |> Expect.equal (Err "Type mismatch")
             ]
         ]

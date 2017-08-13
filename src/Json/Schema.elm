@@ -52,6 +52,8 @@ import Data.Schema
         , SubSchema(SubSchema, NoSchema)
         , Schemata(Schemata)
         , Dependency(ArrayPropNames, PropSchema)
+        , Type(AnyType, SingleType, NullableType, UnionType)
+        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
         , blankSchema
         )
 import Dict exposing (Dict)
@@ -641,6 +643,7 @@ validate value schema =
     , validatePropertyNames
     , validateEnum
     , validateConst
+    , validateType
     ]
         |> failWithFirstError value schema
 
@@ -997,17 +1000,19 @@ validateDependencies v s =
     let
         validateDep obj =
             s.dependencies
-                |> List.foldl (\(depName, dep) res ->
-                    if res == (Ok True) && Dict.member depName (Dict.fromList obj) then
-                        case dep of
-                            PropSchema ss ->
-                                validate v ss
+                |> List.foldl
+                    (\( depName, dep ) res ->
+                        if res == (Ok True) && Dict.member depName (Dict.fromList obj) then
+                            case dep of
+                                PropSchema ss ->
+                                    validate v ss
 
-                            ArrayPropNames keys ->
-                                validate v { blankSchema | required = Just keys }
-                    else
-                        res
-                ) (Ok True)
+                                ArrayPropNames keys ->
+                                    validate v { blankSchema | required = Just keys }
+                        else
+                            res
+                    )
+                    (Ok True)
     in
         if List.isEmpty s.dependencies then
             Ok True
@@ -1020,21 +1025,26 @@ validateDependencies v s =
 validatePropertyNames : Value -> Data.Schema.Schema -> Result String Bool
 validatePropertyNames =
     whenSubschema
-        .propertyNames (Decode.keyValuePairs Decode.value)
+        .propertyNames
+        (Decode.keyValuePairs Decode.value)
         (\propertyNames obj ->
-            List.foldl (\(key, _) res ->
-                if res == (Ok True) then
-                    validate (Encode.string key) propertyNames
-                        |> Result.mapError (\e -> "Property '" ++ key ++ "' doesn't validate against peopertyNames schema: " ++ e)
-                else
-                    Ok True
-            ) (Ok True) obj
+            List.foldl
+                (\( key, _ ) res ->
+                    if res == (Ok True) then
+                        validate (Encode.string key) propertyNames
+                            |> Result.mapError (\e -> "Property '" ++ key ++ "' doesn't validate against peopertyNames schema: " ++ e)
+                    else
+                        Ok True
+                )
+                (Ok True)
+                obj
         )
 
 
 validateEnum : Value -> Data.Schema.Schema -> Result String Bool
 validateEnum =
-    when .enum Decode.value
+    when .enum
+        Decode.value
         (\enum val ->
             if List.any (\item -> toString item == (toString val)) enum then
                 Ok True
@@ -1045,13 +1055,72 @@ validateEnum =
 
 validateConst : Value -> Data.Schema.Schema -> Result String Bool
 validateConst =
-    when .const Decode.value
+    when .const
+        Decode.value
         (\const val ->
             if toString const == (toString val) then
                 Ok True
             else
                 Err "Value doesn't equal const"
         )
+
+
+validateType : Value -> Data.Schema.Schema -> Result String Bool
+validateType val s =
+    case s.type_ of
+        AnyType ->
+            Ok True
+
+        SingleType st ->
+            validateSingleType st val
+
+        NullableType st ->
+            case validateSingleType NullType val of
+                Err _ ->
+                    validateSingleType st val
+
+                _ ->
+                    Ok True
+
+        UnionType listTypes ->
+            if List.any (\st -> validateSingleType st val == (Ok True)) listTypes then
+                Ok True
+            else
+                Err "Type mismatch"
+
+
+
+-- Type(AnyType, SingleType, NullableType, UnionType)
+-- SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+
+
+validateSingleType : SingleType -> Value -> Result String Bool
+validateSingleType st val =
+    let
+        test : Decoder a -> Result String Bool
+        test d =
+            Decode.decodeValue d val
+                |> Result.map (\_ -> True)
+    in
+        case st of
+            IntegerType ->
+                test Decode.int
+
+            NumberType ->
+                test Decode.float
+
+            StringType ->
+                test Decode.string
+
+            NullType ->
+                test <| Decode.null Nothing
+
+            ArrayType ->
+                test <| Decode.list Decode.value
+
+            ObjectType ->
+                test <| Decode.keyValuePairs Decode.value
+
 
 getSchema key (Schemata props) =
     props
