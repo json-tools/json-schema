@@ -239,4 +239,28 @@ all =
                         |> Result.andThen (validate <| Encode.list [ int 10, int 20 ])
                         |> Expect.equal (Err "Array does not contain expected value")
             ]
+        , describe "maxProperties"
+            [ test "success" <|
+                \() ->
+                    { blankSchema | maxProperties = Just 3 }
+                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    { blankSchema | maxProperties = Just 1 }
+                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> Expect.equal (Err "Object has more properties than expected (maxProperties=1)")
+            ]
+        , describe "minProperties"
+            [ test "success" <|
+                \() ->
+                    { blankSchema | minProperties = Just 1 }
+                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    { blankSchema | minProperties = Just 3 }
+                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> Expect.equal (Err "Object has less properties than expected (minProperties=3)")
+            ]
         ]

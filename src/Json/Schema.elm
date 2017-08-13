@@ -628,6 +628,8 @@ validate value schema =
     , validateMinItems
     , validateUniqueItems
     , validateContains
+    , validateMaxProperties
+    , validateMinProperties
     ]
         |> failWithFirstError value schema
 
@@ -846,6 +848,26 @@ validateContains =
                 Err <| "Array does not contain expected value"
         )
 
+
+validateMaxProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateMaxProperties =
+    when .maxProperties (Decode.keyValuePairs Decode.value)
+        (\maxProperties obj ->
+            if List.length obj <= maxProperties then
+                Ok True
+            else
+                Err <| "Object has more properties than expected (maxProperties=" ++ (toString maxProperties) ++ ")"
+        )
+
+validateMinProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateMinProperties =
+    when .minProperties (Decode.keyValuePairs Decode.value)
+        (\minProperties obj ->
+            if List.length obj >= minProperties then
+                Ok True
+            else
+                Err <| "Object has less properties than expected (minProperties=" ++ (toString minProperties) ++ ")"
+        )
 
 isUniqueItems list =
     let
