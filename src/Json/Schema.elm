@@ -46,13 +46,15 @@ import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
-import Data.Schema exposing (
-    Items(ItemDefinition, ArrayOfItems)
-    , SubSchema(SubSchema, NoSchema)
-    )
+import Data.Schema
+    exposing
+        ( Items(ItemDefinition, ArrayOfItems)
+        , SubSchema(SubSchema, NoSchema)
+        )
 import Dict exposing (Dict)
 import String
 import Regex
+import List.Extra
 
 
 {-| Schema represents a node of schema.
@@ -140,7 +142,10 @@ fromString str =
 fromValue : Value -> Result String Data.Schema.Schema
 fromValue val =
     Decode.decodeValue Data.Schema.decoder val
-        --|> Result.andThen convert
+
+
+
+--|> Result.andThen convert
 
 
 decodeSchema : Decoder Schema
@@ -351,7 +356,6 @@ setValue schema subPath finalValue dataNode =
 
                         nodeList =
                             decodeList dataNode
-
                     in
                         case schema.items of
                             Nothing ->
@@ -620,6 +624,10 @@ validate value schema =
     , validateMinLength
     , validatePattern
     , validateItems
+    , validateMaxItems
+    , validateMinItems
+    , validateUniqueItems
+    , validateContains
     ]
         |> failWithFirstError value schema
 
@@ -640,7 +648,8 @@ failWithFirstError value schema results =
 
 validateMultipleOf : Value -> Data.Schema.Schema -> Result String Bool
 validateMultipleOf =
-    when .multipleOf Decode.float
+    when .multipleOf
+        Decode.float
         (\multipleOf x ->
             if isInt (x / multipleOf) then
                 Ok True
@@ -651,7 +660,8 @@ validateMultipleOf =
 
 validateMaximum : Value -> Data.Schema.Schema -> Result String Bool
 validateMaximum =
-    when .maximum Decode.float
+    when .maximum
+        Decode.float
         (\max x ->
             if x <= max then
                 Ok True
@@ -662,7 +672,8 @@ validateMaximum =
 
 validateMinimum : Value -> Data.Schema.Schema -> Result String Bool
 validateMinimum =
-    when .minimum Decode.float
+    when .minimum
+        Decode.float
         (\min x ->
             if x >= min then
                 Ok True
@@ -673,7 +684,8 @@ validateMinimum =
 
 validateExclusiveMaximum : Value -> Data.Schema.Schema -> Result String Bool
 validateExclusiveMaximum =
-    when .exclusiveMaximum Decode.float
+    when .exclusiveMaximum
+        Decode.float
         (\max x ->
             if x < max then
                 Ok True
@@ -684,7 +696,8 @@ validateExclusiveMaximum =
 
 validateExclusiveMinimum : Value -> Data.Schema.Schema -> Result String Bool
 validateExclusiveMinimum =
-    when .exclusiveMinimum Decode.float
+    when .exclusiveMinimum
+        Decode.float
         (\min x ->
             if x > min then
                 Ok True
@@ -692,9 +705,11 @@ validateExclusiveMinimum =
                 Err <| "Value is not above the exclusive minimum of " ++ (toString min)
         )
 
+
 validateMaxLength : Value -> Data.Schema.Schema -> Result String Bool
 validateMaxLength =
-    when .maxLength Decode.string
+    when .maxLength
+        Decode.string
         (\maxLength str ->
             if String.length str <= maxLength then
                 Ok True
@@ -702,9 +717,11 @@ validateMaxLength =
                 Err <| "String is longer than expected " ++ (toString maxLength)
         )
 
+
 validateMinLength : Value -> Data.Schema.Schema -> Result String Bool
 validateMinLength =
-    when .minLength Decode.string
+    when .minLength
+        Decode.string
         (\minLength str ->
             if String.length str >= minLength then
                 Ok True
@@ -715,7 +732,8 @@ validateMinLength =
 
 validatePattern : Value -> Data.Schema.Schema -> Result String Bool
 validatePattern =
-    when .pattern Decode.string
+    when .pattern
+        Decode.string
         (\pattern str ->
             if Regex.contains (Regex.regex pattern) str then
                 Ok True
@@ -736,40 +754,111 @@ validateItems value schema =
             ItemDefinition itemSchema ->
                 Decode.decodeValue (Decode.list Decode.value) value
                     |> Result.andThen
-                        (List.foldl (\item res ->
-                            case res of
-                                Ok index ->
-                                    validateItem item itemSchema index
+                        (List.foldl
+                            (\item res ->
+                                case res of
+                                    Ok index ->
+                                        validateItem item itemSchema index
 
-                                _ ->
-                                    res
-                            ) <| Ok 0)
+                                    _ ->
+                                        res
+                            )
+                         <|
+                            Ok 0
+                        )
                     |> Result.map (\_ -> True)
 
             ArrayOfItems listItemSchemas ->
                 Decode.decodeValue (Decode.list Decode.value) value
                     |> Result.andThen
-                        (List.foldl (\item res ->
-                            case res of
-                                Ok index ->
-                                    case List.drop index listItemSchemas |> List.head of
-                                        Just itemSchema ->
-                                            validateItem item itemSchema index
+                        (List.foldl
+                            (\item res ->
+                                case res of
+                                    Ok index ->
+                                        case List.drop index listItemSchemas |> List.head of
+                                            Just itemSchema ->
+                                                validateItem item itemSchema index
 
-                                        Nothing ->
-                                            case schema.additionalItems of
-                                                SubSchema itemSchema ->
-                                                    validateItem item itemSchema index
+                                            Nothing ->
+                                                case schema.additionalItems of
+                                                    SubSchema itemSchema ->
+                                                        validateItem item itemSchema index
 
-                                                NoSchema ->
-                                                    Ok (index + 1)
-                                _ ->
-                                    res
-                            ) <| Ok 0)
+                                                    NoSchema ->
+                                                        Ok (index + 1)
+
+                                    _ ->
+                                        res
+                            )
+                         <|
+                            Ok 0
+                        )
                     |> Result.map (\_ -> True)
 
             _ ->
                 Ok True
+
+
+validateMaxItems : Value -> Data.Schema.Schema -> Result String Bool
+validateMaxItems =
+    when .maxItems
+        (Decode.list Decode.value)
+        (\maxItems list ->
+            if List.length list <= maxItems then
+                Ok True
+            else
+                Err <| "Array has more items than expected (maxItems=" ++ (toString maxItems) ++ ")"
+        )
+
+
+validateMinItems : Value -> Data.Schema.Schema -> Result String Bool
+validateMinItems =
+    when .minItems
+        (Decode.list Decode.value)
+        (\minItems list ->
+            if List.length list >= minItems then
+                Ok True
+            else
+                Err <| "Array has less items than expected (minItems=" ++ (toString minItems) ++ ")"
+        )
+
+
+validateUniqueItems : Value -> Data.Schema.Schema -> Result String Bool
+validateUniqueItems =
+    when .uniqueItems
+        (Decode.list Decode.value)
+        (\uniqueItems list ->
+            if not uniqueItems || isUniqueItems list then
+                Ok True
+            else
+                Err <| "Array has not unique items"
+        )
+
+
+validateContains : Value -> Data.Schema.Schema -> Result String Bool
+validateContains =
+    whenSubschema .contains
+        (Decode.list Decode.value)
+        (\contains list ->
+            if List.any (\item -> validate item contains == (Ok True)) list then
+                Ok True
+            else
+                Err <| "Array does not contain expected value"
+        )
+
+
+isUniqueItems list =
+    let
+        strings =
+            List.map toString list
+
+        originalLength =
+            List.length list
+    in
+        strings
+            |> List.Extra.unique
+            |> List.length
+            |> (==) originalLength
 
 
 isInt : Float -> Bool
@@ -787,3 +876,11 @@ when propOf decoder fn value schema =
             Ok True
 
 
+whenSubschema propOf decoder fn value schema =
+    case propOf schema of
+        SubSchema v ->
+            Decode.decodeValue decoder value
+                |> Result.andThen (fn v)
+
+        NoSchema ->
+            Ok True
