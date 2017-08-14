@@ -1186,19 +1186,14 @@ validateOneOf =
 
                         NoSchema ->
                             True
-
-                validSchemas =
-                    List.filter validSubschema oneOf
-
-                numValid =
-                    List.length validSchemas
             in
-                if numValid == 1 then
-                    Ok True
-                else if numValid == 0 then
-                    Err "None of the schemas in anyOf allow this value"
-                else
-                    Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ (toString numValid) ++ " validations succeeded"
+                case oneOf |> List.filter validSubschema |> List.length of
+                    1 ->
+                        Ok True
+                    0 ->
+                        Err "None of the schemas in anyOf allow this value"
+                    len ->
+                        Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ (toString len) ++ " validations succeeded"
         )
 
 
