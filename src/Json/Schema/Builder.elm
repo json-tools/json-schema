@@ -4,6 +4,7 @@ module Json.Schema.Builder
         , buildSchema
         , updateSchema
         , toSchema
+        , validate
         , withType
         , withNullableType
         , withUnionType
@@ -25,6 +26,7 @@ module Json.Schema.Builder
 
 import Set
 import Util exposing (foldResults)
+import Validation
 import Data.Schema
     exposing
         ( Schema
@@ -52,6 +54,15 @@ toSchema (SchemaBuilder sb) =
         Ok sb.schema
     else
         Err <| String.join "," sb.errors
+
+
+validate val sb =
+    case toSchema sb of
+        Ok schema ->
+            Validation.validate val schema
+
+        Err s ->
+            Err <| "Schema is invalid: " ++ s
 
 
 withType t sb =
