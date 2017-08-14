@@ -21,7 +21,7 @@ import Json.Schema.Builder as JSB
         , withOneOf
         )
 import Data.Schema exposing (blankSchema)
-import Json.Schema exposing (validate)
+import Validation exposing (validate)
 import Json.Encode as Encode exposing (int)
 import Test exposing (Test, describe, test)
 import Expect
