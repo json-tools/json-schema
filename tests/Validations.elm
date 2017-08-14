@@ -232,13 +232,13 @@ all =
             [ test "success" <|
                 \() ->
                     buildSchema
-                        |> withContains { blankSchema | maximum = Just 1 }
+                        |> withContains ( buildSchema |> JSB.update (\s -> { s | maximum = Just 1 }) )
                         |> JSB.validate (Encode.list [ int 10, int 20, int 1 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
-                        |> withContains { blankSchema | maximum = Just 1 }
+                        |> withContains ( buildSchema |> JSB.update (\s -> { s | maximum = Just 1 }) )
                         |> JSB.validate (Encode.list [ int 10, int 20 ])
                         |> Expect.equal (Err "Array does not contain expected value")
             ]

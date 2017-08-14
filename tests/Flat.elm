@@ -140,7 +140,7 @@ all =
                 [ ( "contains", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withContains blankSchema
+                            |> withContains buildSchema
                         )
         , test "properties={foo=blankSchema}" <|
             \() ->
