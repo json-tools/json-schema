@@ -116,14 +116,18 @@ withUnionType listTypes sb =
                     x
            )
 
-
-withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
-withContains subSchemaBuilder =
+updateWithSubBuilder fn subSchemaBuilder =
     case subSchemaBuilder |> toSchema of
         Ok sub ->
-            updateSchema (\s -> { s | contains = SubSchema sub } )
+            updateSchema (fn (SubSchema sub))
+
         Err s ->
             appendError s
+
+
+withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withContains =
+    updateWithSubBuilder (\sub s -> { s | contains = sub } )
 
 
 withDefinitions defs =
@@ -138,8 +142,9 @@ withItem item =
     updateSchema (\s -> { s | items = ItemDefinition item } )
 
 
-withAdditionalItems ai =
-    updateSchema (\schema -> { schema | additionalItems = SubSchema ai })
+withAdditionalItems : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withAdditionalItems =
+    updateWithSubBuilder (\sub s -> { s | additionalItems = sub })
 
 
 withProperties defs =
@@ -176,6 +181,7 @@ withAnyOf ls =
 
 withOneOf ls =
     updateSchema (\schema -> { schema | oneOf = Just (List.map SubSchema ls) })
+
 
 withMaximum : Float -> SchemaBuilder -> SchemaBuilder
 withMaximum x =

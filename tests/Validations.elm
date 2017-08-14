@@ -179,7 +179,7 @@ all =
                             [ { blankSchema | maximum = Just 10 }
                             , { blankSchema | maximum = Just 100 }
                             ]
-                        |> withAdditionalItems { blankSchema | maximum = Just 1 }
+                        |> withAdditionalItems ( buildSchema |> withMaximum 1 )
                         |> JSB.validate (Encode.list [ int 1, int 20, int 1 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
@@ -189,7 +189,7 @@ all =
                             [ { blankSchema | maximum = Just 11 }
                             , { blankSchema | maximum = Just 100 }
                             ]
-                        |> withAdditionalItems { blankSchema | maximum = Just 1 }
+                        |> withAdditionalItems ( buildSchema |> withMaximum 1 )
                         |> JSB.validate (Encode.list [ int 2, int 2, int 100 ])
                         |> Expect.equal (Err "Item at index 2: Value is above the maximum of 1")
             ]

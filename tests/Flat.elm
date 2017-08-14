@@ -133,7 +133,7 @@ all =
                 [ ( "additionalItems", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withAdditionalItems blankSchema
+                            |> withAdditionalItems buildSchema
                         )
         , test "contains={}" <|
             \() ->
