@@ -24,6 +24,7 @@ module Json.Schema.Builder
         , withOneOf
         -- simple setters
         , withMaximum
+        , withPattern
         )
 
 import Set
@@ -116,7 +117,7 @@ withUnionType listTypes sb =
                     x
            )
 
-updateWithSubBuilder fn subSchemaBuilder =
+updateWithSubSchema fn subSchemaBuilder =
     case subSchemaBuilder |> toSchema of
         Ok sub ->
             updateSchema (fn (SubSchema sub))
@@ -127,7 +128,7 @@ updateWithSubBuilder fn subSchemaBuilder =
 
 withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withContains =
-    updateWithSubBuilder (\sub s -> { s | contains = sub } )
+    updateWithSubSchema (\sub s -> { s | contains = sub } )
 
 
 withDefinitions defs =
@@ -144,7 +145,7 @@ withItem item =
 
 withAdditionalItems : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withAdditionalItems =
-    updateWithSubBuilder (\sub s -> { s | additionalItems = sub })
+    updateWithSubSchema (\sub s -> { s | additionalItems = sub })
 
 
 withProperties defs =
@@ -155,8 +156,9 @@ withPatternProperties defs =
     updateSchema (\schema -> { schema | patternProperties = Just (Schemata defs) })
 
 
-withAdditionalProperties ap =
-    updateSchema (\schema -> { schema | additionalProperties = SubSchema ap })
+withAdditionalProperties : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withAdditionalProperties =
+    updateWithSubSchema (\sub s -> { s | additionalProperties = sub })
 
 
 withSchemaDependency name sd =
@@ -167,8 +169,9 @@ withPropNamesDependency name pn =
     updateSchema (\schema -> { schema | dependencies = ( name, ArrayPropNames pn ) :: schema.dependencies })
 
 
-withPropertyNames pn =
-    updateSchema (\schema -> { schema | propertyNames = SubSchema pn })
+withPropertyNames : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withPropertyNames =
+    updateWithSubSchema (\sub s -> { s | propertyNames = sub })
 
 
 withAllOf ls =
@@ -186,3 +189,8 @@ withOneOf ls =
 withMaximum : Float -> SchemaBuilder -> SchemaBuilder
 withMaximum x =
     updateSchema (\s -> { s | maximum = Just x })
+
+
+withPattern : String -> SchemaBuilder -> SchemaBuilder
+withPattern x =
+    updateSchema (\s -> { s | pattern = Just x })

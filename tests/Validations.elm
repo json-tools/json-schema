@@ -20,6 +20,7 @@ import Json.Schema.Builder as JSB
         , withAnyOf
         , withOneOf
         , withMaximum
+        , withPattern
         )
 import Data.Schema exposing (blankSchema)
 import Validation exposing (validate)
@@ -326,7 +327,7 @@ all =
                         |> withPatternProperties
                             [ ( "o{2}", { blankSchema | maximum = Just 100 } )
                             ]
-                        |> withAdditionalProperties { blankSchema | maximum = Just 20 }
+                        |> withAdditionalProperties ( buildSchema |> withMaximum 20 )
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "success: props" <|
@@ -335,7 +336,7 @@ all =
                         |> withProperties
                             [ ( "foo", { blankSchema | maximum = Just 100 } )
                             ]
-                        |> withAdditionalProperties { blankSchema | maximum = Just 20 }
+                        |> withAdditionalProperties ( buildSchema |> withMaximum 20 )
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
@@ -344,7 +345,7 @@ all =
                         |> withPatternProperties
                             [ ( "o{2}", { blankSchema | maximum = Just 100 } )
                             ]
-                        |> withAdditionalProperties { blankSchema | maximum = Just 20 }
+                        |> withAdditionalProperties ( buildSchema |> withMaximum 20 )
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
             ]
@@ -377,13 +378,13 @@ all =
             [ test "success" <|
                 \() ->
                     buildSchema
-                        |> withPropertyNames { blankSchema | pattern = Just "^ba" }
+                        |> withPropertyNames ( buildSchema |> withPattern "^ba" )
                         |> JSB.validate (Encode.object [ ( "baz", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
-                        |> withPropertyNames { blankSchema | pattern = Just "^ba" }
+                        |> withPropertyNames ( buildSchema |> withPattern "^ba" )
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Err "Property 'foo' doesn't validate against peopertyNames schema: String does not match the regex pattern")
             ]

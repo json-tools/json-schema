@@ -161,7 +161,7 @@ all =
                 [ ( "additionalProperties", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withAdditionalProperties blankSchema
+                            |> withAdditionalProperties buildSchema
                         )
         , test "dependencies={foo=blankSchema}" <|
             \() ->
@@ -182,7 +182,8 @@ all =
                 [ ( "propertyNames", Encode.object [ ( "type", Encode.string "string" ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withPropertyNames stringSchema
+                            |> withPropertyNames (buildSchema |> withType "string")
+
                         )
         , test "enum=[]" <|
             \() ->
