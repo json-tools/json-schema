@@ -24,12 +24,15 @@ module Json.Schema.Builder
         , withOneOf
         -- simple setters
         , withMaximum
+        , withMinimum
         , withPattern
+        , withEnum
         )
 
 import Set
 import Util exposing (foldResults)
 import Validation
+import Json.Decode exposing (Value)
 import Data.Schema
     exposing
         ( Schema
@@ -68,6 +71,18 @@ toSchemata =
                 builder
                     |> toSchema
                     |> Result.map (\s -> l ++ [ (key, s) ])
+            )
+    ) (Ok [])
+
+
+toListOfSchemas : List SchemaBuilder -> Result String (List Schema)
+toListOfSchemas =
+    List.foldl (\builder res ->
+        res
+            |> Result.andThen (\l ->
+                builder
+                    |> toSchema
+                    |> Result.map (\s -> l ++ [ s ])
             )
     ) (Ok [])
 
@@ -138,10 +153,20 @@ updateWithSubSchema fn subSchemaBuilder =
         Err s ->
             appendError s
 
+
 updateWithSchemata fn schemataBuilder =
     case schemataBuilder |> toSchemata of
         Ok schemata ->
             updateSchema (fn (Just <| Schemata schemata))
+
+        Err s ->
+            appendError s
+
+
+updateWithListOfSchemas fn schemasBuilder =
+    case schemasBuilder |> toListOfSchemas of
+        Ok ls ->
+            updateSchema (fn (Just <| List.map SubSchema ls))
 
         Err s ->
             appendError s
@@ -154,7 +179,7 @@ withContains =
 
 withDefinitions : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
 withDefinitions =
-    updateWithSchemata (\schemata s -> { s | definitions = schemata } )
+    updateWithSchemata (\definitions s -> { s | definitions = definitions } )
 
 
 withItems items =
@@ -170,12 +195,14 @@ withAdditionalItems =
     updateWithSubSchema (\sub s -> { s | additionalItems = sub })
 
 
-withProperties defs =
-    updateSchema (\schema -> { schema | properties = Just (Schemata defs) })
+withProperties : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
+withProperties =
+    updateWithSchemata (\properties s -> { s | properties = properties })
 
 
-withPatternProperties defs =
-    updateSchema (\schema -> { schema | patternProperties = Just (Schemata defs) })
+withPatternProperties : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
+withPatternProperties =
+    updateWithSchemata (\patternProperties s -> { s | patternProperties = patternProperties })
 
 
 withAdditionalProperties : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
@@ -193,19 +220,22 @@ withPropNamesDependency name pn =
 
 withPropertyNames : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withPropertyNames =
-    updateWithSubSchema (\sub s -> { s | propertyNames = sub })
+    updateWithSubSchema (\propertyNames s -> { s | propertyNames = propertyNames })
 
 
-withAllOf ls =
-    updateSchema (\schema -> { schema | allOf = Just (List.map SubSchema ls) })
+withAllOf : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withAllOf =
+    updateWithListOfSchemas (\allOf s -> { s | allOf = allOf })
 
 
-withAnyOf ls =
-    updateSchema (\schema -> { schema | anyOf = Just (List.map SubSchema ls) })
+withAnyOf : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withAnyOf =
+    updateWithListOfSchemas (\anyOf s -> { s | anyOf = anyOf })
 
 
-withOneOf ls =
-    updateSchema (\schema -> { schema | oneOf = Just (List.map SubSchema ls) })
+withOneOf     : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withOneOf =
+    updateWithListOfSchemas (\oneOf s -> { s | oneOf = oneOf })
 
 
 withMaximum : Float -> SchemaBuilder -> SchemaBuilder
@@ -213,6 +243,15 @@ withMaximum x =
     updateSchema (\s -> { s | maximum = Just x })
 
 
+withMinimum : Float -> SchemaBuilder -> SchemaBuilder
+withMinimum x =
+    updateSchema (\s -> { s | minimum = Just x })
+
+
 withPattern : String -> SchemaBuilder -> SchemaBuilder
 withPattern x =
     updateSchema (\s -> { s | pattern = Just x })
+
+withEnum : List Value -> SchemaBuilder -> SchemaBuilder
+withEnum x =
+    updateSchema (\s -> { s | enum = Just x })

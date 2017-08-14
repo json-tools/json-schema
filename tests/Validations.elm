@@ -21,6 +21,8 @@ import Json.Schema.Builder as JSB
         , withOneOf
         , withMaximum
         , withPattern
+        , withMinimum
+        , withEnum
         )
 import Data.Schema exposing (blankSchema)
 import Validation exposing (validate)
@@ -57,13 +59,15 @@ all =
         , describe "maximum"
             [ test "success" <|
                 \() ->
-                    { blankSchema | maximum = Just 2 }
-                        |> validate (Encode.int 2)
+                    buildSchema
+                        |> withMaximum 2
+                        |> JSB.validate (Encode.int 2)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | maximum = Just 2 }
-                        |> validate (Encode.float 2.1)
+                    buildSchema
+                        |> withMaximum 2
+                        |> JSB.validate (Encode.float 2.1)
                         |> Expect.equal (Err "Value is above the maximum of 2")
             ]
         , describe "minimum"
@@ -285,8 +289,8 @@ all =
                 \() ->
                     buildSchema
                         |> withProperties
-                            [ ( "foo", { blankSchema | maximum = Just 10 } )
-                            , ( "bar", { blankSchema | maximum = Just 20 } )
+                            [ ( "foo", buildSchema |> withMaximum 10 )
+                            , ( "bar", buildSchema |> withMaximum 20 )
                             ]
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
@@ -294,8 +298,8 @@ all =
                 \() ->
                     buildSchema
                         |> withProperties
-                            [ ( "foo", { blankSchema | maximum = Just 10 } )
-                            , ( "bar", { blankSchema | maximum = Just 20 } )
+                            [ ( "foo", buildSchema |> withMaximum 10 )
+                            , ( "bar", buildSchema |> withMaximum 20 )
                             ]
                         |> JSB.validate (Encode.object [ ( "bar", int 28 ) ])
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
@@ -305,8 +309,8 @@ all =
                 \() ->
                     buildSchema
                         |> withPatternProperties
-                            [ ( "o{2}", { blankSchema | maximum = Just 10 } )
-                            , ( "a", { blankSchema | maximum = Just 20 } )
+                            [ ( "o{2}", buildSchema |> withMaximum 10 )
+                            , ( "a", buildSchema |> withMaximum 20 )
                             ]
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
@@ -314,8 +318,8 @@ all =
                 \() ->
                     buildSchema
                         |> withPatternProperties
-                            [ ( "o{2}", { blankSchema | maximum = Just 10 } )
-                            , ( "a", { blankSchema | maximum = Just 20 } )
+                            [ ( "o{2}", buildSchema |> withMaximum 10 )
+                            , ( "a", buildSchema |> withMaximum 20 )
                             ]
                         |> JSB.validate (Encode.object [ ( "bar", int 28 ) ])
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
@@ -325,7 +329,7 @@ all =
                 \() ->
                     buildSchema
                         |> withPatternProperties
-                            [ ( "o{2}", { blankSchema | maximum = Just 100 } )
+                            [ ( "o{2}", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties ( buildSchema |> withMaximum 20 )
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
@@ -334,7 +338,7 @@ all =
                 \() ->
                     buildSchema
                         |> withProperties
-                            [ ( "foo", { blankSchema | maximum = Just 100 } )
+                            [ ( "foo", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties ( buildSchema |> withMaximum 20 )
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
@@ -343,7 +347,7 @@ all =
                 \() ->
                     buildSchema
                         |> withPatternProperties
-                            [ ( "o{2}", { blankSchema | maximum = Just 100 } )
+                            [ ( "o{2}", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties ( buildSchema |> withMaximum 20 )
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
@@ -491,8 +495,8 @@ all =
                 \() ->
                     buildSchema
                         |> withAllOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | maximum = Just 1 }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withMaximum 1
                             ]
                         |> JSB.validate (Encode.int 1)
                         |> Expect.equal (Ok True)
@@ -500,8 +504,8 @@ all =
                 \() ->
                     buildSchema
                         |> withAllOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | maximum = Just 1 }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withMaximum 1
                             ]
                         |> JSB.validate (Encode.int -1)
                         |> Expect.equal (Err "Value is below the minimum of 0")
@@ -509,8 +513,8 @@ all =
                 \() ->
                     buildSchema
                         |> withAllOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | maximum = Just 1 }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withMaximum 1
                             ]
                         |> JSB.validate (Encode.int 2)
                         |> Expect.equal (Err "Value is above the maximum of 1")
@@ -520,8 +524,8 @@ all =
                 \() ->
                     buildSchema
                         |> withAllOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int 1)
                         |> Expect.equal (Ok True)
@@ -529,8 +533,8 @@ all =
                 \() ->
                     buildSchema
                         |> withAnyOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.float 0.5)
                         |> Expect.equal (Ok True)
@@ -538,8 +542,8 @@ all =
                 \() ->
                     buildSchema
                         |> withAnyOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int -1)
                         |> Expect.equal (Err "None of the schemas in anyOf accept this value")
@@ -549,8 +553,8 @@ all =
                 \() ->
                     buildSchema
                         |> withOneOf
-                            [ { blankSchema | minimum = Just 10 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 10
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int 1)
                         |> Expect.equal (Ok True)
@@ -558,8 +562,8 @@ all =
                 \() ->
                     buildSchema
                         |> withOneOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int 0)
                         |> Expect.equal (Ok True)
@@ -567,8 +571,8 @@ all =
                 \() ->
                     buildSchema
                         |> withOneOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int -1)
                         |> Expect.equal (Err "None of the schemas in anyOf allow this value")
@@ -576,8 +580,8 @@ all =
                 \() ->
                     buildSchema
                         |> withOneOf
-                            [ { blankSchema | minimum = Just 0 }
-                            , { blankSchema | enum = Just [ int 1 ] }
+                            [ buildSchema |> withMinimum 0
+                            , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int 1)
                         |> Expect.equal (Err "oneOf expects value to succeed validation against exactly one schema but 2 validations succeeded")

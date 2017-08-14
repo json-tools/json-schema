@@ -147,14 +147,14 @@ all =
                 [ ( "properties", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withProperties [ ( "foo", blankSchema ) ]
+                            |> withProperties [ ( "foo", buildSchema ) ]
                         )
         , test "patternProperties={foo=blankSchema}" <|
             \() ->
                 [ ( "patternProperties", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withPatternProperties [ ( "foo", blankSchema ) ]
+                            |> withPatternProperties [ ( "foo", buildSchema ) ]
                         )
         , test "additionalProperties=blankSchema" <|
             \() ->
@@ -200,21 +200,21 @@ all =
                 [ ( "allOf", Encode.list [ Encode.object [] ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withAllOf [ blankSchema ]
+                            |> withAllOf [ buildSchema ]
                         )
         , test "oneOf=[blankSchema]" <|
             \() ->
                 [ ( "oneOf", Encode.list [ Encode.object [] ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withOneOf [ blankSchema ]
+                            |> withOneOf [ buildSchema ]
                         )
         , test "anyOf=[blankSchema]" <|
             \() ->
                 [ ( "anyOf", Encode.list [ Encode.object [] ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withAnyOf [ blankSchema ]
+                            |> withAnyOf [ buildSchema ]
                         )
         ]
 
