@@ -17,6 +17,7 @@ import Json.Schema.Builder
         , withNullableType
         , withUnionType
         , withAllOf
+        , withAnyOf
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -545,5 +546,37 @@ all =
                         |> toSchema
                         |> Result.andThen (validate <| Encode.int 2)
                         |> Expect.equal (Err "Value is above the maximum of 1")
+            ]
+        , describe "anyOf"
+            [ test "success for enum" <|
+                \() ->
+                    buildSchema
+                        |> withAllOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "success for minimum" <|
+                \() ->
+                    buildSchema
+                        |> withAnyOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.float 0.5)
+                        |> Expect.equal (Ok True)
+            , test "failure" <|
+                \() ->
+                    buildSchema
+                        |> withAnyOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int -1)
+                        |> Expect.equal (Err "None of the schemas in anyOf allow this value")
             ]
         ]

@@ -645,6 +645,7 @@ validate value schema =
     , validateConst
     , validateType
     , validateAllOf
+    , validateAnyOf
     ]
         |> failWithFirstError value schema
 
@@ -1124,7 +1125,7 @@ validateSingleType st val =
 
 
 validateAllOf : Value -> Data.Schema.Schema -> Result String Bool
-validateAllOf val =
+validateAllOf =
     when .allOf
         Decode.value
         (\allOf val ->
@@ -1143,7 +1144,30 @@ validateAllOf val =
                 (Ok True)
                 allOf
         )
-        val
+
+
+validateAnyOf : Value -> Data.Schema.Schema -> Result String Bool
+validateAnyOf =
+    when .anyOf
+        Decode.value
+        (\anyOf val ->
+            let
+                validSubschema subschema =
+                    case subschema of
+                        SubSchema schema ->
+                            validate val schema == (Ok True)
+
+                        NoSchema ->
+                            True
+
+                isValid =
+                    List.any validSubschema anyOf
+            in
+                if isValid then
+                    Ok True
+                else
+                    Err "None of the schemas in anyOf allow this value"
+        )
 
 
 getSchema key (Schemata props) =
