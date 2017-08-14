@@ -112,7 +112,7 @@ all =
                 [ ( "definitions", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withDefinitions [ ( "foo", blankSchema ) ]
+                            |> withDefinitions [ ( "foo", buildSchema ) ]
                         )
         , test "items=[blankSchema]" <|
             \() ->
@@ -133,14 +133,14 @@ all =
                 [ ( "additionalItems", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withAdditionalItems blankSchema
+                            |> withAdditionalItems buildSchema
                         )
         , test "contains={}" <|
             \() ->
                 [ ( "contains", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withContains blankSchema
+                            |> withContains buildSchema
                         )
         , test "properties={foo=blankSchema}" <|
             \() ->
@@ -161,7 +161,7 @@ all =
                 [ ( "additionalProperties", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withAdditionalProperties blankSchema
+                            |> withAdditionalProperties buildSchema
                         )
         , test "dependencies={foo=blankSchema}" <|
             \() ->
@@ -182,7 +182,8 @@ all =
                 [ ( "propertyNames", Encode.object [ ( "type", Encode.string "string" ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withPropertyNames stringSchema
+                            |> withPropertyNames (buildSchema |> withType "string")
+
                         )
         , test "enum=[]" <|
             \() ->

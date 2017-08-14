@@ -22,6 +22,9 @@ module Json.Schema.Builder
         , withAllOf
         , withAnyOf
         , withOneOf
+        -- simple setters
+        , withMaximum
+        , withPattern
         )
 
 import Set
@@ -54,6 +57,20 @@ toSchema (SchemaBuilder sb) =
         Ok sb.schema
     else
         Err <| String.join "," sb.errors
+
+
+toSchemata : List (String, SchemaBuilder) -> Result String Schemata
+toSchemata list =
+    list
+        |> List.foldl (\(key, builder) res ->
+            res
+                |> Result.andThen (\l ->
+                    builder
+                        |> toSchema
+                        |> Result.map (\s -> l ++ [ (key, s) ])
+                )
+        ) (Ok [])
+        |> Result.map Schemata
 
 
 validate val sb =
@@ -114,13 +131,31 @@ withUnionType listTypes sb =
                     x
            )
 
+updateWithSubSchema fn subSchemaBuilder =
+    case subSchemaBuilder |> toSchema of
+        Ok sub ->
+            updateSchema (fn (SubSchema sub))
 
-withContains sub =
-    updateSchema (\s -> { s | contains = SubSchema sub } )
+        Err s ->
+            appendError s
+
+updateWithSchemata fn schemataBuilder =
+    case schemataBuilder |> toSchemata of
+        Ok schemata ->
+            updateSchema (fn schemata)
+
+        Err s ->
+            appendError s
 
 
-withDefinitions defs =
-    updateSchema (\s -> { s | definitions = Just (Schemata defs) } )
+withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withContains =
+    updateWithSubSchema (\sub s -> { s | contains = sub } )
+
+
+withDefinitions : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
+withDefinitions =
+    updateWithSchemata (\schemata s -> { s | definitions = Just schemata } )
 
 
 withItems items =
@@ -131,8 +166,9 @@ withItem item =
     updateSchema (\s -> { s | items = ItemDefinition item } )
 
 
-withAdditionalItems ai =
-    updateSchema (\schema -> { schema | additionalItems = SubSchema ai })
+withAdditionalItems : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withAdditionalItems =
+    updateWithSubSchema (\sub s -> { s | additionalItems = sub })
 
 
 withProperties defs =
@@ -143,8 +179,9 @@ withPatternProperties defs =
     updateSchema (\schema -> { schema | patternProperties = Just (Schemata defs) })
 
 
-withAdditionalProperties ap =
-    updateSchema (\schema -> { schema | additionalProperties = SubSchema ap })
+withAdditionalProperties : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withAdditionalProperties =
+    updateWithSubSchema (\sub s -> { s | additionalProperties = sub })
 
 
 withSchemaDependency name sd =
@@ -155,8 +192,9 @@ withPropNamesDependency name pn =
     updateSchema (\schema -> { schema | dependencies = ( name, ArrayPropNames pn ) :: schema.dependencies })
 
 
-withPropertyNames pn =
-    updateSchema (\schema -> { schema | propertyNames = SubSchema pn })
+withPropertyNames : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withPropertyNames =
+    updateWithSubSchema (\sub s -> { s | propertyNames = sub })
 
 
 withAllOf ls =
@@ -169,3 +207,13 @@ withAnyOf ls =
 
 withOneOf ls =
     updateSchema (\schema -> { schema | oneOf = Just (List.map SubSchema ls) })
+
+
+withMaximum : Float -> SchemaBuilder -> SchemaBuilder
+withMaximum x =
+    updateSchema (\s -> { s | maximum = Just x })
+
+
+withPattern : String -> SchemaBuilder -> SchemaBuilder
+withPattern x =
+    updateSchema (\s -> { s | pattern = Just x })
