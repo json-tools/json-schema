@@ -644,6 +644,7 @@ validate value schema =
     , validateEnum
     , validateConst
     , validateType
+    , validateAllOf
     ]
         |> failWithFirstError value schema
 
@@ -1120,6 +1121,29 @@ validateSingleType st val =
 
             ObjectType ->
                 test <| Decode.keyValuePairs Decode.value
+
+
+validateAllOf : Value -> Data.Schema.Schema -> Result String Bool
+validateAllOf val =
+    when .allOf
+        Decode.value
+        (\allOf val ->
+            List.foldl
+                (\subschema res ->
+                    if res == (Ok True) then
+                        case subschema of
+                            SubSchema schema ->
+                                validate val schema
+
+                            NoSchema ->
+                                Ok True
+                    else
+                        res
+                )
+                (Ok True)
+                allOf
+        )
+        val
 
 
 getSchema key (Schemata props) =

@@ -16,6 +16,7 @@ import Json.Schema.Builder
         , withType
         , withNullableType
         , withUnionType
+        , withAllOf
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -512,5 +513,37 @@ all =
                         |> toSchema
                         |> Result.andThen (validate <| Encode.object [])
                         |> Expect.equal (Err "Type mismatch")
+            ]
+        , describe "allOf"
+            [ test "success" <|
+                \() ->
+                    buildSchema
+                        |> withAllOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | maximum = Just 1 }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "failure because of minimum" <|
+                \() ->
+                    buildSchema
+                        |> withAllOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | maximum = Just 1 }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int -1)
+                        |> Expect.equal (Err "Value is below the minimum of 0")
+            , test "failure because of maximum" <|
+                \() ->
+                    buildSchema
+                        |> withAllOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | maximum = Just 1 }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 2)
+                        |> Expect.equal (Err "Value is above the maximum of 1")
             ]
         ]
