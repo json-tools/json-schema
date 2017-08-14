@@ -5,7 +5,7 @@ module Data.Schema
         , Meta
         , decoder
         , Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , stringToType
         , blankSchema
         , SubSchema(SubSchema, NoSchema)
@@ -39,6 +39,7 @@ import Json.Decode.Pipeline exposing (decode, optional)
 
 type alias Schema =
     { type_ : Type
+    , ref : Maybe String
     -- meta
     , title : Maybe String
     , description : Maybe String
@@ -85,6 +86,7 @@ type SubSchema = SubSchema Schema | NoSchema
 blankSchema : Schema
 blankSchema =
     { type_ = AnyType
+    , ref = Nothing
     , title = Nothing
     , description = Nothing
     , default = Nothing
@@ -151,8 +153,9 @@ decoder =
             |> optional "type"
                 (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                 AnyType
-            |> optional "title" (nullable string) Nothing
+            |> optional "$ref" (nullable string) Nothing
             -- meta
+            |> optional "title" (nullable string) Nothing
             |> optional "description" (nullable string) Nothing
             |> optional "default" (nullable value) Nothing
             |> optional "examples" (nullable <| list value) Nothing
@@ -254,6 +257,7 @@ type SingleType
     = IntegerType
     | NumberType
     | StringType
+    | BooleanType
     | ArrayType
     | ObjectType
     | NullType
@@ -292,6 +296,9 @@ stringToType s =
 
         "string" ->
             Ok StringType
+
+        "boolean" ->
+            Ok BooleanType
 
         "array" ->
             Ok ArrayType

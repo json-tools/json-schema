@@ -1,4 +1,4 @@
-module Tests exposing (all)
+module Schema exposing (all)
 
 import Json.Schema as JS exposing (Schema, empty)
 
@@ -8,6 +8,11 @@ import Json.Schema as JS exposing (Schema, empty)
 import Json.Encode as Encode exposing (Value, string, int, object, list)
 import Test exposing (..)
 import Expect
+import Data.Schema
+    exposing
+        ( Type(SingleType)
+        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
+        )
 
 
 blankRoot : Value
@@ -47,14 +52,14 @@ all =
                         { "enum": [ "a", "b" ] }
                     """
                         |> .type_
-                        |> Expect.equal "string"
+                        |> Expect.equal (SingleType StringType)
             , test "has properties: type should become an object" <|
                 \() ->
                     schema """
                         { "properties": { "a": { "type": "string" } } }
                     """
                         |> .type_
-                        |> Expect.equal "object"
+                        |> Expect.equal (SingleType ObjectType)
             ]
         , describe "Manipulation"
             [ test "simple object with string" <|

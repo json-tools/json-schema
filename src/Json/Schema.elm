@@ -1,7 +1,6 @@
 module Json.Schema
     exposing
         ( Schema
-        , ArrayItemDefinition(ArrayItemDefinition)
         , Properties
         , empty
         , fromValue
@@ -22,7 +21,7 @@ module Json.Schema
 schemas defined in json-schema format
 
 # Definition
-@docs Schema, ArrayItemDefinition, Properties
+@docs Schema, Properties
 
 # Schema creation
 @docs empty, fromString, fromValue
@@ -48,12 +47,12 @@ import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, fi
 import Json.Encode as Encode exposing (Value)
 import Data.Schema
     exposing
-        ( Items(ItemDefinition, ArrayOfItems)
+        ( Items(ItemDefinition, ArrayOfItems, NoItems)
         , SubSchema(SubSchema, NoSchema)
         , Schemata(Schemata)
         , Dependency(ArrayPropNames, PropSchema)
         , Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , blankSchema
         )
 import Dict exposing (Dict)
@@ -69,24 +68,7 @@ Array item type defined in `items`.
 Object properties defined in `properties`.
 -}
 type alias Schema =
-    { type_ : String
-    , required : Set.Set String
-    , default : Maybe Value
-    , description : String
-    , format : Maybe String
-    , ref : Maybe String
-    , enum : Maybe (List String)
-    , items : Maybe ArrayItemDefinition
-    , properties : Properties
-    , definitions : Properties
-    }
-
-
-{-| ArrayItemDefinition - wrapper type for recursive schema node,
-defines type of array items
--}
-type ArrayItemDefinition
-    = ArrayItemDefinition Schema
+    Data.Schema.Schema
 
 
 {-| Properties - list of properties definitions for node with type = object
@@ -99,27 +81,7 @@ type Properties
 -}
 empty : Schema
 empty =
-    Schema
-        -- type_
-        "any"
-        -- required []
-        Set.empty
-        -- default
-        Nothing
-        -- description
-        ""
-        -- format
-        Nothing
-        -- ref
-        Nothing
-        -- enum
-        Nothing
-        -- items
-        Nothing
-        -- properties
-        (Properties [])
-        -- definitions
-        (Properties [])
+    Data.Schema.blankSchema
 
 
 {-| Build schema from JSON string.
@@ -155,17 +117,18 @@ fromValue val =
 
 decodeSchema : Decoder Schema
 decodeSchema =
-    succeed Schema
-        |: (withDefault "" <| field "type" string)
-        |: (withDefault Set.empty <| field "required" (DecodeExtra.set string))
-        |: (maybe <| field "default" Decode.value)
-        |: withDefault "" (field "description" string)
-        |: (maybe <| field "format" string)
-        |: (maybe <| field "$ref" string)
-        |: (maybe <| field "enum" (Decode.list string))
-        |: (maybe <| field "items" (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema)))
-        |: (withDefault (Properties []) <| field "properties" (lazy (\_ -> decodeProperties)))
-        |: (withDefault (Properties []) <| field "definitions" (lazy (\_ -> decodeProperties)))
+    Data.Schema.decoder
+--    succeed Schema
+--        |: (withDefault "" <| field "type" string)
+--        |: (withDefault Set.empty <| field "required" (DecodeExtra.set string))
+--        |: (maybe <| field "default" Decode.value)
+--        |: withDefault "" (field "description" string)
+--        |: (maybe <| field "format" string)
+--        |: (maybe <| field "$ref" string)
+--        |: (maybe <| field "enum" (Decode.list string))
+--        |: (maybe <| field "items" (lazy (\_ -> Decode.map ArrayItemDefinition decodeSchema)))
+--        |: (withDefault (Properties []) <| field "properties" (lazy (\_ -> decodeProperties)))
+--        |: (withDefault (Properties []) <| field "definitions" (lazy (\_ -> decodeProperties)))
 
 
 decodeProperties : Decoder Properties
@@ -201,9 +164,6 @@ convert rootSchema =
 
         updateProperties node =
             let
-                (Properties props) =
-                    node.properties
-
                 tryNext ( key, prop ) list =
                     case walk prop of
                         Ok p ->
@@ -212,29 +172,39 @@ convert rootSchema =
                         Err s ->
                             Err s
 
-                newProps =
+                newProps props =
                     List.foldl
                         (\item res -> res |> Result.andThen (tryNext item))
                         (Ok [])
                         props
             in
-                case newProps of
-                    Ok props ->
-                        Ok
-                            { node | properties = Properties props }
+                node.properties
+                    |> Maybe.map
+                        (\(Schemata props) ->
+                            case newProps props of
+                                Ok p ->
+                                    Ok
+                                        { node | properties = Just (Schemata p) }
 
-                    Err s ->
-                        Err s
+                                Err s ->
+                                    Err s
+                        )
+                    |> Maybe.withDefault (Ok node)
+
 
         updateArrayItemDef node =
             case node.items of
-                Nothing ->
+                NoItems ->
                     Ok node
 
-                Just (ArrayItemDefinition def) ->
+                -- TODO: handle me correctly
+                ArrayOfItems _ ->
+                    Ok node
+
+                ItemDefinition def ->
                     case walk def of
                         Ok newDef ->
-                            Ok { node | items = Just (ArrayItemDefinition newDef) }
+                            Ok { node | items = ItemDefinition newDef }
 
                         Err s ->
                             Err s
@@ -247,23 +217,23 @@ convert rootSchema =
                             checkItems node
 
                         Just _ ->
-                            { node | type_ = "string" }
+                            { node | type_ = SingleType StringType }
 
                 checkItems node =
                     case node.items of
-                        Nothing ->
+                        NoItems ->
                             checkProperties node node.properties
 
-                        Just _ ->
-                            { node | type_ = "array" }
+                        _ ->
+                            { node | type_ = SingleType ArrayType }
 
-                checkProperties node (Properties p) =
-                    if List.isEmpty p then
-                        { node | type_ = "any" }
+                checkProperties node p =
+                    if p == Nothing then
+                        { node | type_ = AnyType }
                     else
-                        { node | type_ = "object" }
+                        { node | type_ = SingleType ObjectType }
             in
-                if String.isEmpty node.type_ || node.type_ == "any" then
+                if node.type_ == AnyType then
                     Ok (checkEnum node)
                 else
                     Ok node
@@ -308,13 +278,13 @@ setValue schema subPath finalValue dataNode =
                             Err x
             in
                 case schema.type_ of
-                    "int" ->
+                    SingleType IntegerType ->
                         tryDecoding Decode.int
 
-                    "string" ->
+                    SingleType StringType ->
                         tryDecoding Decode.string
 
-                    "bool" ->
+                    SingleType BooleanType ->
                         tryDecoding Decode.bool
 
                     _ ->
@@ -322,7 +292,7 @@ setValue schema subPath finalValue dataNode =
 
         key :: tail ->
             case schema.type_ of
-                "object" ->
+                SingleType ObjectType ->
                     let
                         nodeDict =
                             decodeDict dataNode
@@ -354,7 +324,7 @@ setValue schema subPath finalValue dataNode =
                             Nothing ->
                                 Err ("Key '" ++ key ++ "' not found")
 
-                "array" ->
+                SingleType ArrayType ->
                     let
                         index =
                             String.toInt key |> Result.withDefault 0
@@ -363,10 +333,14 @@ setValue schema subPath finalValue dataNode =
                             decodeList dataNode
                     in
                         case schema.items of
-                            Nothing ->
+                            NoItems ->
                                 Err "No items definition"
 
-                            Just (ArrayItemDefinition prop) ->
+                            -- TODO: handle me correctly
+                            ArrayOfItems _ ->
+                                Err "No items definition"
+
+                            ItemDefinition prop ->
                                 case getListItem index nodeList of
                                     Just oldItem ->
                                         case setValue prop tail finalValue oldItem of
@@ -476,23 +450,34 @@ defaultFor schema =
 
         objectFromRequiredProps =
             schema.required
-                |> Set.toList
-                |> List.map defaultChildProp
+                |> Maybe.map(List.map defaultChildProp)
 
         defaultDefault =
             case schema.type_ of
-                "object" ->
-                    Encode.object objectFromRequiredProps
+                SingleType ObjectType ->
+                    case objectFromRequiredProps of
+                        Just props ->
+                            Encode.object props
 
-                "array" ->
+                        Nothing ->
+                            Encode.null
+
+                SingleType ArrayType ->
                     Encode.list []
 
-                "integer" ->
+                SingleType IntegerType ->
                     Encode.int 0
 
-                "boolean" ->
+                SingleType BooleanType ->
                     Encode.bool False
 
+                SingleType NumberType ->
+                    Encode.float 0
+
+                SingleType NullType ->
+                    Encode.null
+
+                -- TODO: no need to assume anything, fixme
                 -- "any", "string" (assume those are strings)
                 _ ->
                     Encode.string ""
@@ -522,17 +507,21 @@ decodeList val =
         |> Result.withDefault []
 
 
-getDefinition : Properties -> String -> Maybe Schema
-getDefinition (Properties defs) name =
-    List.foldl
-        (\( n, prop ) result ->
-            if name == n then
-                Just prop
-            else
-                result
-        )
-        Nothing
-        defs
+getDefinition : Maybe Schemata -> String -> Maybe Schema
+getDefinition defs name =
+    defs
+        |> Maybe.andThen
+            (\(Schemata x) ->
+                List.foldl
+                    (\( key, prop ) result ->
+                        if name == key then
+                            Just prop
+                        else
+                            result
+                    )
+                    Nothing
+                    x
+            )
 
 
 {-| getValue
@@ -545,7 +534,7 @@ getValue schema path inputData =
 
         key :: tail ->
             case schema.type_ of
-                "object" ->
+                SingleType ObjectType ->
                     -- TODO: lookup definition using "ref" (need root schema for that)
                     case getDefinition schema.properties key of
                         Just def ->
@@ -558,14 +547,14 @@ getValue schema path inputData =
                         Nothing ->
                             defaultFor schema
 
-                "array" ->
+                SingleType ArrayType ->
                     let
                         i =
                             --Debug.log "array index is"
                             String.toInt key |> Result.withDefault 0
                     in
                         case schema.items of
-                            Just (ArrayItemDefinition def) ->
+                            ItemDefinition def ->
                                 inputData
                                     |> decodeList
                                     |> List.drop i
@@ -573,7 +562,11 @@ getValue schema path inputData =
                                     |> Maybe.withDefault (Encode.string "")
                                     |> getValue def tail
 
-                            Nothing ->
+                            NoItems ->
+                                defaultFor schema
+
+                            -- TODO: handle me correctly
+                            ArrayOfItems _ ->
                                 defaultFor schema
 
                 _ ->
@@ -598,22 +591,28 @@ registerProperty : String -> Schema -> Schema -> Schema
 registerProperty name prop schema =
     let
         hasProperty name list =
-            List.foldl (\( n, _ ) res -> res || name == n) False list
+            List.foldl (\( key, _ ) res -> res || name == key) False list
 
-        upgrade (Properties props) =
-            if hasProperty name props then
-                List.map
-                    (\( n, p ) ->
-                        if n == name then
-                            ( n, prop )
+        upgrade : Maybe Schemata -> Maybe Schemata
+        upgrade props =
+            props
+                |> Maybe.map
+                    (\(Schemata schemata) ->
+                        if hasProperty name schemata then
+                            List.map
+                                (\( n, p ) ->
+                                    if n == name then
+                                        ( n, prop )
+                                    else
+                                        ( n, p )
+                                )
+                                schemata
                         else
-                            ( n, p )
+                            ( name, prop ) :: schemata
                     )
-                    props
-            else
-                ( name, prop ) :: props
+                |> Maybe.map Schemata
     in
-        { schema | properties = Properties <| upgrade schema.properties }
+        { schema | properties = upgrade schema.properties }
 
 
 {-| Validate value agains schema
@@ -1114,6 +1113,9 @@ validateSingleType st val =
 
             StringType ->
                 test Decode.string
+
+            BooleanType ->
+                test Decode.bool
 
             NullType ->
                 test <| Decode.null Nothing
