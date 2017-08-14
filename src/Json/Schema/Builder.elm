@@ -115,8 +115,13 @@ withUnionType listTypes sb =
            )
 
 
-withContains sub =
-    updateSchema (\s -> { s | contains = SubSchema sub } )
+withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withContains subSchemaBuilder =
+    case subSchemaBuilder |> toSchema of
+        Ok sub ->
+            update (\s -> { s | contains = SubSchema sub } )
+        Err s ->
+            appendError s
 
 
 withDefinitions defs =
