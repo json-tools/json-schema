@@ -112,7 +112,7 @@ all =
                 [ ( "definitions", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withDefinitions [ ( "foo", blankSchema ) ]
+                            |> withDefinitions [ ( "foo", buildSchema ) ]
                         )
         , test "items=[blankSchema]" <|
             \() ->
