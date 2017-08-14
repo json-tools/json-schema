@@ -52,6 +52,7 @@ buildSchema =
     SchemaBuilder { errors = [], schema = blankSchema }
 
 
+toSchema : SchemaBuilder -> Result String Schema
 toSchema (SchemaBuilder sb) =
     if List.isEmpty sb.errors then
         Ok sb.schema
@@ -59,18 +60,16 @@ toSchema (SchemaBuilder sb) =
         Err <| String.join "," sb.errors
 
 
-toSchemata : List (String, SchemaBuilder) -> Result String Schemata
-toSchemata list =
-    list
-        |> List.foldl (\(key, builder) res ->
-            res
-                |> Result.andThen (\l ->
-                    builder
-                        |> toSchema
-                        |> Result.map (\s -> l ++ [ (key, s) ])
-                )
-        ) (Ok [])
-        |> Result.map Schemata
+toSchemata : List (String, SchemaBuilder) -> Result String (List (String, Schema))
+toSchemata =
+    List.foldl (\(key, builder) res ->
+        res
+            |> Result.andThen (\l ->
+                builder
+                    |> toSchema
+                    |> Result.map (\s -> l ++ [ (key, s) ])
+            )
+    ) (Ok [])
 
 
 validate val sb =
@@ -142,7 +141,7 @@ updateWithSubSchema fn subSchemaBuilder =
 updateWithSchemata fn schemataBuilder =
     case schemataBuilder |> toSchemata of
         Ok schemata ->
-            updateSchema (fn schemata)
+            updateSchema (fn (Just <| Schemata schemata))
 
         Err s ->
             appendError s
@@ -155,7 +154,7 @@ withContains =
 
 withDefinitions : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
 withDefinitions =
-    updateWithSchemata (\schemata s -> { s | definitions = Just schemata } )
+    updateWithSchemata (\schemata s -> { s | definitions = schemata } )
 
 
 withItems items =
