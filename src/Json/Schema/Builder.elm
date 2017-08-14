@@ -25,6 +25,8 @@ module Json.Schema.Builder
         -- simple setters
         , withMaximum
         , withMinimum
+        , withExclusiveMaximum
+        , withExclusiveMinimum
         , withPattern
         , withEnum
         )
@@ -246,6 +248,16 @@ withMaximum x =
 withMinimum : Float -> SchemaBuilder -> SchemaBuilder
 withMinimum x =
     updateSchema (\s -> { s | minimum = Just x })
+
+
+withExclusiveMaximum : Float -> SchemaBuilder -> SchemaBuilder
+withExclusiveMaximum x =
+    updateSchema (\s -> { s | exclusiveMaximum = Just x })
+
+
+withExclusiveMinimum : Float -> SchemaBuilder -> SchemaBuilder
+withExclusiveMinimum x =
+    updateSchema (\s -> { s | exclusiveMinimum = Just x })
 
 
 withPattern : String -> SchemaBuilder -> SchemaBuilder

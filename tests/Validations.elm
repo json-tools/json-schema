@@ -20,8 +20,10 @@ import Json.Schema.Builder as JSB
         , withAnyOf
         , withOneOf
         , withMaximum
-        , withPattern
         , withMinimum
+        , withExclusiveMaximum
+        , withExclusiveMinimum
+        , withPattern
         , withEnum
         )
 import Data.Schema exposing (blankSchema)
@@ -73,32 +75,37 @@ all =
         , describe "minimum"
             [ test "success" <|
                 \() ->
-                    { blankSchema | minimum = Just 2 }
-                        |> validate (Encode.int 2)
+                    buildSchema
+                        |> withMinimum 2
+                        |> JSB.validate (Encode.int 2)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | minimum = Just 2 }
-                        |> validate (Encode.float 1.9)
+                    buildSchema
+                        |> withMinimum 2
+                        |> JSB.validate (Encode.float 1.9)
                         |> Expect.equal (Err "Value is below the minimum of 2")
             ]
         , describe "exclusiveMaximum"
             [ test "success" <|
                 \() ->
-                    { blankSchema | exclusiveMaximum = Just 2 }
-                        |> validate (Encode.float 1.9)
+                    buildSchema
+                        |> withExclusiveMaximum 2
+                        |> JSB.validate (Encode.float 1.9)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | exclusiveMaximum = Just 2 }
-                        |> validate (Encode.float 2)
+                    buildSchema
+                        |> withExclusiveMaximum 2
+                        |> JSB.validate (Encode.float 2)
                         |> Expect.equal (Err "Value is not below the exclusive maximum of 2")
             ]
         , describe "exclusiveMinimum"
             [ test "success" <|
                 \() ->
-                    { blankSchema | exclusiveMinimum = Just 2 }
-                        |> validate (Encode.float 2.1)
+                    buildSchema
+                        |> withExclusiveMinimum 2
+                        |> JSB.validate (Encode.float 2.1)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
@@ -133,13 +140,15 @@ all =
         , describe "pattern"
             [ test "success" <|
                 \() ->
-                    { blankSchema | pattern = Just "o{2}" }
-                        |> validate (Encode.string "foo")
+                    buildSchema
+                        |> withPattern "o{2}"
+                        |> JSB.validate (Encode.string "foo")
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | pattern = Just "o{3}" }
-                        |> validate (Encode.string "foo")
+                    buildSchema
+                        |> withPattern "o{3}"
+                        |> JSB.validate (Encode.string "foo")
                         |> Expect.equal (Err "String does not match the regex pattern")
             ]
         , describe "items: schema"
