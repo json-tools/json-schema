@@ -646,6 +646,7 @@ validate value schema =
     , validateType
     , validateAllOf
     , validateAnyOf
+    , validateOneOf
     ]
         |> failWithFirstError value schema
 
@@ -1167,6 +1168,35 @@ validateAnyOf =
                     Ok True
                 else
                     Err "None of the schemas in anyOf allow this value"
+        )
+
+
+validateOneOf : Value -> Data.Schema.Schema -> Result String Bool
+validateOneOf =
+    when .oneOf
+        Decode.value
+        (\oneOf val ->
+            let
+                validSubschema subschema =
+                    case subschema of
+                        SubSchema schema ->
+                            validate val schema == (Ok True)
+
+                        NoSchema ->
+                            True
+
+                validSchemas =
+                    List.filter validSubschema oneOf
+
+                numValid =
+                    List.length validSchemas
+            in
+                if numValid == 1 then
+                    Ok True
+                else if numValid == 0 then
+                    Err "None of the schemas in anyOf allow this value"
+                else
+                    Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ (toString numValid) ++ " validations succeeded"
         )
 
 

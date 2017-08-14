@@ -18,6 +18,7 @@ import Json.Schema.Builder
         , withUnionType
         , withAllOf
         , withAnyOf
+        , withOneOf
         , toSchema
         )
 import Data.Schema exposing (blankSchema)
@@ -578,5 +579,47 @@ all =
                         |> toSchema
                         |> Result.andThen (validate <| Encode.int -1)
                         |> Expect.equal (Err "None of the schemas in anyOf allow this value")
+            ]
+        , describe "oneOf"
+            [ test "success for enum" <|
+                \() ->
+                    buildSchema
+                        |> withOneOf
+                            [ { blankSchema | minimum = Just 10 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Ok True)
+            , test "success for minimum" <|
+                \() ->
+                    buildSchema
+                        |> withOneOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 0)
+                        |> Expect.equal (Ok True)
+            , test "failure for all" <|
+                \() ->
+                    buildSchema
+                        |> withOneOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int -1)
+                        |> Expect.equal (Err "None of the schemas in anyOf allow this value")
+            , test "failure because of success for both" <|
+                \() ->
+                    buildSchema
+                        |> withOneOf
+                            [ { blankSchema | minimum = Just 0 }
+                            , { blankSchema | enum = Just [ int 1 ] }
+                            ]
+                        |> toSchema
+                        |> Result.andThen (validate <| Encode.int 1)
+                        |> Expect.equal (Err "oneOf expects value to succeed validation against exactly one schema but 2 validations succeeded")
             ]
         ]
