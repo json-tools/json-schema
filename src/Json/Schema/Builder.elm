@@ -23,6 +23,7 @@ module Json.Schema.Builder
         , withAnyOf
         , withOneOf
         -- simple setters
+        , withMultipleOf
         , withMaximum
         , withMinimum
         , withExclusiveMaximum
@@ -240,6 +241,11 @@ withOneOf =
     updateWithListOfSchemas (\oneOf s -> { s | oneOf = oneOf })
 
 
+withMultipleOf : Float -> SchemaBuilder -> SchemaBuilder
+withMultipleOf x =
+    updateSchema (\s -> { s | multipleOf = Just x })
+
+
 withMaximum : Float -> SchemaBuilder -> SchemaBuilder
 withMaximum x =
     updateSchema (\s -> { s | maximum = Just x })
@@ -263,6 +269,7 @@ withExclusiveMinimum x =
 withPattern : String -> SchemaBuilder -> SchemaBuilder
 withPattern x =
     updateSchema (\s -> { s | pattern = Just x })
+
 
 withEnum : List Value -> SchemaBuilder -> SchemaBuilder
 withEnum x =

@@ -19,6 +19,7 @@ import Json.Schema.Builder as JSB
         , withAllOf
         , withAnyOf
         , withOneOf
+        , withMultipleOf
         , withMaximum
         , withMinimum
         , withExclusiveMaximum
@@ -39,23 +40,27 @@ all =
         [ describe "multipleOf"
             [ test "success with int" <|
                 \() ->
-                    { blankSchema | multipleOf = Just 2 }
-                        |> validate (Encode.int 4)
+                    buildSchema
+                        |> withMultipleOf 2
+                        |> JSB.validate (Encode.int 4)
                         |> Expect.equal (Ok True)
             , test "success with float" <|
                 \() ->
-                    { blankSchema | multipleOf = Just 2.1 }
-                        |> validate (Encode.float 4.2)
+                    buildSchema
+                        |> withMultipleOf 2.1
+                        |> JSB.validate (Encode.float 4.2)
                         |> Expect.equal (Ok True)
             , test "success with periodic float" <|
                 \() ->
-                    { blankSchema | multipleOf = Just (1 / 3) }
-                        |> validate (Encode.float (2 / 3))
+                    buildSchema
+                        |> withMultipleOf (1 / 3)
+                        |> JSB.validate (Encode.float (2 / 3))
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | multipleOf = Just 3 }
-                        |> validate (Encode.float (2 / 7))
+                    buildSchema
+                        |> withMultipleOf 3
+                        |> JSB.validate (Encode.float (2 / 7))
                         |> Expect.equal (Err "Value is not the multiple of 3")
             ]
         , describe "maximum"
