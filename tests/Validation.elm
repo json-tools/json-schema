@@ -253,36 +253,36 @@ all =
             [ test "success" <|
                 \() ->
                     { blankSchema | maxProperties = Just 3 }
-                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     { blankSchema | maxProperties = Just 1 }
-                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Err "Object has more properties than expected (maxProperties=1)")
             ]
         , describe "minProperties"
             [ test "success" <|
                 \() ->
                     { blankSchema | minProperties = Just 1 }
-                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     { blankSchema | minProperties = Just 3 }
-                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Err "Object has less properties than expected (minProperties=3)")
             ]
         , describe "required"
             [ test "success" <|
                 \() ->
                     { blankSchema | required = Just [ "foo", "bar" ] }
-                        |> validate (Encode.object [ ("foo", int 1), ("bar", int 2) ])
+                        |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     { blankSchema | required = Just [ "foo", "bar" ] }
-                        |> validate (Encode.object [ ("foo", int 1) ])
+                        |> validate (Encode.object [ ( "foo", int 1 ) ])
                         |> Expect.equal (Err "Object doesn't have all the required properties")
             ]
         , describe "properties"
@@ -294,7 +294,7 @@ all =
                             , ( "bar", { blankSchema | maximum = Just 20 } )
                             ]
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
@@ -304,7 +304,7 @@ all =
                             , ( "bar", { blankSchema | maximum = Just 20 } )
                             ]
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("bar", int 28) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "bar", int 28 ) ]))
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
             ]
         , describe "patternProperties"
@@ -316,7 +316,7 @@ all =
                             , ( "a", { blankSchema | maximum = Just 20 } )
                             ]
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
@@ -326,7 +326,7 @@ all =
                             , ( "a", { blankSchema | maximum = Just 20 } )
                             ]
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("bar", int 28) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "bar", int 28 ) ]))
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
             ]
         , describe "additionalProperties"
@@ -338,7 +338,7 @@ all =
                             ]
                         |> withAdditionalProperties { blankSchema | maximum = Just 20 }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Ok True)
             , test "success: props" <|
                 \() ->
@@ -348,7 +348,7 @@ all =
                             ]
                         |> withAdditionalProperties { blankSchema | maximum = Just 20 }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
@@ -358,7 +358,7 @@ all =
                             ]
                         |> withAdditionalProperties { blankSchema | maximum = Just 20 }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 100), ("bar", int 200) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ]))
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
             ]
         , describe "dependencies"
@@ -369,7 +369,7 @@ all =
                             "foo"
                             { blankSchema | required = Just [ "bar" ] }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Ok True)
             , test "failure when dependency is a schema" <|
                 \() ->
@@ -378,15 +378,15 @@ all =
                             "foo"
                             { blankSchema | required = Just [ "bar" ] }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 1) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 1 ) ]))
                         |> Expect.equal (Err "Object doesn't have all the required properties")
-                        --|> Expect.equal (Err "Required property 'bar' is missing")
+              --|> Expect.equal (Err "Required property 'bar' is missing")
             , test "failure when dependency is array of strings" <|
                 \() ->
                     buildSchema
                         |> withPropNamesDependency "foo" [ "bar" ]
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 1) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 1 ) ]))
                         |> Expect.equal (Err "Object doesn't have all the required properties")
             ]
         , describe "propertyNames"
@@ -395,14 +395,14 @@ all =
                     buildSchema
                         |> withPropertyNames { blankSchema | pattern = Just "^ba" }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("baz", int 1), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "baz", int 1 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withPropertyNames { blankSchema | pattern = Just "^ba" }
                         |> toSchema
-                        |> Result.andThen (validate (Encode.object [ ("foo", int 1), ("bar", int 2) ]))
+                        |> Result.andThen (validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ]))
                         |> Expect.equal (Err "Property 'foo' doesn't validate against peopertyNames schema: String does not match the regex pattern")
             ]
         , describe "enum"
@@ -420,12 +420,12 @@ all =
         , describe "const"
             [ test "success" <|
                 \() ->
-                    { blankSchema | const = Just ( int 1 ) }
+                    { blankSchema | const = Just (int 1) }
                         |> validate (Encode.int 1)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | const = Just ( int 1 ) }
+                    { blankSchema | const = Just (int 1) }
                         |> validate (Encode.int 2)
                         |> Expect.equal (Err "Value doesn't equal const")
             ]
