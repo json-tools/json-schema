@@ -22,6 +22,8 @@ module Json.Schema.Builder
         , withAllOf
         , withAnyOf
         , withOneOf
+        -- simple setters
+        , withMaximum
         )
 
 import Set
@@ -119,7 +121,7 @@ withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withContains subSchemaBuilder =
     case subSchemaBuilder |> toSchema of
         Ok sub ->
-            update (\s -> { s | contains = SubSchema sub } )
+            updateSchema (\s -> { s | contains = SubSchema sub } )
         Err s ->
             appendError s
 
@@ -174,3 +176,7 @@ withAnyOf ls =
 
 withOneOf ls =
     updateSchema (\schema -> { schema | oneOf = Just (List.map SubSchema ls) })
+
+withMaximum : Float -> SchemaBuilder -> SchemaBuilder
+withMaximum x =
+    updateSchema (\s -> { s | maximum = Just x })

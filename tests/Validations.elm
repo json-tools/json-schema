@@ -19,6 +19,7 @@ import Json.Schema.Builder as JSB
         , withAllOf
         , withAnyOf
         , withOneOf
+        , withMaximum
         )
 import Data.Schema exposing (blankSchema)
 import Validation exposing (validate)
@@ -232,13 +233,13 @@ all =
             [ test "success" <|
                 \() ->
                     buildSchema
-                        |> withContains ( buildSchema |> JSB.update (\s -> { s | maximum = Just 1 }) )
+                        |> withContains ( buildSchema |> withMaximum 1 )
                         |> JSB.validate (Encode.list [ int 10, int 20, int 1 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
-                        |> withContains ( buildSchema |> JSB.update (\s -> { s | maximum = Just 1 }) )
+                        |> withContains ( buildSchema |> withMaximum 1 )
                         |> JSB.validate (Encode.list [ int 10, int 20 ])
                         |> Expect.equal (Err "Array does not contain expected value")
             ]
