@@ -29,9 +29,17 @@ module Json.Schema.Builder
         , withMinimum
         , withExclusiveMaximum
         , withExclusiveMinimum
+        , withMaxLength
+        , withMinLength
+        , withMaxProperties
+        , withMinProperties
+        , withMaxItems
+        , withMinItems
+        , withUniqueItems
         , withPattern
         , withEnum
         , withRequired
+        , withConst
         )
 
 import Set
@@ -292,6 +300,41 @@ withExclusiveMinimum x =
     updateSchema (\s -> { s | exclusiveMinimum = Just x })
 
 
+withMaxLength : Int -> SchemaBuilder -> SchemaBuilder
+withMaxLength x =
+    updateSchema (\s -> { s | maxLength = Just x })
+
+
+withMinLength : Int -> SchemaBuilder -> SchemaBuilder
+withMinLength x =
+    updateSchema (\s -> { s | minLength = Just x })
+
+
+withMaxProperties : Int -> SchemaBuilder -> SchemaBuilder
+withMaxProperties n =
+    updateSchema (\s -> { s | maxProperties = Just n })
+
+
+withMinProperties : Int -> SchemaBuilder -> SchemaBuilder
+withMinProperties n =
+    updateSchema (\s -> { s | minProperties = Just n })
+
+
+withMaxItems : Int -> SchemaBuilder -> SchemaBuilder
+withMaxItems n =
+    updateSchema (\s -> { s | maxItems = Just n })
+
+
+withMinItems : Int -> SchemaBuilder -> SchemaBuilder
+withMinItems n =
+    updateSchema (\s -> { s | minItems = Just n })
+
+
+withUniqueItems : Bool -> SchemaBuilder -> SchemaBuilder
+withUniqueItems b =
+    updateSchema (\s -> { s | uniqueItems = Just b })
+
+
 withPattern : String -> SchemaBuilder -> SchemaBuilder
 withPattern x =
     updateSchema (\s -> { s | pattern = Just x })
@@ -305,3 +348,8 @@ withEnum x =
 withRequired : List String -> SchemaBuilder -> SchemaBuilder
 withRequired x =
     updateSchema (\s -> { s | required = Just x })
+
+
+withConst : Value -> SchemaBuilder -> SchemaBuilder
+withConst v =
+    updateSchema (\s -> { s | const = Just v })

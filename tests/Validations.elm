@@ -27,9 +27,16 @@ import Json.Schema.Builder as JSB
         , withPattern
         , withEnum
         , withRequired
+        , withMaxLength
+        , withMinLength
+        , withMaxProperties
+        , withMinProperties
+        , withMaxItems
+        , withMinItems
+        , withUniqueItems
+        , withConst
+        , validate
         )
-import Data.Schema exposing (blankSchema)
-import Validation exposing (validate)
 import Json.Encode as Encode exposing (int)
 import Test exposing (Test, describe, test)
 import Expect
@@ -115,31 +122,36 @@ all =
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | exclusiveMinimum = Just 2 }
-                        |> validate (Encode.float 2)
+                    buildSchema
+                        |> withExclusiveMinimum 2
+                        |> JSB.validate (Encode.float 2)
                         |> Expect.equal (Err "Value is not above the exclusive minimum of 2")
             ]
         , describe "maxLength"
             [ test "success" <|
                 \() ->
-                    { blankSchema | maxLength = Just 3 }
-                        |> validate (Encode.string "foo")
+                    buildSchema
+                        |> withMaxLength 3
+                        |> JSB.validate (Encode.string "foo")
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | maxLength = Just 2 }
+                    buildSchema
+                        |> withMaxLength 2
                         |> validate (Encode.string "foo")
                         |> Expect.equal (Err "String is longer than expected 2")
             ]
         , describe "minLength"
             [ test "success" <|
                 \() ->
-                    { blankSchema | minLength = Just 3 }
+                    buildSchema
+                        |> withMinLength 3
                         |> validate (Encode.string "foo")
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | minLength = Just 4 }
+                    buildSchema
+                        |> withMinLength 4
                         |> validate (Encode.string "foo")
                         |> Expect.equal (Err "String is shorter than expected 4")
             ]
@@ -224,36 +236,42 @@ all =
         , describe "maxItems"
             [ test "success" <|
                 \() ->
-                    { blankSchema | maxItems = Just 3 }
+                    buildSchema
+                        |> withMaxItems 3
                         |> validate (Encode.list [ int 1, int 2 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | maxItems = Just 2 }
+                    buildSchema
+                        |> withMaxItems 2
                         |> validate (Encode.list [ int 1, int 2, int 3 ])
                         |> Expect.equal (Err "Array has more items than expected (maxItems=2)")
             ]
         , describe "minItems"
             [ test "success" <|
                 \() ->
-                    { blankSchema | minItems = Just 2 }
+                    buildSchema
+                        |> withMinItems 2
                         |> validate (Encode.list [ int 1, int 2, int 3 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | minItems = Just 3 }
+                    buildSchema
+                        |> withMinItems 3
                         |> validate (Encode.list [ int 1, int 2 ])
                         |> Expect.equal (Err "Array has less items than expected (minItems=3)")
             ]
         , describe "uniqueItems"
             [ test "success" <|
                 \() ->
-                    { blankSchema | uniqueItems = Just True }
+                    buildSchema
+                        |> withUniqueItems True
                         |> validate (Encode.list [ int 1, int 2, int 3 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | uniqueItems = Just True }
+                    buildSchema
+                        |> withUniqueItems True
                         |> validate (Encode.list [ int 1, int 1 ])
                         |> Expect.equal (Err "Array has not unique items")
             ]
@@ -274,36 +292,42 @@ all =
         , describe "maxProperties"
             [ test "success" <|
                 \() ->
-                    { blankSchema | maxProperties = Just 3 }
+                    buildSchema
+                        |> withMaxProperties 3
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | maxProperties = Just 1 }
+                    buildSchema
+                        |> withMaxProperties 1
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Err "Object has more properties than expected (maxProperties=1)")
             ]
         , describe "minProperties"
             [ test "success" <|
                 \() ->
-                    { blankSchema | minProperties = Just 1 }
+                    buildSchema  
+                        |> withMinProperties 1
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | minProperties = Just 3 }
+                    buildSchema
+                        |> withMinProperties 3
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Err "Object has less properties than expected (minProperties=3)")
             ]
         , describe "required"
             [ test "success" <|
                 \() ->
-                    { blankSchema | required = Just [ "foo", "bar" ] }
+                    buildSchema
+                        |> withRequired [ "foo", "bar" ]
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | required = Just [ "foo", "bar" ] }
+                    buildSchema
+                        |> withRequired [ "foo", "bar" ]
                         |> validate (Encode.object [ ( "foo", int 1 ) ])
                         |> Expect.equal (Err "Object doesn't have all the required properties")
             ]
@@ -418,24 +442,27 @@ all =
         , describe "enum"
             [ test "success" <|
                 \() ->
-                    { blankSchema | enum = Just [ int 1, int 2 ] }
+                    buildSchema
+                        |> withEnum [ int 1, int 2 ]
                         |> validate (Encode.int 2)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | enum = Just [ int 1, int 2 ] }
+                    buildSchema
+                        |> withEnum [ int 1, int 2 ]
                         |> validate (Encode.int 3)
                         |> Expect.equal (Err "Value is not present in enum")
             ]
         , describe "const"
             [ test "success" <|
                 \() ->
-                    { blankSchema | const = Just (int 1) }
+                    buildSchema
+                        |> withConst (int 1)
                         |> validate (Encode.int 1)
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
-                    { blankSchema | const = Just (int 1) }
+                    buildSchema |> withConst (int 1)
                         |> validate (Encode.int 2)
                         |> Expect.equal (Err "Value doesn't equal const: expected \"1\" but the actual value is \"2\"")
             ]
