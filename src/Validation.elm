@@ -636,8 +636,12 @@ isInt x =
 when propOf decoder fn value schema =
     case propOf schema of
         Just v ->
-            Decode.decodeValue decoder value
-                |> Result.andThen (fn v)
+            case Decode.decodeValue decoder value of
+                Ok decoded ->
+                    fn v decoded
+
+                Err s ->
+                    Ok True
 
         Nothing ->
             Ok True

@@ -134,6 +134,12 @@ all =
                         |> withMaxLength 3
                         |> JSB.validate (Encode.string "foo")
                         |> Expect.equal (Ok True)
+            , test "success for non-strings" <|
+                \() ->
+                    buildSchema
+                        |> withMaxLength 3
+                        |> JSB.validate (Encode.int 10000)
+                        |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
