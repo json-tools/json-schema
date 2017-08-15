@@ -173,48 +173,52 @@ validateItems value schema =
     in
         case schema.items of
             ItemDefinition itemSchema ->
-                Decode.decodeValue (Decode.list Decode.value) value
-                    |> Result.andThen
-                        (List.foldl
-                            (\item res ->
-                                case res of
-                                    Ok index ->
-                                        validateItem item itemSchema index
+                case Decode.decodeValue (Decode.list Decode.value) value of
+                    Ok decoded ->
+                        decoded
+                            |> List.foldl
+                                (\item res ->
+                                    case res of
+                                        Ok index ->
+                                            validateItem item itemSchema index
 
-                                    _ ->
-                                        res
-                            )
-                         <|
-                            Ok 0
-                        )
-                    |> Result.map (\_ -> True)
+                                        _ ->
+                                            res
+                                )
+                                (Ok 0)
+                            |> Result.map (\_ -> True)
+
+                    Err _ ->
+                        Ok True
 
             ArrayOfItems listItemSchemas ->
-                Decode.decodeValue (Decode.list Decode.value) value
-                    |> Result.andThen
-                        (List.foldl
-                            (\item res ->
-                                case res of
-                                    Ok index ->
-                                        case List.drop index listItemSchemas |> List.head of
-                                            Just itemSchema ->
-                                                validateItem item itemSchema index
+                case Decode.decodeValue (Decode.list Decode.value) value of
+                    Ok decoded ->
+                        decoded
+                            |> List.foldl
+                                (\item res ->
+                                    case res of
+                                        Ok index ->
+                                            case List.drop index listItemSchemas |> List.head of
+                                                Just itemSchema ->
+                                                    validateItem item itemSchema index
 
-                                            Nothing ->
-                                                case schema.additionalItems of
-                                                    SubSchema itemSchema ->
-                                                        validateItem item itemSchema index
+                                                Nothing ->
+                                                    case schema.additionalItems of
+                                                        SubSchema itemSchema ->
+                                                            validateItem item itemSchema index
 
-                                                    NoSchema ->
-                                                        Ok (index + 1)
+                                                        NoSchema ->
+                                                            Ok (index + 1)
 
-                                    _ ->
-                                        res
-                            )
-                         <|
-                            Ok 0
-                        )
-                    |> Result.map (\_ -> True)
+                                        _ ->
+                                            res
+                                )
+                                (Ok 0)
+                            |> Result.map (\_ -> True)
+
+                    Err _ ->
+                        Ok True
 
             _ ->
                 Ok True
@@ -422,9 +426,12 @@ validateDependencies v s =
         if List.isEmpty s.dependencies then
             Ok True
         else
-            v
-                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
-                |> Result.andThen validateDep
+            case Decode.decodeValue (Decode.keyValuePairs Decode.value) v of
+                Ok v ->
+                    validateDep v
+
+                Err _ ->
+                    Ok True
 
 
 validatePropertyNames : Value -> Data.Schema.Schema -> Result String Bool
@@ -650,8 +657,12 @@ when propOf decoder fn value schema =
 whenSubschema propOf decoder fn value schema =
     case propOf schema of
         SubSchema v ->
-            Decode.decodeValue decoder value
-                |> Result.andThen (fn v)
+            case Decode.decodeValue decoder value of
+                Ok decoded ->
+                    fn v decoded
+
+                Err s ->
+                    Ok True
 
         NoSchema ->
             Ok True
