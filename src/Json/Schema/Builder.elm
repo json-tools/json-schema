@@ -23,6 +23,7 @@ module Json.Schema.Builder
         , withAnyOf
         , withOneOf
         -- simple setters
+        , withTitle
         , withMultipleOf
         , withMaximum
         , withMinimum
@@ -30,6 +31,7 @@ module Json.Schema.Builder
         , withExclusiveMinimum
         , withPattern
         , withEnum
+        , withRequired
         )
 
 import Set
@@ -225,10 +227,17 @@ withAdditionalProperties =
     updateWithSubSchema (\sub s -> { s | additionalProperties = sub })
 
 
+withSchemaDependency : String -> SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withSchemaDependency name sd =
-    updateSchema (\schema -> { schema | dependencies = ( name, PropSchema sd ) :: schema.dependencies })
+    case sd |> toSchema of
+        Ok depSchema ->
+            updateSchema (\s -> { s | dependencies = s.dependencies ++ [ ( name, PropSchema depSchema ) ] })
+
+        Err s ->
+            appendError s
 
 
+withPropNamesDependency : String -> List String -> SchemaBuilder -> SchemaBuilder
 withPropNamesDependency name pn =
     updateSchema (\schema -> { schema | dependencies = ( name, ArrayPropNames pn ) :: schema.dependencies })
 
@@ -248,9 +257,14 @@ withAnyOf =
     updateWithListOfSchemas (\anyOf s -> { s | anyOf = anyOf })
 
 
-withOneOf     : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withOneOf : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withOneOf =
     updateWithListOfSchemas (\oneOf s -> { s | oneOf = oneOf })
+
+
+withTitle : String -> SchemaBuilder -> SchemaBuilder
+withTitle x =
+    updateSchema (\s -> { s | title = Just x })
 
 
 withMultipleOf : Float -> SchemaBuilder -> SchemaBuilder
@@ -286,3 +300,8 @@ withPattern x =
 withEnum : List Value -> SchemaBuilder -> SchemaBuilder
 withEnum x =
     updateSchema (\s -> { s | enum = Just x })
+
+
+withRequired : List String -> SchemaBuilder -> SchemaBuilder
+withRequired x =
+    updateSchema (\s -> { s | required = Just x })

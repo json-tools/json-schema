@@ -26,6 +26,7 @@ import Json.Schema.Builder as JSB
         , withExclusiveMinimum
         , withPattern
         , withEnum
+        , withRequired
         )
 import Data.Schema exposing (blankSchema)
 import Validation exposing (validate)
@@ -381,7 +382,7 @@ all =
                     buildSchema
                         |> withSchemaDependency
                             "foo"
-                            { blankSchema | required = Just [ "bar" ] }
+                            ( buildSchema |> withRequired [ "bar" ] )
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
             , test "failure when dependency is a schema" <|
@@ -389,7 +390,7 @@ all =
                     buildSchema
                         |> withSchemaDependency
                             "foo"
-                            { blankSchema | required = Just [ "bar" ] }
+                            ( buildSchema |> withRequired [ "bar" ] )
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ) ])
                         |> Expect.equal (Err "Object doesn't have all the required properties")
               --|> Expect.equal (Err "Required property 'bar' is missing")

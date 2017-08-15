@@ -23,6 +23,7 @@ import Json.Schema.Builder
         , withAllOf
         , withAnyOf
         , withOneOf
+        , withTitle
         )
 import Data.Schema as Schema exposing (Schema, decoder, blankSchema)
 import Expect
@@ -104,9 +105,9 @@ all =
         , test "title=smth" <|
             \() ->
                 [ ( "title", Encode.string "smth" ) ]
-                    |> decodeSchema
-                    |> Expect.equal
-                        (Ok { blankSchema | title = Just "smth" })
+                    |> decodesInto
+                        (buildSchema
+                            |> withTitle "smth")
         , test "definitions={foo=blankSchema}" <|
             \() ->
                 [ ( "definitions", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
@@ -168,7 +169,7 @@ all =
                 [ ( "dependencies", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withSchemaDependency "foo" blankSchema
+                            |> withSchemaDependency "foo" buildSchema
                         )
         , test "dependencies={foo=[bar]}" <|
             \() ->
