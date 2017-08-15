@@ -2,7 +2,6 @@ module Json.Schema.Builder
     exposing
         ( SchemaBuilder(SchemaBuilder)
         , buildSchema
-        , updateSchema
         , toSchema
         , validate
         , withType
@@ -41,6 +40,58 @@ module Json.Schema.Builder
         , withRequired
         , withConst
         )
+
+{-| Convenience API to build valid JSON schema from your elm code
+
+# Definition
+@docs SchemaBuilder
+
+# Schema builder creation
+@docs buildSchema
+
+# Building up schema
+@docs
+    withType,
+    withNullableType,
+    withUnionType,
+    withContains,
+    withDefinitions,
+    withItems,
+    withItem,
+    withAdditionalItems,
+    withProperties,
+    withPatternProperties,
+    withAdditionalProperties,
+    withSchemaDependency,
+    withPropNamesDependency,
+    withPropertyNames,
+    withAllOf,
+    withAnyOf,
+    withOneOf,
+    withTitle,
+    withMultipleOf,
+    withMaximum,
+    withMinimum,
+    withExclusiveMaximum,
+    withExclusiveMinimum,
+    withMaxLength,
+    withMinLength,
+    withMaxProperties,
+    withMinProperties,
+    withMaxItems,
+    withMinItems,
+    withUniqueItems,
+    withPattern,
+    withEnum,
+    withRequired,
+    withConst
+
+
+# Validation
+@docs validate
+
+-}
+
 
 import Set
 import Util exposing (foldResults)

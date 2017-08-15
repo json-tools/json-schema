@@ -7,7 +7,8 @@
         "./src"
     ],
     "exposed-modules": [
-        "Json.Schema"
+        "Json.Schema",
+        "Json.Schema.Builder"
     ],
     "dependencies": {
         "NoRedInk/elm-decode-pipeline": "3.0.0 <= v < 4.0.0",
