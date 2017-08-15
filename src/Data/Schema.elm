@@ -2,7 +2,6 @@ module Data.Schema
     exposing
         ( Schema
         , Schemata(Schemata)
-        , Meta
         , decoder
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
@@ -322,23 +321,6 @@ singleTypeDecoder s =
 
         Err msg ->
             fail msg
-
-
-type alias Meta =
-    { title : Maybe String
-    , description : Maybe String
-    , default : Maybe Value
-    , examples : Maybe (List Value)
-    }
-
-
-metaDecoder : Decoder Meta
-metaDecoder =
-    Decode.map4 Meta
-        (maybe <| field "title" string)
-        (maybe <| field "description" string)
-        (maybe <| field "default" value)
-        (maybe <| field "examples" <| list value)
 
 
 schemataDecoder : Decoder Schemata
