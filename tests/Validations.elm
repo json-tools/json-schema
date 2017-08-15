@@ -160,13 +160,13 @@ all =
             [ test "success" <|
                 \() ->
                     buildSchema
-                        |> withItem { blankSchema | maximum = Just 10 }
+                        |> withItem ( buildSchema |> withMaximum 10 )
                         |> JSB.validate (Encode.list [ int 1 ])
                         |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
-                        |> withItem { blankSchema | maximum = Just 10 }
+                        |> withItem ( buildSchema |> withMaximum 10 )
                         |> JSB.validate (Encode.list [ int 1, int 11 ])
                         |> Expect.equal (Err "Item at index 1: Value is above the maximum of 10")
             ]
@@ -175,8 +175,10 @@ all =
                 \() ->
                     buildSchema
                         |> withItems
-                            [ { blankSchema | maximum = Just 10 }
-                            , { blankSchema | maximum = Just 100 }
+                            [ buildSchema
+                                |> withMaximum 10
+                            , buildSchema
+                                |> withMaximum 100
                             ]
                         |> JSB.validate (Encode.list [ int 1, int 20 ])
                         |> Expect.equal (Ok True)
@@ -184,8 +186,10 @@ all =
                 \() ->
                     buildSchema
                         |> withItems
-                            [ { blankSchema | maximum = Just 11 }
-                            , { blankSchema | maximum = Just 100 }
+                            [ buildSchema
+                                |> withMaximum 11
+                            , buildSchema
+                                |> withMaximum 100
                             ]
                         |> JSB.validate (Encode.list [ int 100, int 2 ])
                         |> Expect.equal (Err "Item at index 0: Value is above the maximum of 11")
@@ -195,8 +199,10 @@ all =
                 \() ->
                     buildSchema
                         |> withItems
-                            [ { blankSchema | maximum = Just 10 }
-                            , { blankSchema | maximum = Just 100 }
+                            [ buildSchema
+                                |> withMaximum 10
+                            , buildSchema
+                                |> withMaximum 100
                             ]
                         |> withAdditionalItems ( buildSchema |> withMaximum 1 )
                         |> JSB.validate (Encode.list [ int 1, int 20, int 1 ])
@@ -205,8 +211,10 @@ all =
                 \() ->
                     buildSchema
                         |> withItems
-                            [ { blankSchema | maximum = Just 11 }
-                            , { blankSchema | maximum = Just 100 }
+                            [ buildSchema
+                                |> withMaximum 11
+                            , buildSchema
+                                |> withMaximum 100
                             ]
                         |> withAdditionalItems ( buildSchema |> withMaximum 1 )
                         |> JSB.validate (Encode.list [ int 2, int 2, int 100 ])

@@ -185,12 +185,24 @@ withDefinitions =
     updateWithSchemata (\definitions s -> { s | definitions = definitions } )
 
 
-withItems items =
-    updateSchema (\s -> { s | items = ArrayOfItems items } )
+withItems : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+withItems listSchemas =
+    case listSchemas |> toListOfSchemas of
+        Ok items ->
+            updateSchema (\s -> { s | items = ArrayOfItems items } )
+
+        Err s ->
+            appendError s
 
 
+withItem : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withItem item =
-    updateSchema (\s -> { s | items = ItemDefinition item } )
+    case item |> toSchema of
+        Ok itemSchema ->
+            updateSchema (\s -> { s | items = ItemDefinition itemSchema } )
+
+        Err s ->
+            appendError s
 
 
 withAdditionalItems : SchemaBuilder -> SchemaBuilder -> SchemaBuilder

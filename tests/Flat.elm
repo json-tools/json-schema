@@ -119,14 +119,14 @@ all =
                 [ ( "items", Encode.list <| [ Encode.object [] ] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withItems [ blankSchema ]
+                            |> withItems [ buildSchema ]
                         )
         , test "items=blankSchema" <|
             \() ->
                 [ ( "items", Encode.object [] ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withItem blankSchema
+                            |> withItem buildSchema
                         )
         , test "additionalItems=blankSchema" <|
             \() ->
