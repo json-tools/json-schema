@@ -5,6 +5,7 @@ import Json.Encode as Encode exposing (int, float, string)
 import Dict
 import Regex
 import List.Extra
+import Util exposing (isInt)
 import Data.Schema
     exposing
         ( Items(ItemDefinition, ArrayOfItems, NoItems)
@@ -633,11 +634,6 @@ isUniqueItems list =
             |> List.Extra.unique
             |> List.length
             |> (==) originalLength
-
-
-isInt : Float -> Bool
-isInt x =
-    x == (round >> toFloat) x
 
 
 when propOf decoder fn value schema =

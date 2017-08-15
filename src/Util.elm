@@ -1,4 +1,4 @@
-module Util exposing (foldResults, resultToDecoder)
+module Util exposing (foldResults, resultToDecoder, isInt)
 
 import Json.Decode exposing (Decoder, succeed, fail)
 
@@ -19,5 +19,10 @@ resultToDecoder res =
 
         Err e ->
             fail e
+
+
+isInt : Float -> Bool
+isInt x =
+    x == (round >> toFloat) x
 
 

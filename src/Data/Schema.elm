@@ -12,7 +12,7 @@ module Data.Schema
         , Dependency(ArrayPropNames, PropSchema)
         )
 
-import Util exposing (resultToDecoder, foldResults)
+import Util exposing (resultToDecoder, foldResults, isInt)
 import Json.Decode as Decode
     exposing
         ( Value
@@ -239,12 +239,13 @@ dependenciesDecoder =
 nonNegativeInt : Decoder Int
 nonNegativeInt =
     int
-        |> andThen (\x -> if x >= 0 then succeed x else fail "Expected positive int")
+        |> andThen (\x -> if x >= 0 && isInt x then succeed x else fail "Expected non-negative int")
 
 
 subschemaDecoder : Decoder SubSchema
 subschemaDecoder =
     Decode.map SubSchema decoder
+
 
 type Type
     = AnyType
