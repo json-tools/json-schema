@@ -22,7 +22,7 @@ module Json.Schema.Builder
         , withAllOf
         , withAnyOf
         , withOneOf
-        -- simple setters
+          -- simple setters
         , withTitle
         , withMultipleOf
         , withMaximum
@@ -76,28 +76,34 @@ toSchema (SchemaBuilder sb) =
         Err <| String.join "," sb.errors
 
 
-toSchemata : List (String, SchemaBuilder) -> Result String (List (String, Schema))
+toSchemata : List ( String, SchemaBuilder ) -> Result String (List ( String, Schema ))
 toSchemata =
-    List.foldl (\(key, builder) res ->
-        res
-            |> Result.andThen (\l ->
-                builder
-                    |> toSchema
-                    |> Result.map (\s -> l ++ [ (key, s) ])
-            )
-    ) (Ok [])
+    List.foldl
+        (\( key, builder ) res ->
+            res
+                |> Result.andThen
+                    (\l ->
+                        builder
+                            |> toSchema
+                            |> Result.map (\s -> l ++ [ ( key, s ) ])
+                    )
+        )
+        (Ok [])
 
 
 toListOfSchemas : List SchemaBuilder -> Result String (List Schema)
 toListOfSchemas =
-    List.foldl (\builder res ->
-        res
-            |> Result.andThen (\l ->
-                builder
-                    |> toSchema
-                    |> Result.map (\s -> l ++ [ s ])
-            )
-    ) (Ok [])
+    List.foldl
+        (\builder res ->
+            res
+                |> Result.andThen
+                    (\l ->
+                        builder
+                            |> toSchema
+                            |> Result.map (\s -> l ++ [ s ])
+                    )
+        )
+        (Ok [])
 
 
 validate val sb =
@@ -114,13 +120,13 @@ withType t sb =
         |> stringToType
         |> Result.map (\x -> updateSchema (\s -> { s | type_ = SingleType x }) sb)
         |> (\r ->
-            case r of
-                Ok x ->
-                    x
+                case r of
+                    Ok x ->
+                        x
 
-                Err s ->
-                    appendError s sb
-            )
+                    Err s ->
+                        appendError s sb
+           )
 
 
 updateSchema fn (SchemaBuilder sb) =
@@ -150,13 +156,14 @@ withUnionType listTypes sb =
         |> foldResults
         |> Result.map (\s -> updateSchema (\x -> { x | type_ = UnionType s }) sb)
         |> (\x ->
-            case x of
-                Err s ->
-                    appendError s sb
+                case x of
+                    Err s ->
+                        appendError s sb
 
-                Ok x ->
-                    x
+                    Ok x ->
+                        x
            )
+
 
 updateWithSubSchema fn subSchemaBuilder =
     case subSchemaBuilder |> toSchema of
@@ -187,19 +194,19 @@ updateWithListOfSchemas fn schemasBuilder =
 
 withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withContains =
-    updateWithSubSchema (\sub s -> { s | contains = sub } )
+    updateWithSubSchema (\sub s -> { s | contains = sub })
 
 
-withDefinitions : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
+withDefinitions : List ( String, SchemaBuilder ) -> SchemaBuilder -> SchemaBuilder
 withDefinitions =
-    updateWithSchemata (\definitions s -> { s | definitions = definitions } )
+    updateWithSchemata (\definitions s -> { s | definitions = definitions })
 
 
 withItems : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withItems listSchemas =
     case listSchemas |> toListOfSchemas of
         Ok items ->
-            updateSchema (\s -> { s | items = ArrayOfItems items } )
+            updateSchema (\s -> { s | items = ArrayOfItems items })
 
         Err s ->
             appendError s
@@ -209,7 +216,7 @@ withItem : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withItem item =
     case item |> toSchema of
         Ok itemSchema ->
-            updateSchema (\s -> { s | items = ItemDefinition itemSchema } )
+            updateSchema (\s -> { s | items = ItemDefinition itemSchema })
 
         Err s ->
             appendError s
@@ -220,12 +227,12 @@ withAdditionalItems =
     updateWithSubSchema (\sub s -> { s | additionalItems = sub })
 
 
-withProperties : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
+withProperties : List ( String, SchemaBuilder ) -> SchemaBuilder -> SchemaBuilder
 withProperties =
     updateWithSchemata (\properties s -> { s | properties = properties })
 
 
-withPatternProperties : List (String, SchemaBuilder) -> SchemaBuilder -> SchemaBuilder
+withPatternProperties : List ( String, SchemaBuilder ) -> SchemaBuilder -> SchemaBuilder
 withPatternProperties =
     updateWithSchemata (\patternProperties s -> { s | patternProperties = patternProperties })
 

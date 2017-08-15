@@ -25,7 +25,7 @@ import Json.Schema.Builder
         , withOneOf
         , withTitle
         )
-import Data.Schema as Schema exposing (Schema, decoder, blankSchema)
+import Data.Schema as Schema exposing (Schema, decoder)
 import Expect
 import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (decodeValue)
@@ -107,7 +107,8 @@ all =
                 [ ( "title", Encode.string "smth" ) ]
                     |> decodesInto
                         (buildSchema
-                            |> withTitle "smth")
+                            |> withTitle "smth"
+                        )
         , test "definitions={foo=blankSchema}" <|
             \() ->
                 [ ( "definitions", Encode.object [ ( "foo", Encode.object [] ) ] ) ]
@@ -184,7 +185,6 @@ all =
                     |> decodesInto
                         (buildSchema
                             |> withPropertyNames (buildSchema |> withType "string")
-
                         )
         , test "enum=[]" <|
             \() ->
@@ -240,11 +240,3 @@ decodesInto sb list =
         |> Encode.object
         |> decodeValue Schema.decoder
         |> Expect.equal (sb |> toSchema)
-
-
-stringSchema : Schema
-stringSchema =
-    buildSchema
-        |> withType "string"
-        |> toSchema
-        |> Result.withDefault blankSchema

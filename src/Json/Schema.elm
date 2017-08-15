@@ -117,6 +117,9 @@ fromValue val =
 decodeSchema : Decoder Schema
 decodeSchema =
     Data.Schema.decoder
+
+
+
 --    succeed Schema
 --        |: (withDefault "" <| field "type" string)
 --        |: (withDefault Set.empty <| field "required" (DecodeExtra.set string))
@@ -189,7 +192,6 @@ convert rootSchema =
                                     Err s
                         )
                     |> Maybe.withDefault (Ok node)
-
 
         updateArrayItemDef node =
             case node.items of
@@ -449,7 +451,7 @@ defaultFor schema =
 
         objectFromRequiredProps =
             schema.required
-                |> Maybe.map(List.map defaultChildProp)
+                |> Maybe.map (List.map defaultChildProp)
 
         defaultDefault =
             case schema.type_ of
@@ -612,5 +614,3 @@ registerProperty name prop schema =
                 |> Maybe.map Schemata
     in
         { schema | properties = upgrade schema.properties }
-
-
