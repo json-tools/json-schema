@@ -581,9 +581,14 @@ withDefaultFor schema =
 
 {-| Iterate through properties
 -}
-mapProperties : Properties -> (( String, Schema ) -> a) -> List a
-mapProperties (Properties props) fn =
-    List.map fn props
+mapProperties : Maybe Schemata -> (( String, Schema ) -> a) -> List a
+mapProperties props fn =
+    case props of
+        Just (Schemata props) ->
+            List.map fn props
+
+        Nothing ->
+            []
 
 
 {-| Register property
