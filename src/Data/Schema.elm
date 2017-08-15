@@ -14,8 +14,6 @@ module Data.Schema
         )
 
 import Util exposing (resultToDecoder, foldResults)
-import Data.NumberValidations as NumberValidations exposing (NumberValidations)
-import Data.StringValidations as StringValidations exposing (StringValidations)
 import Json.Decode as Decode
     exposing
         ( Value
