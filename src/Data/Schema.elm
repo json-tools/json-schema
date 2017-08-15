@@ -54,6 +54,7 @@ type alias Schema =
     , maxLength : Maybe Int
     , minLength : Maybe Int
     , pattern : Maybe String
+    , format : Maybe String
     -- array validations
     , items : Items
     , additionalItems : SubSchema
@@ -98,6 +99,7 @@ blankSchema =
     , maxLength = Nothing
     , minLength = Nothing
     , pattern = Nothing
+    , format = Nothing
     , items = NoItems
     , additionalItems = NoSchema
     , maxItems = Nothing
@@ -168,6 +170,7 @@ decoder =
             |> optional "maxLength" (nullable nonNegativeInt) Nothing
             |> optional "minLength" (nullable nonNegativeInt) Nothing
             |> optional "pattern" (nullable string) Nothing
+            |> optional "format" (nullable string) Nothing
             -- array
             |> optional "items" (lazy (\_ -> itemsDecoder)) NoItems
             |> optional "additionalItems" (lazy (\_ -> subschemaDecoder)) NoSchema

@@ -82,6 +82,7 @@ module Json.Schema.Builder
     withMinItems,
     withUniqueItems,
     withPattern,
+    withFormat,
     withEnum,
     withRequired,
     withConst
@@ -396,6 +397,11 @@ withUniqueItems b =
 withPattern : String -> SchemaBuilder -> SchemaBuilder
 withPattern x =
     updateSchema (\s -> { s | pattern = Just x })
+
+
+withFormat : String -> SchemaBuilder -> SchemaBuilder
+withFormat x =
+    updateSchema (\s -> { s | format = Just x })
 
 
 withEnum : List Value -> SchemaBuilder -> SchemaBuilder
