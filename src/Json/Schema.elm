@@ -108,10 +108,7 @@ fromString str =
 fromValue : Value -> Result String Data.Schema.Schema
 fromValue val =
     Decode.decodeValue Data.Schema.decoder val
-
-
-
---|> Result.andThen convert
+        |> Result.andThen convert
 
 
 decodeSchema : Decoder Schema

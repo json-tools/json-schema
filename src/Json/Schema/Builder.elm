@@ -183,14 +183,7 @@ validate val sb =
 -- TYPE
 
 
-{-| Set the `type` property of JSON schema to a specific type, accepts strings:
-  - null
-  - integer
-  - number
-  - string
-  - boolean
-  - object
-  - array
+{-| Set the `type` property of JSON schema to a specific type, accepts strings
 
     buildSchema
         |> withType "boolean"
@@ -209,14 +202,7 @@ withType t sb =
                         appendError s sb
            )
 
-{-| Set the `type` property of JSON schema to a nullable type, accepts strings:
-  - null
-  - integer
-  - number
-  - string
-  - boolean
-  - object
-  - array
+{-| Set the `type` property of JSON schema to a nullable type.
 
     buildSchema
         |> withNullableType "string"

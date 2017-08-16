@@ -154,8 +154,8 @@ decoder =
             |> optional "type"
                 (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                 AnyType
-            |> optional "$ref" (nullable string) Nothing
             |> optional "id" (nullable string) Nothing
+            |> optional "$ref" (nullable string) Nothing
             -- meta
             |> optional "title" (nullable string) Nothing
             |> optional "description" (nullable string) Nothing
