@@ -2,17 +2,18 @@ module Data.Schema
     exposing
         ( Schema
         , Schemata(Schemata)
-        , decoder
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , stringToType
         , blankSchema
+        , decoder
         , SubSchema(SubSchema, NoSchema)
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
         )
 
 import Util exposing (resultToDecoder, foldResults, isInt)
+import Json.Decode.Pipeline exposing (decode, optional)
 import Json.Decode as Decode
     exposing
         ( Value
@@ -31,11 +32,11 @@ import Json.Decode as Decode
         , list
         , value
         )
-import Json.Decode.Pipeline exposing (decode, optional)
 
 
 type alias Schema =
     { type_ : Type
+    , id : Maybe String
     , ref : Maybe String
     -- meta
     , title : Maybe String
@@ -84,6 +85,7 @@ type SubSchema = SubSchema Schema | NoSchema
 blankSchema : Schema
 blankSchema =
     { type_ = AnyType
+    , id = Nothing
     , ref = Nothing
     , title = Nothing
     , description = Nothing
@@ -153,6 +155,7 @@ decoder =
                 (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                 AnyType
             |> optional "$ref" (nullable string) Nothing
+            |> optional "id" (nullable string) Nothing
             -- meta
             |> optional "title" (nullable string) Nothing
             |> optional "description" (nullable string) Nothing
