@@ -1,9 +1,8 @@
-# JSON-Schema for elm
+# JSON Schema for elm
 
 [![Build Status](https://travis-ci.org/1602/elm-json-schema.svg?branch=master)](https://travis-ci.org/1602/elm-json-schema)
 
 > JSON Schema is a vocabulary that allows you to annotate and validate JSON documents. (http://json-schema.org/)
-
 
 This code is experimental, it doesn't cover json schema spec in full (yet), just allows to parse minimal subset of it in order to implement very basic proof of concept of "type as value" in elm.
 
