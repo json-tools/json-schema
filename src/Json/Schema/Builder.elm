@@ -547,14 +547,13 @@ type alias SchemataBuilder =
 toSchemata : SchemataBuilder -> Result String (List ( String, Schema ))
 toSchemata =
     List.foldl
-        (\( key, builder ) res ->
-            res
-                |> Result.andThen
-                    (\l ->
-                        builder
-                            |> toSchema
-                            |> Result.map (\s -> l ++ [ ( key, s ) ])
-                    )
+        (\( key, builder ) ->
+            Result.andThen
+                (\schemas ->
+                    builder
+                        |> toSchema
+                        |> Result.map (\schema -> schemas ++ [ ( key, schema ) ])
+                )
         )
         (Ok [])
 
@@ -562,16 +561,16 @@ toSchemata =
 toListOfSchemas : List SchemaBuilder -> Result String (List Schema)
 toListOfSchemas =
     List.foldl
-        (\builder res ->
-            res
-                |> Result.andThen
-                    (\l ->
-                        builder
-                            |> toSchema
-                            |> Result.map (\s -> l ++ [ s ])
-                    )
+        (\builder ->
+            Result.andThen
+                (\schemas ->
+                    builder
+                        |> toSchema
+                        |> Result.map (\schema -> schemas ++ [ schema ])
+                 )
         )
         (Ok [])
+
 
 updateWithSubSchema : (SubSchema -> (Schema -> Schema)) -> SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 updateWithSubSchema fn subSchemaBuilder =
