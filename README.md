@@ -24,12 +24,14 @@ Instead of writing validation code as part of your frontend app you could descri
 
 ### ✋ decoding json values into elm types
 
-experimental. not sure if needed.
+Some basic decoding of JSON values into elm records (no union types and fluffy structures), helpers to create JSON Schema by data, and elm code by JSON Schema.
 
-## Current status
+## Current status of this project
 
 - [x] decode draft 6 of json-schema (without Boolean schema, yet)
 - [x] validate all the things
 - [x] schema builder api
 - [ ] documentation
 - [x] forms builder api (legacy, will be updated soon-ish)
+- [ ] demo of form and docs generator
+- [ ] demo of decoding and schema inferring
