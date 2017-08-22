@@ -10,19 +10,19 @@ The end goal of this project is to cover json schema draft 6 spec in full, if yo
 
 ## When to use this library?
 
-### form generation
+### ✍ form generation
 
 Sometimes it is not possible by design to come up with some static type definition, for example if you are building REST API test console, where each endpoint requires its own data. The simplest solution would be to allow user to enter data as json string, decode it into value to ensure that json is valid and send to a server as value, without looking inside this value to make sure it makes sense. But what if we want to enter data using form, perform some basic validation before sending it to a server? Then we have a valid use case for this library.
 
-### documentation generation
+### ☝ documentation generation
 
 JSON Schema allows you to specify some meta data like title, description, examples, definitions and also some validation keywords like type, format, enum, and all sub-schemas (e.g. properties, items) which is a useful source of information for content generation if you want to document data structures.
 
-### validation
+### ✌ validation
 
 Instead of writing validation code as part of your frontend app you could describe it in a declarative way as JSON schema, so that you can focus on what your are validating rather than how. Combined with form generation this is a great time-saver while building interfaces. Nice side-effect of this approach is that it is easier to produce consistent UI by design (it is just quite difficult to do something custom and surprising).
 
-### decoding json values into elm types
+### ✋ decoding json values into elm types
 
 experimental. not sure if needed.
 
