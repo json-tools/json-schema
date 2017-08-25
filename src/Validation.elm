@@ -50,6 +50,7 @@ validate value schema =
     , validateAllOf
     , validateAnyOf
     , validateOneOf
+    , validateNot
     ]
         |> failWithFirstError value schema
 
@@ -607,6 +608,18 @@ validateOneOf =
                         Err "None of the schemas in anyOf allow this value"
                     len ->
                         Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ (toString len) ++ " validations succeeded"
+        )
+
+
+validateNot : Value -> Data.Schema.Schema -> Result String Bool
+validateNot =
+    whenSubschema .not
+        Decode.value
+        (\notSchema val ->
+            if validate val notSchema  == (Ok True) then
+                Err "Successful validation for the negative schema ('not' keyword)"
+            else
+                Ok True
         )
 
 

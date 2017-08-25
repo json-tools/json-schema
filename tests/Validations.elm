@@ -38,6 +38,9 @@ import Json.Schema.Builder as JSB
         , validate
         )
 import Json.Encode as Encode exposing (int)
+import Json.Decode as Decode exposing (decodeValue)
+import Validation
+import Data.Schema
 import Test exposing (Test, describe, test)
 import Expect
 
@@ -642,5 +645,19 @@ all =
                             ]
                         |> JSB.validate (Encode.int 1)
                         |> Expect.equal (Err "oneOf expects value to succeed validation against exactly one schema but 2 validations succeeded")
+            ]
+        , describe "boolean schema"
+            [ test "true always validates any value" <|
+                \() ->
+                    Encode.bool True
+                        |> decodeValue Data.Schema.decoder
+                        |> Result.andThen (Validation.validate <| int 1)
+                        |> Expect.equal (Ok True)
+            , test "false always fails validation" <|
+                \() ->
+                    Encode.bool False
+                        |> decodeValue Data.Schema.decoder
+                        |> Result.andThen (Validation.validate <| int 1)
+                        |> Expect.equal (Err "Successful validation for the negative schema ('not' keyword)")
             ]
         ]

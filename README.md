@@ -28,7 +28,7 @@ Some basic decoding of JSON values into elm records (no union types and fluffy s
 
 ## Current status of this project
 
-- [x] decode draft 6 of json-schema (without Boolean schema, yet)
+- [x] decode draft 6 of json-schema
 - [x] validate all the things
 - [x] schema builder api
 - [ ] documentation

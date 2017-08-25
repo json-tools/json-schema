@@ -149,51 +149,67 @@ decoder =
             string
                 |> list
                 |> andThen multipleTypesDecoder
+
+        booleanSchemaDecoder =
+            Decode.bool
+                |> Decode.andThen (\b ->
+                    if b then
+                        succeed blankSchema
+                    else
+                        succeed { blankSchema | not = SubSchema blankSchema }
+                )
+
+        objectSchemaDecoder =
+            decode Schema
+                |> optional "type"
+                    (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
+                    AnyType
+                |> optional "id" (nullable string) Nothing
+                |> optional "$ref" (nullable string) Nothing
+                -- meta
+                |> optional "title" (nullable string) Nothing
+                |> optional "description" (nullable string) Nothing
+                |> optional "default" (nullable value) Nothing
+                |> optional "examples" (nullable <| list value) Nothing
+                |> optional "definitions" (nullable <| lazy <| \_ -> schemataDecoder) Nothing
+                -- number
+                |> optional "multipleOf" (nullable float) Nothing
+                |> optional "maximum" (nullable float) Nothing
+                |> optional "exclusiveMaximum" (nullable float) Nothing
+                |> optional "minimum" (nullable float) Nothing
+                |> optional "exclusiveMinimum" (nullable float) Nothing
+                -- string
+                |> optional "maxLength" (nullable nonNegativeInt) Nothing
+                |> optional "minLength" (nullable nonNegativeInt) Nothing
+                |> optional "pattern" (nullable string) Nothing
+                |> optional "format" (nullable string) Nothing
+                -- array
+                |> optional "items" (lazy (\_ -> itemsDecoder)) NoItems
+                |> optional "additionalItems" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "maxItems" (nullable nonNegativeInt) Nothing
+                |> optional "minItems" (nullable nonNegativeInt) Nothing
+                |> optional "uniqueItems" (nullable bool) Nothing
+                |> optional "contains" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "maxProperties" (nullable nonNegativeInt) Nothing
+                |> optional "minProperties" (nullable nonNegativeInt) Nothing
+                |> optional "required" (nullable (list string)) Nothing
+                |> optional "properties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
+                |> optional "patternProperties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
+                |> optional "additionalProperties" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "dependencies" (lazy (\_ -> dependenciesDecoder)) []
+                |> optional "propertyNames" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "enum" (nullable nonEmptyUniqueArrayOfValuesDecoder) Nothing
+                |> optional "const" (nullable value) Nothing
+                |> optional "allOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
+                |> optional "anyOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
+                |> optional "oneOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
+                |> optional "not" (lazy (\_ -> subschemaDecoder)) NoSchema
     in
-        decode Schema
-            |> optional "type"
-                (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
-                AnyType
-            |> optional "id" (nullable string) Nothing
-            |> optional "$ref" (nullable string) Nothing
-            -- meta
-            |> optional "title" (nullable string) Nothing
-            |> optional "description" (nullable string) Nothing
-            |> optional "default" (nullable value) Nothing
-            |> optional "examples" (nullable <| list value) Nothing
-            |> optional "definitions" (nullable <| lazy <| \_ -> schemataDecoder) Nothing
-            -- number
-            |> optional "multipleOf" (nullable float) Nothing
-            |> optional "maximum" (nullable float) Nothing
-            |> optional "exclusiveMaximum" (nullable float) Nothing
-            |> optional "minimum" (nullable float) Nothing
-            |> optional "exclusiveMinimum" (nullable float) Nothing
-            -- string
-            |> optional "maxLength" (nullable nonNegativeInt) Nothing
-            |> optional "minLength" (nullable nonNegativeInt) Nothing
-            |> optional "pattern" (nullable string) Nothing
-            |> optional "format" (nullable string) Nothing
-            -- array
-            |> optional "items" (lazy (\_ -> itemsDecoder)) NoItems
-            |> optional "additionalItems" (lazy (\_ -> subschemaDecoder)) NoSchema
-            |> optional "maxItems" (nullable nonNegativeInt) Nothing
-            |> optional "minItems" (nullable nonNegativeInt) Nothing
-            |> optional "uniqueItems" (nullable bool) Nothing
-            |> optional "contains" (lazy (\_ -> subschemaDecoder)) NoSchema
-            |> optional "maxProperties" (nullable nonNegativeInt) Nothing
-            |> optional "minProperties" (nullable nonNegativeInt) Nothing
-            |> optional "required" (nullable (list string)) Nothing
-            |> optional "properties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
-            |> optional "patternProperties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
-            |> optional "additionalProperties" (lazy (\_ -> subschemaDecoder)) NoSchema
-            |> optional "dependencies" (lazy (\_ -> dependenciesDecoder)) []
-            |> optional "propertyNames" (lazy (\_ -> subschemaDecoder)) NoSchema
-            |> optional "enum" (nullable nonEmptyUniqueArrayOfValuesDecoder) Nothing
-            |> optional "const" (nullable value) Nothing
-            |> optional "allOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
-            |> optional "anyOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
-            |> optional "oneOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
-            |> optional "not" (lazy (\_ -> subschemaDecoder)) NoSchema
+        Decode.oneOf
+            [ booleanSchemaDecoder
+            , objectSchemaDecoder
+            ]
+
 
 
 nonEmptyListOfSchemas : Decoder (List SubSchema)

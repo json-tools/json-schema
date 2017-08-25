@@ -24,6 +24,7 @@ import Json.Schema.Builder
         , withAnyOf
         , withOneOf
         , withTitle
+        , withNot
         )
 import Data.Schema as Schema exposing (Schema, decoder)
 import Expect
@@ -217,6 +218,18 @@ all =
                         (buildSchema
                             |> withAnyOf [ buildSchema ]
                         )
+        , describe "boolean schema"
+            [ test "true always validates any value" <|
+                \() ->
+                    Encode.bool True
+                        |> decodeValue Schema.decoder
+                        |> Expect.equal (buildSchema |> toSchema)
+            , test "false always fails validation" <|
+                \() ->
+                    Encode.bool False
+                        |> decodeValue Schema.decoder
+                        |> Expect.equal (buildSchema |> withNot buildSchema |> toSchema)
+            ]
         ]
 
 
