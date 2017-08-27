@@ -55,29 +55,51 @@ view model =
         Err e ->
             Html.text e
 
+col10 =
+    div [ style [ ("padding", "10px") ] ]
+
+
+schemata : Maybe Schemata -> (List (String, Schema) -> Html msg) -> Html msg
+schemata s fn =
+    s
+        |> Maybe.map (\(Schemata s) -> fn s)
+        |> Maybe.withDefault (text "")
+
 
 documentation : Schema -> Html Msg
 documentation node =
     case node of
         ObjectSchema s ->
-            Html.div []
-                [ Html.text (typeToString s.type_)
-                , case s.definitions of
-                    Just (Schemata schemata) ->
-                        div [ style [ ("padding", "10px") ] ]
-                            [ text "with definitions: "
-                            , schemata
-                                |> List.map (\(key, schema) ->
-                                    div []
-                                        [ Html.strong [] [ text key ]
-                                        , text " => "
-                                        , documentation schema
-                                        ]
-                                )
-                                |> div []
-                            ]
-                    Nothing ->
-                        text ""
+            col10
+                [ schemata s.definitions (\defs ->
+                    col10
+                        [ text "definitions: "
+                        , defs
+                            |> List.map (\(key, schema) ->
+                                col10
+                                    [ Html.code [] [ text <| "#/definitions/" ++ key ]
+                                    , text " => "
+                                    , documentation schema
+                                    ]
+                            )
+                            |> div []
+                        ]
+                    )
+                , Html.text (typeToString s.type_)
+                , schemata s.properties (\props ->
+                    col10
+                        [ text "properties: "
+                        , props
+                            |> List.map (\(key, schema) ->
+                                col10
+                                    [ Html.code [] [ text <| "#/properties/" ++ key ]
+                                    , text " => "
+                                    , documentation schema
+                                    ]
+                            )
+                            |> div []
+                        ]
+                    )
                 ]
 
         BooleanSchema b ->
