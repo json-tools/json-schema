@@ -53,3 +53,21 @@ typeToString t =
             "any"
 
 
+typeToList : Type -> List String
+typeToList t =
+    case t of
+        NullableType NullType ->
+            [ "null" ]
+
+        NullableType st ->
+            [ "nullable " ++ (singleTypeToString st) ]
+
+        SingleType s ->
+            [ singleTypeToString s ]
+
+        UnionType l ->
+            l
+                |> List.map singleTypeToString
+
+        AnyType ->
+            [ "any" ]

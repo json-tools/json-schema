@@ -1,9 +1,14 @@
 module Main exposing (main)
 
 import Navigation exposing (Location, program, newUrl)
-import Html exposing (Html)
+import Html exposing (Html, text, div)
+import Html.Attributes exposing (style)
 import Json.Decode as Decode exposing (decodeString)
-import Json.Schema.Definitions as Schema
+import Json.Schema.Helpers as Helpers exposing (typeToString)
+import Json.Schema.Definitions as Schema exposing
+    ( Schema(BooleanSchema, ObjectSchema)
+    , Schemata(Schemata)
+    )
 
 type alias Model = {}
 
@@ -42,10 +47,41 @@ view : Model -> Html Msg
 view model =
     case coreSchemaDraft6 |> decodeString Schema.decoder of
         Ok s ->
-            Html.pre [] [ Html.text <| toString s ]
+            div []
+                [ Html.pre [] [ Html.text <| toString s ]
+                , documentation s
+                ]
 
         Err e ->
             Html.text e
+
+
+documentation : Schema -> Html Msg
+documentation node =
+    case node of
+        ObjectSchema s ->
+            Html.div []
+                [ Html.text (typeToString s.type_)
+                , case s.definitions of
+                    Just (Schemata schemata) ->
+                        div [ style [ ("padding", "10px") ] ]
+                            [ text "with definitions: "
+                            , schemata
+                                |> List.map (\(key, schema) ->
+                                    div []
+                                        [ Html.strong [] [ text key ]
+                                        , text " => "
+                                        , documentation schema
+                                        ]
+                                )
+                                |> div []
+                            ]
+                    Nothing ->
+                        text ""
+                ]
+
+        BooleanSchema b ->
+            Html.text (toString b)
 
 
 coreSchemaDraft6 : String
