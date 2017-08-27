@@ -1,4 +1,4 @@
-module Flat exposing (all)
+module Decoding exposing (all)
 
 import Test exposing (Test, describe, test, only)
 import Json.Schema.Builder
