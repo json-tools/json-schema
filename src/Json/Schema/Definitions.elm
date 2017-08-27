@@ -1,13 +1,14 @@
 module Json.Schema.Definitions
     exposing
-        ( Schema
+        ( Schema(ObjectSchema, BooleanSchema)
         , Schemata(Schemata)
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , stringToType
         , blankSchema
+        , blankSubSchema
         , decoder
-        , SubSchema(SubSchema, NoSchema)
+        , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
         )
@@ -34,7 +35,12 @@ import Json.Decode as Decode
         )
 
 
-type alias Schema =
+type Schema
+    = BooleanSchema Bool
+    | ObjectSchema SubSchema
+
+
+type alias SubSchema =
     { type_ : Type
     , id : Maybe String
     , ref : Maybe String
@@ -57,33 +63,33 @@ type alias Schema =
     , format : Maybe String
     -- array validations
     , items : Items
-    , additionalItems : SubSchema
+    , additionalItems : Maybe Schema
     , maxItems : Maybe Int
     , minItems : Maybe Int
     , uniqueItems : Maybe Bool
-    , contains : SubSchema
+    , contains : Maybe Schema
     , maxProperties : Maybe Int
     , minProperties : Maybe Int
     , required : Maybe (List String)
     , properties : Maybe Schemata
     , patternProperties : Maybe Schemata
-    , additionalProperties : SubSchema
+    , additionalProperties : Maybe Schema
     , dependencies : List (String, Dependency)
-    , propertyNames : SubSchema
+    , propertyNames : Maybe Schema
     , enum : Maybe (List Value)
     , const : Maybe Value
-    , allOf : Maybe (List SubSchema)
-    , anyOf : Maybe (List SubSchema)
-    , oneOf : Maybe (List SubSchema)
-    , not : SubSchema
+    , allOf : Maybe (List Schema)
+    , anyOf : Maybe (List Schema)
+    , oneOf : Maybe (List Schema)
+    , not : Maybe Schema
     }
 
 
-type SubSchema = SubSchema Schema | NoSchema
-
-
 blankSchema : Schema
-blankSchema =
+blankSchema = ObjectSchema blankSubSchema
+
+blankSubSchema : SubSchema
+blankSubSchema =
     { type_ = AnyType
     , id = Nothing
     , ref = Nothing
@@ -102,25 +108,25 @@ blankSchema =
     , pattern = Nothing
     , format = Nothing
     , items = NoItems
-    , additionalItems = NoSchema
+    , additionalItems = Nothing
     , maxItems = Nothing
     , minItems = Nothing
     , uniqueItems = Nothing
-    , contains = NoSchema
+    , contains = Nothing
     , maxProperties = Nothing
     , minProperties = Nothing
     , required = Nothing
     , properties = Nothing
     , patternProperties = Nothing
-    , additionalProperties = NoSchema
+    , additionalProperties = Nothing
     , dependencies = []
-    , propertyNames = NoSchema
+    , propertyNames = Nothing
     , enum = Nothing
     , const = Nothing
     , allOf = Nothing
     , anyOf = Nothing
     , oneOf = Nothing
-    , not = NoSchema
+    , not = Nothing
     }
 
 
@@ -154,13 +160,13 @@ decoder =
             Decode.bool
                 |> Decode.andThen (\b ->
                     if b then
-                        succeed blankSchema
+                        succeed (BooleanSchema True)
                     else
-                        succeed { blankSchema | not = SubSchema blankSchema }
+                        succeed (BooleanSchema False)
                 )
 
         objectSchemaDecoder =
-            decode Schema
+            decode SubSchema
                 |> optional "type"
                     (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                     AnyType
@@ -185,36 +191,39 @@ decoder =
                 |> optional "format" (nullable string) Nothing
                 -- array
                 |> optional "items" (lazy (\_ -> itemsDecoder)) NoItems
-                |> optional "additionalItems" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "additionalItems" (nullable <| lazy (\_ -> decoder)) Nothing
                 |> optional "maxItems" (nullable nonNegativeInt) Nothing
                 |> optional "minItems" (nullable nonNegativeInt) Nothing
                 |> optional "uniqueItems" (nullable bool) Nothing
-                |> optional "contains" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "contains" (nullable <| lazy (\_ -> decoder)) Nothing
                 |> optional "maxProperties" (nullable nonNegativeInt) Nothing
                 |> optional "minProperties" (nullable nonNegativeInt) Nothing
                 |> optional "required" (nullable (list string)) Nothing
                 |> optional "properties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
                 |> optional "patternProperties" (nullable (lazy (\_ -> schemataDecoder))) Nothing
-                |> optional "additionalProperties" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "additionalProperties" (nullable <| lazy (\_ -> decoder)) Nothing
                 |> optional "dependencies" (lazy (\_ -> dependenciesDecoder)) []
-                |> optional "propertyNames" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "propertyNames" (nullable <| lazy (\_ -> decoder)) Nothing
                 |> optional "enum" (nullable nonEmptyUniqueArrayOfValuesDecoder) Nothing
                 |> optional "const" (nullable value) Nothing
                 |> optional "allOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
                 |> optional "anyOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
                 |> optional "oneOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
-                |> optional "not" (lazy (\_ -> subschemaDecoder)) NoSchema
+                |> optional "not" (nullable <| lazy (\_ -> decoder)) Nothing
     in
         Decode.oneOf
             [ booleanSchemaDecoder
             , objectSchemaDecoder
+                |> Decode.andThen (\b ->
+                    succeed (ObjectSchema b)
+                )
             ]
 
 
 
-nonEmptyListOfSchemas : Decoder (List SubSchema)
+nonEmptyListOfSchemas : Decoder (List Schema)
 nonEmptyListOfSchemas =
-    list (lazy (\_ -> subschemaDecoder))
+    list (lazy (\_ -> decoder))
         |> andThen failIfEmpty
 
 
@@ -259,11 +268,6 @@ nonNegativeInt : Decoder Int
 nonNegativeInt =
     int
         |> andThen (\x -> if x >= 0 && isInt x then succeed x else fail "Expected non-negative int")
-
-
-subschemaDecoder : Decoder SubSchema
-subschemaDecoder =
-    Decode.map SubSchema decoder
 
 
 type Type

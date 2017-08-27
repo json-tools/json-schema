@@ -40,14 +40,14 @@ schemas defined in json-schema format
 
 -}
 
-import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
 import Json.Schema.Definitions
     exposing
         ( Items(ItemDefinition, ArrayOfItems, NoItems)
-        , SubSchema(SubSchema, NoSchema)
+        , SubSchema
+        , Schema(BooleanSchema, ObjectSchema)
         , Schemata(Schemata)
         , Dependency(ArrayPropNames, PropSchema)
         , Type(AnyType, SingleType, NullableType, UnionType)
@@ -56,8 +56,6 @@ import Json.Schema.Definitions
         )
 import Dict exposing (Dict)
 import String
-import Regex
-import List.Extra
 
 
 {-| Schema represents a node of schema.
@@ -142,7 +140,12 @@ traverse schema path =
         section :: name :: [] ->
             case section of
                 "definitions" ->
-                    getDefinition schema.definitions name
+                    case schema of
+                        ObjectSchema os ->
+                            getDefinition os.definitions name
+
+                        x ->
+                            Just x
 
                 _ ->
                     Nothing
@@ -177,45 +180,56 @@ convert rootSchema =
                         (Ok [])
                         props
             in
-                node.properties
-                    |> Maybe.map
-                        (\(Schemata props) ->
-                            case newProps props of
-                                Ok p ->
-                                    Ok
-                                        { node | properties = Just (Schemata p) }
+                case node of
+                    ObjectSchema os ->
+                        os.properties
+                            |> Maybe.map
+                                (\(Schemata props) ->
+                                    case newProps props of
+                                        Ok p ->
+                                            Ok <|
+                                                ObjectSchema { os | properties = Just (Schemata p) }
+
+                                        Err s ->
+                                            Err s
+                                )
+                            |> Maybe.withDefault (Ok node)
+
+                    BooleanSchema _ ->
+                        Ok node
+
+        updateArrayItemDef node =
+            case node of
+                ObjectSchema os ->
+                    case os.items of
+                        NoItems ->
+                            Ok node
+
+                        -- TODO: handle me correctly
+                        ArrayOfItems _ ->
+                            Ok node
+
+                        ItemDefinition def ->
+                            case walk def of
+                                Ok newDef ->
+                                    Ok <| ObjectSchema { os | items = ItemDefinition newDef }
 
                                 Err s ->
                                     Err s
-                        )
-                    |> Maybe.withDefault (Ok node)
 
-        updateArrayItemDef node =
-            case node.items of
-                NoItems ->
-                    Ok node
-
-                -- TODO: handle me correctly
-                ArrayOfItems _ ->
-                    Ok node
-
-                ItemDefinition def ->
-                    case walk def of
-                        Ok newDef ->
-                            Ok { node | items = ItemDefinition newDef }
-
-                        Err s ->
-                            Err s
+                x ->
+                    Ok x
 
         clarifyType node =
             let
+                checkEnum : SubSchema -> Schema
                 checkEnum node =
                     case node.enum of
                         Nothing ->
                             checkItems node
 
                         Just _ ->
-                            { node | type_ = SingleType StringType }
+                            ObjectSchema { node | type_ = SingleType StringType }
 
                 checkItems node =
                     case node.items of
@@ -223,27 +237,37 @@ convert rootSchema =
                             checkProperties node node.properties
 
                         _ ->
-                            { node | type_ = SingleType ArrayType }
+                            ObjectSchema { node | type_ = SingleType ArrayType }
 
                 checkProperties node p =
                     if p == Nothing then
-                        { node | type_ = AnyType }
+                        ObjectSchema { node | type_ = AnyType }
                     else
-                        { node | type_ = SingleType ObjectType }
+                        ObjectSchema { node | type_ = SingleType ObjectType }
             in
-                if node.type_ == AnyType then
-                    Ok (checkEnum node)
-                else
-                    Ok node
+                case node of
+                    ObjectSchema os ->
+                        if os.type_ == AnyType then
+                            Ok (checkEnum os)
+                        else
+                            Ok node
+
+                    x ->
+                        Ok x
 
         walk : Schema -> Result String Schema
         walk node =
-            (case node.ref of
-                Just ref ->
-                    digDefinition ref node
+            (case node of
+                ObjectSchema os ->
+                    case os.ref of
+                        Just ref ->
+                            digDefinition ref node
 
-                Nothing ->
-                    Ok node
+                        Nothing ->
+                            Ok node
+
+                x ->
+                    Ok x
             )
                 |> Result.andThen updateProperties
                 |> Result.andThen updateArrayItemDef
@@ -264,100 +288,105 @@ convert rootSchema =
 -}
 setValue : Schema -> List String -> Value -> Value -> Result String Value
 setValue schema subPath finalValue dataNode =
-    case subPath of
-        [] ->
-            let
-                tryDecoding decoder =
-                    case Decode.decodeValue decoder finalValue of
-                        Ok _ ->
-                            Ok finalValue
+    case schema of
+        BooleanSchema _ ->
+            Err "Can not set value using boolean schema"
 
-                        Err x ->
-                            Err x
-            in
-                case schema.type_ of
-                    SingleType IntegerType ->
-                        tryDecoding Decode.int
-
-                    SingleType StringType ->
-                        tryDecoding Decode.string
-
-                    SingleType BooleanType ->
-                        tryDecoding Decode.bool
-
-                    _ ->
-                        Ok finalValue
-
-        key :: tail ->
-            case schema.type_ of
-                SingleType ObjectType ->
+        ObjectSchema schema ->
+            case subPath of
+                [] ->
                     let
-                        nodeDict =
-                            decodeDict dataNode
+                        tryDecoding decoder =
+                            case Decode.decodeValue decoder finalValue of
+                                Ok _ ->
+                                    Ok finalValue
 
-                        value =
-                            nodeDict
-                                |> Dict.get key
-                                |> withDefaultFor schema
-
-                        updatedValue prop =
-                            setValue
-                                prop
-                                tail
-                                finalValue
-                                value
+                                Err x ->
+                                    Err x
                     in
-                        case getDefinition schema.properties key of
-                            Just prop ->
-                                case updatedValue prop of
-                                    Ok val ->
-                                        nodeDict
-                                            |> Dict.insert key val
-                                            |> encodeDict
-                                            |> \v -> Ok v
+                        case schema.type_ of
+                            SingleType IntegerType ->
+                                tryDecoding Decode.int
 
-                                    Err e ->
-                                        Err e
+                            SingleType StringType ->
+                                tryDecoding Decode.string
 
-                            Nothing ->
-                                Err ("Key '" ++ key ++ "' not found")
+                            SingleType BooleanType ->
+                                tryDecoding Decode.bool
 
-                SingleType ArrayType ->
-                    let
-                        index =
-                            String.toInt key |> Result.withDefault 0
+                            _ ->
+                                Ok finalValue
 
-                        nodeList =
-                            decodeList dataNode
-                    in
-                        case schema.items of
-                            NoItems ->
-                                Err "No items definition"
+                key :: tail ->
+                    case schema.type_ of
+                        SingleType ObjectType ->
+                            let
+                                nodeDict =
+                                    decodeDict dataNode
 
-                            -- TODO: handle me correctly
-                            ArrayOfItems _ ->
-                                Err "No items definition"
+                                value =
+                                    nodeDict
+                                        |> Dict.get key
+                                        |> withDefaultFor (ObjectSchema schema)
 
-                            ItemDefinition prop ->
-                                case getListItem index nodeList of
-                                    Just oldItem ->
-                                        case setValue prop tail finalValue oldItem of
-                                            Ok newValue ->
-                                                setListItem index newValue nodeList
-                                                    |> Encode.list
+                                updatedValue prop =
+                                    setValue
+                                        prop
+                                        tail
+                                        finalValue
+                                        value
+                            in
+                                case getDefinition schema.properties key of
+                                    Just prop ->
+                                        case updatedValue prop of
+                                            Ok val ->
+                                                nodeDict
+                                                    |> Dict.insert key val
+                                                    |> encodeDict
                                                     |> \v -> Ok v
 
                                             Err e ->
                                                 Err e
 
                                     Nothing ->
-                                        nodeList
-                                            ++ [ defaultFor prop |> setValue prop tail finalValue |> Result.withDefault (defaultFor prop) ]
-                                            |> Encode.list
-                                            |> \v -> Ok v
+                                        Err ("Key '" ++ key ++ "' not found")
 
-                _ ->
-                    Ok finalValue
+                        SingleType ArrayType ->
+                            let
+                                index =
+                                    String.toInt key |> Result.withDefault 0
+
+                                nodeList =
+                                    decodeList dataNode
+                            in
+                                case schema.items of
+                                    NoItems ->
+                                        Err "No items definition"
+
+                                    -- TODO: handle me correctly
+                                    ArrayOfItems _ ->
+                                        Err "No items definition"
+
+                                    ItemDefinition prop ->
+                                        case getListItem index nodeList of
+                                            Just oldItem ->
+                                                case setValue prop tail finalValue oldItem of
+                                                    Ok newValue ->
+                                                        setListItem index newValue nodeList
+                                                            |> Encode.list
+                                                            |> \v -> Ok v
+
+                                                    Err e ->
+                                                        Err e
+
+                                            Nothing ->
+                                                nodeList
+                                                    ++ [ defaultFor prop |> setValue prop tail finalValue |> Result.withDefault (defaultFor prop) ]
+                                                    |> Encode.list
+                                                    |> \v -> Ok v
+
+                        _ ->
+                            Ok finalValue
 
 
 getListItem : Int -> List a -> Maybe a
@@ -435,57 +464,62 @@ is not specified, then default calculated based on type:
 -}
 defaultFor : Schema -> Value
 defaultFor schema =
-    let
-        defaultChildProp propName =
-            ( propName
-            , case getDefinition schema.properties propName of
-                Just s ->
-                    defaultFor s
+    case schema of
+        BooleanSchema _ ->
+            Encode.null -- TODO: should be Err
 
-                Nothing ->
-                    Encode.null
-            )
-
-        objectFromRequiredProps =
-            schema.required
-                |> Maybe.map (List.map defaultChildProp)
-
-        defaultDefault =
-            case schema.type_ of
-                SingleType ObjectType ->
-                    case objectFromRequiredProps of
-                        Just props ->
-                            Encode.object props
+        ObjectSchema schema ->
+            let
+                defaultChildProp propName =
+                    ( propName
+                    , case getDefinition schema.properties propName of
+                        Just s ->
+                            defaultFor s
 
                         Nothing ->
                             Encode.null
+                    )
 
-                SingleType ArrayType ->
-                    Encode.list []
+                objectFromRequiredProps =
+                    schema.required
+                        |> Maybe.map (List.map defaultChildProp)
 
-                SingleType IntegerType ->
-                    Encode.int 0
+                defaultDefault =
+                    case schema.type_ of
+                        SingleType ObjectType ->
+                            case objectFromRequiredProps of
+                                Just props ->
+                                    Encode.object props
 
-                SingleType BooleanType ->
-                    Encode.bool False
+                                Nothing ->
+                                    Encode.null
 
-                SingleType NumberType ->
-                    Encode.float 0
+                        SingleType ArrayType ->
+                            Encode.list []
 
-                SingleType NullType ->
-                    Encode.null
+                        SingleType IntegerType ->
+                            Encode.int 0
 
-                -- TODO: no need to assume anything, fixme
-                -- "any", "string" (assume those are strings)
-                _ ->
-                    Encode.string ""
-    in
-        case schema.default of
-            Just default ->
-                default
+                        SingleType BooleanType ->
+                            Encode.bool False
 
-            Nothing ->
-                defaultDefault
+                        SingleType NumberType ->
+                            Encode.float 0
+
+                        SingleType NullType ->
+                            Encode.null
+
+                        -- TODO: no need to assume anything, fixme
+                        -- "any", "string" (assume those are strings)
+                        _ ->
+                            Encode.string ""
+            in
+                case schema.default of
+                    Just default ->
+                        default
+
+                    Nothing ->
+                        defaultDefault
 
 
 encodeDict : Dict String Value -> Value
@@ -526,49 +560,54 @@ getDefinition defs name =
 -}
 getValue : Schema -> List String -> Value -> Value
 getValue schema path inputData =
-    case path of
-        [] ->
-            inputData
+    case schema of
+        BooleanSchema _ ->
+            inputData -- TODO: make it Err
 
-        key :: tail ->
-            case schema.type_ of
-                SingleType ObjectType ->
-                    -- TODO: lookup definition using "ref" (need root schema for that)
-                    case getDefinition schema.properties key of
-                        Just def ->
-                            inputData
-                                |> decodeDict
-                                |> Dict.get key
-                                |> Maybe.withDefault (defaultFor def)
-                                |> getValue def tail
-
-                        Nothing ->
-                            defaultFor schema
-
-                SingleType ArrayType ->
-                    let
-                        i =
-                            --Debug.log "array index is"
-                            String.toInt key |> Result.withDefault 0
-                    in
-                        case schema.items of
-                            ItemDefinition def ->
-                                inputData
-                                    |> decodeList
-                                    |> List.drop i
-                                    |> List.head
-                                    |> Maybe.withDefault (Encode.string "")
-                                    |> getValue def tail
-
-                            NoItems ->
-                                defaultFor schema
-
-                            -- TODO: handle me correctly
-                            ArrayOfItems _ ->
-                                defaultFor schema
-
-                _ ->
+        ObjectSchema schema ->
+            case path of
+                [] ->
                     inputData
+
+                key :: tail ->
+                    case schema.type_ of
+                        SingleType ObjectType ->
+                            -- TODO: lookup definition using "ref" (need root schema for that)
+                            case getDefinition schema.properties key of
+                                Just def ->
+                                    inputData
+                                        |> decodeDict
+                                        |> Dict.get key
+                                        |> Maybe.withDefault (defaultFor def)
+                                        |> getValue def tail
+
+                                Nothing ->
+                                    defaultFor (ObjectSchema schema)
+
+                        SingleType ArrayType ->
+                            let
+                                i =
+                                    --Debug.log "array index is"
+                                    String.toInt key |> Result.withDefault 0
+                            in
+                                case schema.items of
+                                    ItemDefinition def ->
+                                        inputData
+                                            |> decodeList
+                                            |> List.drop i
+                                            |> List.head
+                                            |> Maybe.withDefault (Encode.string "")
+                                            |> getValue def tail
+
+                                    NoItems ->
+                                        defaultFor (ObjectSchema schema)
+
+                                    -- TODO: handle me correctly
+                                    ArrayOfItems _ ->
+                                        defaultFor (ObjectSchema schema)
+
+                        _ ->
+                            inputData
 
 
 withDefaultFor : Schema -> Maybe Value -> Value
@@ -615,4 +654,9 @@ registerProperty name prop schema =
                     )
                 |> Maybe.map Schemata
     in
-        { schema | properties = upgrade schema.properties }
+        case schema of
+            ObjectSchema os ->
+                ObjectSchema { os | properties = upgrade os.properties }
+
+            BooleanSchema bs ->
+                BooleanSchema bs

@@ -1,6 +1,7 @@
 module Schema exposing (all)
 
-import Json.Schema as JS exposing (Schema, empty)
+import Json.Schema as JS exposing (empty)
+import Json.Schema.Definitions exposing (blankSubSchema, SubSchema, Schema(ObjectSchema))
 
 
 --import Json.Decode as Decode exposing (decodeString, value)
@@ -20,9 +21,17 @@ blankRoot =
     object []
 
 
-schema : String -> Schema
+schema : String -> SubSchema
 schema str =
-    JS.fromString str |> Result.withDefault empty
+    JS.fromString str
+        |> Result.withDefault (ObjectSchema blankSubSchema)
+        |> (\x ->
+            case x of
+                ObjectSchema x ->
+                    x
+                _ ->
+                    blankSubSchema
+            )
 
 
 skip : String -> b -> Test
@@ -65,14 +74,14 @@ all =
             [ test "simple object with string" <|
                 \() ->
                     blankRoot
-                        |> JS.setValue simpleSchema [ "foo" ] (string "bar")
+                        |> JS.setValue (ObjectSchema simpleSchema) [ "foo" ] (string "bar")
                         |> Expect.equal (Ok (object [ ( "foo", string "bar" ) ]))
             , test "simple object with int" <|
                 \() ->
                     blankRoot
-                        |> JS.setValue simpleIntSchema [ "foo" ] (int 0)
+                        |> JS.setValue (ObjectSchema simpleIntSchema) [ "foo" ] (int 0)
                         |> Result.withDefault blankRoot
-                        |> JS.getValue simpleIntSchema [ "foo" ]
+                        |> JS.getValue (ObjectSchema simpleIntSchema) [ "foo" ]
                         |> Expect.equal (int 0)
             , test "nested object" <|
                 \() ->
@@ -82,11 +91,11 @@ all =
                 \() ->
                     let
                         set path val target =
-                            JS.setValue nestedArraySchema path val target
+                            JS.setValue (ObjectSchema nestedArraySchema) path val target
                                 |> Result.withDefault blankRoot
 
                         get =
-                            JS.getString nestedArraySchema
+                            JS.getString (ObjectSchema nestedArraySchema)
                     in
                         blankRoot
                             |> set [ "fooes", "0" ] (string "bam")
@@ -98,11 +107,11 @@ all =
                 \() ->
                     let
                         set path val target =
-                            JS.setValue nestedArrayObjectSchema path val target
+                            JS.setValue (ObjectSchema nestedArrayObjectSchema) path val target
                                 |> Result.withDefault blankRoot
 
                         get =
-                            JS.getString nestedArrayObjectSchema
+                            JS.getString (ObjectSchema nestedArrayObjectSchema)
                     in
                         blankRoot
                             |> set [ "fooes", "0", "baz" ] (string "baa")
@@ -114,7 +123,7 @@ all =
                 \() ->
                     let
                         set =
-                            JS.setValue simpleSchema
+                            JS.setValue (ObjectSchema simpleSchema)
                     in
                         blankRoot
                             |> set [ "some", "wrong", "path" ] (string "x")
@@ -122,13 +131,13 @@ all =
             , test "error when property type does not match" <|
                 \() ->
                     blankRoot
-                        |> JS.setValue simpleSchema [ "foo" ] (int 647)
+                        |> JS.setValue (ObjectSchema simpleSchema) [ "foo" ] (int 647)
                         |> Expect.equal (Err "Expecting a String but instead got: 647")
             ]
         ]
 
 
-simpleSchema : Schema
+simpleSchema : SubSchema
 simpleSchema =
     schema """
         { "properties": { "foo": { "type": "string" } }
@@ -136,7 +145,7 @@ simpleSchema =
     """
 
 
-simpleIntSchema : Schema
+simpleIntSchema : SubSchema
 simpleIntSchema =
     schema """
         { "properties": { "foo": { "type": "integer" } }
@@ -144,7 +153,7 @@ simpleIntSchema =
     """
 
 
-nestedSchema : Schema
+nestedSchema : SubSchema
 nestedSchema =
     schema """
         { "type": "object"
@@ -158,7 +167,7 @@ nestedSchema =
     """
 
 
-nestedArraySchema : Schema
+nestedArraySchema : SubSchema
 nestedArraySchema =
     schema """
         { "type": "object"
@@ -172,7 +181,7 @@ nestedArraySchema =
     """
 
 
-nestedArrayObjectSchema : Schema
+nestedArrayObjectSchema : SubSchema
 nestedArrayObjectSchema =
     schema """
         { "type": "object"

@@ -5,6 +5,7 @@ import Json.Schema.Builder
     exposing
         ( SchemaBuilder
         , buildSchema
+        , boolSchema
         , toSchema
         , withType
         , withNullableType
@@ -34,7 +35,7 @@ import Json.Decode as Decode exposing (decodeValue)
 
 all : Test
 all =
-    describe "schema flat parser"
+    describe "decoding of JSON Schema"
         [ test "type=integer" <|
             \() ->
                 [ ( "type", Encode.string "integer" ) ]
@@ -223,12 +224,12 @@ all =
                 \() ->
                     Encode.bool True
                         |> decodeValue Schema.decoder
-                        |> Expect.equal (buildSchema |> toSchema)
+                        |> Expect.equal (boolSchema True |> toSchema)
             , test "false always fails validation" <|
                 \() ->
                     Encode.bool False
                         |> decodeValue Schema.decoder
-                        |> Expect.equal (buildSchema |> withNot buildSchema |> toSchema)
+                        |> Expect.equal (boolSchema False |> toSchema)
             ]
         ]
 

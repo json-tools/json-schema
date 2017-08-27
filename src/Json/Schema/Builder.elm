@@ -2,6 +2,7 @@ module Json.Schema.Builder
     exposing
         ( SchemaBuilder(SchemaBuilder)
         , buildSchema
+        , boolSchema
         , toSchema
         , validate
         -- type
@@ -61,7 +62,7 @@ module Json.Schema.Builder
 @docs SchemaBuilder
 
 # Schema builder creation
-@docs buildSchema, toSchema
+@docs buildSchema, boolSchema, toSchema
 
 # Building up schema
 
@@ -117,15 +118,15 @@ import Validation
 import Json.Decode exposing (Value)
 import Json.Schema.Definitions
     exposing
-        ( Schema
+        ( Schema(ObjectSchema, BooleanSchema)
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
         , Schemata(Schemata)
-        , SubSchema(SubSchema, NoSchema)
+        , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
         , stringToType
-        , blankSchema
+        , blankSubSchema
         )
 
 
@@ -145,7 +146,7 @@ import Json.Schema.Definitions
             ]
 -}
 type SchemaBuilder
-    = SchemaBuilder { errors : List String, schema : Schema }
+    = SchemaBuilder { errors : List String, schema : Maybe SubSchema, bool : Maybe Bool }
 
 
 -- BASIC API
@@ -155,7 +156,14 @@ type SchemaBuilder
 -}
 buildSchema : SchemaBuilder
 buildSchema =
-    SchemaBuilder { errors = [], schema = blankSchema }
+    SchemaBuilder { errors = [], schema = Just blankSubSchema, bool = Nothing }
+
+
+{-| Create boolean schema
+-}
+boolSchema : Bool -> SchemaBuilder
+boolSchema b =
+    SchemaBuilder { errors = [], schema = Nothing, bool = Just b }
 
 
 {-| Extract JSON Schema from the builder
@@ -163,7 +171,17 @@ buildSchema =
 toSchema : SchemaBuilder -> Result String Schema
 toSchema (SchemaBuilder sb) =
     if List.isEmpty sb.errors then
-        Ok sb.schema
+        case sb.bool of
+            Just x ->
+                Ok <| BooleanSchema x
+
+            Nothing ->
+                case sb.schema of
+                    Just ss ->
+                        Ok <| ObjectSchema ss
+
+                    Nothing ->
+                        Ok <| ObjectSchema blankSubSchema
     else
         Err <| String.join ", " sb.errors
 
@@ -530,14 +548,19 @@ withId x =
 
 -- HELPERS
 
-updateSchema : (Schema -> Schema) -> SchemaBuilder -> SchemaBuilder
+updateSchema : (SubSchema -> SubSchema) -> SchemaBuilder -> SchemaBuilder
 updateSchema fn (SchemaBuilder sb) =
-    SchemaBuilder { sb | schema = fn sb.schema }
+    case sb.schema of
+        Just ss ->
+            SchemaBuilder { sb | schema = Just <| fn ss }
+
+        Nothing ->
+            SchemaBuilder sb
 
 
 appendError : String -> SchemaBuilder -> SchemaBuilder
-appendError e (SchemaBuilder { errors, schema }) =
-    SchemaBuilder { errors = e :: errors, schema = schema }
+appendError e (SchemaBuilder { errors, schema, bool }) =
+    SchemaBuilder { errors = e :: errors, schema = schema, bool = bool }
 
 
 type alias SchemataBuilder =
@@ -572,17 +595,20 @@ toListOfSchemas =
         (Ok [])
 
 
-updateWithSubSchema : (SubSchema -> (Schema -> Schema)) -> SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+-- updateWithSubSchema (\sub s -> { s | contains = sub })
+
+updateWithSubSchema : (Maybe Schema -> (SubSchema -> SubSchema)) -> SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 updateWithSubSchema fn subSchemaBuilder =
     case subSchemaBuilder |> toSchema of
-        Ok sub ->
-            updateSchema (fn (SubSchema sub))
+        Ok s ->
+            fn (Just s)
+                |> updateSchema
 
-        Err s ->
-            appendError s
+        Err err ->
+            appendError err
 
 
-updateWithSchemata : (Maybe Schemata -> (Schema -> Schema)) -> SchemataBuilder -> SchemaBuilder -> SchemaBuilder
+updateWithSchemata : (Maybe Schemata -> (SubSchema -> SubSchema)) -> SchemataBuilder -> SchemaBuilder -> SchemaBuilder
 updateWithSchemata fn schemataBuilder =
     case schemataBuilder |> toSchemata of
         Ok schemata ->
@@ -592,11 +618,11 @@ updateWithSchemata fn schemataBuilder =
             appendError s
 
 
-updateWithListOfSchemas : (Maybe (List SubSchema) -> (Schema -> Schema)) -> List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
+updateWithListOfSchemas : (Maybe (List Schema) -> (SubSchema -> SubSchema)) -> List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 updateWithListOfSchemas fn schemasBuilder =
     case schemasBuilder |> toListOfSchemas of
         Ok ls ->
-            updateSchema (fn (Just <| List.map SubSchema ls))
+            updateSchema (fn (Just ls))
 
         Err s ->
             appendError s

@@ -658,6 +658,6 @@ all =
                     Encode.bool False
                         |> decodeValue Json.Schema.Definitions.decoder
                         |> Result.andThen (Validation.validate <| int 1)
-                        |> Expect.equal (Err "Successful validation for the negative schema ('not' keyword)")
+                        |> Expect.equal (Err "Always fail")
             ]
         ]
