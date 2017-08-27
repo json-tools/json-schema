@@ -349,4 +349,6 @@ singleTypeDecoder s =
 
 schemataDecoder : Decoder Schemata
 schemataDecoder =
-    Decode.map Schemata <| Decode.keyValuePairs (lazy (\_ -> decoder))
+    Decode.keyValuePairs (lazy (\_ -> decoder))
+        |> Decode.andThen (\x -> succeed <| List.reverse x)
+        |> Decode.map Schemata
