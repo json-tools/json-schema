@@ -44,7 +44,7 @@ import Set
 import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
 import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
 import Json.Encode as Encode exposing (Value)
-import Data.Schema
+import Json.Schema.Definitions
     exposing
         ( Items(ItemDefinition, ArrayOfItems, NoItems)
         , SubSchema(SubSchema, NoSchema)
@@ -67,7 +67,7 @@ Array item type defined in `items`.
 Object properties defined in `properties`.
 -}
 type alias Schema =
-    Data.Schema.Schema
+    Json.Schema.Definitions.Schema
 
 
 {-| Properties - list of properties definitions for node with type = object
@@ -80,7 +80,7 @@ type Properties
 -}
 empty : Schema
 empty =
-    Data.Schema.blankSchema
+    Json.Schema.Definitions.blankSchema
 
 
 {-| Build schema from JSON string.
@@ -105,15 +105,15 @@ fromString str =
         ) ]
             |> fromValue
 -}
-fromValue : Value -> Result String Data.Schema.Schema
+fromValue : Value -> Result String Schema
 fromValue val =
-    Decode.decodeValue Data.Schema.decoder val
+    Decode.decodeValue Json.Schema.Definitions.decoder val
         |> Result.andThen convert
 
 
 decodeSchema : Decoder Schema
 decodeSchema =
-    Data.Schema.decoder
+    Json.Schema.Definitions.decoder
 
 
 

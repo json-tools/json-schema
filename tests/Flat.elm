@@ -26,7 +26,7 @@ import Json.Schema.Builder
         , withTitle
         , withNot
         )
-import Data.Schema as Schema exposing (Schema, decoder)
+import Json.Schema.Definitions as Schema exposing (Schema, decoder)
 import Expect
 import Json.Encode as Encode exposing (Value)
 import Json.Decode as Decode exposing (decodeValue)

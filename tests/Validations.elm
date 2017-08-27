@@ -40,7 +40,7 @@ import Json.Schema.Builder as JSB
 import Json.Encode as Encode exposing (int)
 import Json.Decode as Decode exposing (decodeValue)
 import Validation
-import Data.Schema
+import Json.Schema.Definitions
 import Test exposing (Test, describe, test)
 import Expect
 
@@ -650,13 +650,13 @@ all =
             [ test "true always validates any value" <|
                 \() ->
                     Encode.bool True
-                        |> decodeValue Data.Schema.decoder
+                        |> decodeValue Json.Schema.Definitions.decoder
                         |> Result.andThen (Validation.validate <| int 1)
                         |> Expect.equal (Ok True)
             , test "false always fails validation" <|
                 \() ->
                     Encode.bool False
-                        |> decodeValue Data.Schema.decoder
+                        |> decodeValue Json.Schema.Definitions.decoder
                         |> Result.andThen (Validation.validate <| int 1)
                         |> Expect.equal (Err "Successful validation for the negative schema ('not' keyword)")
             ]

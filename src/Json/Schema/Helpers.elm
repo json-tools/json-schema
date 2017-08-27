@@ -1,6 +1,6 @@
 module Json.Schema.Helpers exposing (typeToString)
 
-import Data.Schema
+import Json.Schema.Definitions
     exposing
         ( Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)

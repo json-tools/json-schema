@@ -6,7 +6,7 @@ import Dict
 import Regex
 import List.Extra
 import Util exposing (isInt)
-import Data.Schema
+import Json.Schema.Definitions
     exposing
         ( Items(ItemDefinition, ArrayOfItems, NoItems)
         , SubSchema(SubSchema, NoSchema)
@@ -55,7 +55,7 @@ validate value schema =
         |> failWithFirstError value schema
 
 
-failWithFirstError : Value -> Data.Schema.Schema -> List (Value -> Data.Schema.Schema -> Result String Bool) -> Result String Bool
+failWithFirstError : Value -> Schema -> List (Value -> Schema -> Result String Bool) -> Result String Bool
 failWithFirstError value schema results =
     let
         failIfError fn prevResult =
@@ -69,7 +69,7 @@ failWithFirstError value schema results =
         List.foldl failIfError (Ok True) results
 
 
-validateMultipleOf : Value -> Data.Schema.Schema -> Result String Bool
+validateMultipleOf : Value -> Schema -> Result String Bool
 validateMultipleOf =
     when .multipleOf
         Decode.float
@@ -81,7 +81,7 @@ validateMultipleOf =
         )
 
 
-validateMaximum : Value -> Data.Schema.Schema -> Result String Bool
+validateMaximum : Value -> Schema -> Result String Bool
 validateMaximum =
     when .maximum
         Decode.float
@@ -93,7 +93,7 @@ validateMaximum =
         )
 
 
-validateMinimum : Value -> Data.Schema.Schema -> Result String Bool
+validateMinimum : Value -> Schema -> Result String Bool
 validateMinimum =
     when .minimum
         Decode.float
@@ -105,7 +105,7 @@ validateMinimum =
         )
 
 
-validateExclusiveMaximum : Value -> Data.Schema.Schema -> Result String Bool
+validateExclusiveMaximum : Value -> Schema -> Result String Bool
 validateExclusiveMaximum =
     when .exclusiveMaximum
         Decode.float
@@ -117,7 +117,7 @@ validateExclusiveMaximum =
         )
 
 
-validateExclusiveMinimum : Value -> Data.Schema.Schema -> Result String Bool
+validateExclusiveMinimum : Value -> Schema -> Result String Bool
 validateExclusiveMinimum =
     when .exclusiveMinimum
         Decode.float
@@ -129,7 +129,7 @@ validateExclusiveMinimum =
         )
 
 
-validateMaxLength : Value -> Data.Schema.Schema -> Result String Bool
+validateMaxLength : Value -> Schema -> Result String Bool
 validateMaxLength =
     when .maxLength
         Decode.string
@@ -141,7 +141,7 @@ validateMaxLength =
         )
 
 
-validateMinLength : Value -> Data.Schema.Schema -> Result String Bool
+validateMinLength : Value -> Schema -> Result String Bool
 validateMinLength =
     when .minLength
         Decode.string
@@ -153,7 +153,7 @@ validateMinLength =
         )
 
 
-validatePattern : Value -> Data.Schema.Schema -> Result String Bool
+validatePattern : Value -> Schema -> Result String Bool
 validatePattern =
     when .pattern
         Decode.string
@@ -165,7 +165,7 @@ validatePattern =
         )
 
 
-validateItems : Value -> Data.Schema.Schema -> Result String Bool
+validateItems : Value -> Schema -> Result String Bool
 validateItems value schema =
     let
         validateItem item schema index =
@@ -226,7 +226,7 @@ validateItems value schema =
                 Ok True
 
 
-validateMaxItems : Value -> Data.Schema.Schema -> Result String Bool
+validateMaxItems : Value -> Schema -> Result String Bool
 validateMaxItems =
     when .maxItems
         (Decode.list Decode.value)
@@ -238,7 +238,7 @@ validateMaxItems =
         )
 
 
-validateMinItems : Value -> Data.Schema.Schema -> Result String Bool
+validateMinItems : Value -> Schema -> Result String Bool
 validateMinItems =
     when .minItems
         (Decode.list Decode.value)
@@ -250,7 +250,7 @@ validateMinItems =
         )
 
 
-validateUniqueItems : Value -> Data.Schema.Schema -> Result String Bool
+validateUniqueItems : Value -> Schema -> Result String Bool
 validateUniqueItems =
     when .uniqueItems
         (Decode.list Decode.value)
@@ -262,7 +262,7 @@ validateUniqueItems =
         )
 
 
-validateContains : Value -> Data.Schema.Schema -> Result String Bool
+validateContains : Value -> Schema -> Result String Bool
 validateContains =
     whenSubschema .contains
         (Decode.list Decode.value)
@@ -274,7 +274,7 @@ validateContains =
         )
 
 
-validateMaxProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateMaxProperties : Value -> Schema -> Result String Bool
 validateMaxProperties =
     when .maxProperties
         (Decode.keyValuePairs Decode.value)
@@ -286,7 +286,7 @@ validateMaxProperties =
         )
 
 
-validateMinProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateMinProperties : Value -> Schema -> Result String Bool
 validateMinProperties =
     when .minProperties
         (Decode.keyValuePairs Decode.value)
@@ -298,7 +298,7 @@ validateMinProperties =
         )
 
 
-validateRequired : Value -> Data.Schema.Schema -> Result String Bool
+validateRequired : Value -> Schema -> Result String Bool
 validateRequired =
     when .required
         (Decode.keyValuePairs Decode.value)
@@ -315,7 +315,7 @@ validateRequired =
         )
 
 
-validateProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateProperties : Value -> Schema -> Result String Bool
 validateProperties =
     when .properties
         (Decode.keyValuePairs Decode.value)
@@ -338,7 +338,7 @@ validateProperties =
         )
 
 
-validatePatternProperties : Value -> Data.Schema.Schema -> Result String Bool
+validatePatternProperties : Value -> Schema -> Result String Bool
 validatePatternProperties =
     when .patternProperties
         (Decode.keyValuePairs Decode.value)
@@ -365,7 +365,7 @@ validatePatternProperties =
         )
 
 
-validateAdditionalProperties : Value -> Data.Schema.Schema -> Result String Bool
+validateAdditionalProperties : Value -> Schema -> Result String Bool
 validateAdditionalProperties v s =
     let
         rejectMatching :
@@ -406,7 +406,7 @@ validateAdditionalProperties v s =
             s
 
 
-validateDependencies : Value -> Data.Schema.Schema -> Result String Bool
+validateDependencies : Value -> Schema -> Result String Bool
 validateDependencies v s =
     let
         validateDep obj =
@@ -436,7 +436,7 @@ validateDependencies v s =
                     Ok True
 
 
-validatePropertyNames : Value -> Data.Schema.Schema -> Result String Bool
+validatePropertyNames : Value -> Schema -> Result String Bool
 validatePropertyNames =
     whenSubschema
         .propertyNames
@@ -455,7 +455,7 @@ validatePropertyNames =
         )
 
 
-validateEnum : Value -> Data.Schema.Schema -> Result String Bool
+validateEnum : Value -> Schema -> Result String Bool
 validateEnum =
     when .enum
         Decode.value
@@ -467,7 +467,7 @@ validateEnum =
         )
 
 
-validateConst : Value -> Data.Schema.Schema -> Result String Bool
+validateConst : Value -> Schema -> Result String Bool
 validateConst =
     when .const
         Decode.value
@@ -485,7 +485,7 @@ validateConst =
         )
 
 
-validateType : Value -> Data.Schema.Schema -> Result String Bool
+validateType : Value -> Schema -> Result String Bool
 validateType val s =
     case s.type_ of
         AnyType ->
@@ -541,7 +541,7 @@ validateSingleType st val =
                 test <| Decode.keyValuePairs Decode.value
 
 
-validateAllOf : Value -> Data.Schema.Schema -> Result String Bool
+validateAllOf : Value -> Schema -> Result String Bool
 validateAllOf =
     when .allOf
         Decode.value
@@ -563,7 +563,7 @@ validateAllOf =
         )
 
 
-validateAnyOf : Value -> Data.Schema.Schema -> Result String Bool
+validateAnyOf : Value -> Schema -> Result String Bool
 validateAnyOf =
     when .anyOf
         Decode.value
@@ -587,7 +587,7 @@ validateAnyOf =
         )
 
 
-validateOneOf : Value -> Data.Schema.Schema -> Result String Bool
+validateOneOf : Value -> Schema -> Result String Bool
 validateOneOf =
     when .oneOf
         Decode.value
@@ -611,7 +611,7 @@ validateOneOf =
         )
 
 
-validateNot : Value -> Data.Schema.Schema -> Result String Bool
+validateNot : Value -> Schema -> Result String Bool
 validateNot =
     whenSubschema .not
         Decode.value

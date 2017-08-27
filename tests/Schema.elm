@@ -8,7 +8,7 @@ import Json.Schema as JS exposing (Schema, empty)
 import Json.Encode as Encode exposing (Value, string, int, object, list)
 import Test exposing (..)
 import Expect
-import Data.Schema
+import Json.Schema.Definitions
     exposing
         ( Type(SingleType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)

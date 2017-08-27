@@ -1,4 +1,4 @@
-module Data.Schema
+module Json.Schema.Definitions
     exposing
         ( Schema
         , Schemata(Schemata)
