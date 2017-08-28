@@ -1,4 +1,4 @@
-module Json.Schema.Helpers exposing (typeToString)
+module Json.Schema.Helpers exposing (typeToString, typeToList)
 
 import Json.Schema.Definitions
     exposing
@@ -70,4 +70,4 @@ typeToList t =
                 |> List.map singleTypeToString
 
         AnyType ->
-            [ "any" ]
+            [ ]
