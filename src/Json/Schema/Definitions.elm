@@ -200,7 +200,7 @@ encode s =
                     "integer"
 
                 NumberType ->
-                    "float"
+                    "number"
 
                 BooleanType ->
                     "boolean"

@@ -16,7 +16,7 @@ singleTypeToString st =
             "integer"
 
         NumberType ->
-            "float"
+            "number"
 
         BooleanType ->
             "boolean"
