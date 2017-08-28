@@ -61,6 +61,11 @@ col10 =
     div [ style [ ("padding", "10px") ] ]
 
 
+source : Schema -> Html a
+source s =
+    Html.pre [] [ Schema.encode s |> Encode.encode 4 |> text ]
+
+
 schemata : Maybe Schemata -> (List (String, Schema) -> Html msg) -> Html msg
 schemata s fn =
     s
@@ -82,6 +87,7 @@ documentation node =
                                     [ Html.code [] [ text <| "#/definitions/" ++ key ]
                                     , text " => "
                                     , documentation schema
+                                    , source schema
                                     ]
                             )
                             |> div []
@@ -97,6 +103,7 @@ documentation node =
                                     [ Html.code [] [ text <| "#/properties/" ++ key ]
                                     , text " => "
                                     , documentation schema
+                                    , source schema
                                     ]
                             )
                             |> div []
