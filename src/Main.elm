@@ -5,13 +5,15 @@ import Html exposing (Html, text, div)
 import Html.Attributes exposing (style)
 import Json.Decode as Decode exposing (decodeString)
 import Json.Encode as Encode
-import Json.Schema.Helpers as Helpers exposing (typeToList)
-import Json.Schema.Definitions as Schema exposing
-    ( Schema(BooleanSchema, ObjectSchema)
-    , Schemata(Schemata)
-    )
+import Json.Schema.Definitions as Schema
+    exposing
+        ( Schema(BooleanSchema, ObjectSchema)
+        , Schemata(Schemata)
+        )
 
-type alias Model = {}
+
+type alias Model =
+    {}
 
 
 type Msg
@@ -46,69 +48,64 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    case bookingSchema |> decodeString Schema.decoder of
+    case coreSchemaDraft6 |> decodeString Schema.decoder of
         Ok s ->
             div []
-                [ Html.pre [] [ Html.text <| toString s ]
-                , documentation s
+                [ documentation s "#"
                 ]
 
         Err e ->
             Html.text e
 
+
 col10 : List (Html a) -> Html a
 col10 =
-    div [ style [ ("padding", "10px") ] ]
+    div [ style [ ( "padding", "20px" ) ] ]
 
 
-source : Schema -> Html a
+source : Schema -> Html msg
 source s =
     Html.pre [] [ Schema.encode s |> Encode.encode 4 |> text ]
 
 
-schemata : Maybe Schemata -> (List (String, Schema) -> Html msg) -> Html msg
-schemata s fn =
+schemataKey : String -> Html msg
+schemataKey s =
+    Html.code [ style [ ( "font-weight", "bold" ) ] ] [ text s ]
+
+
+schemataDoc : Maybe Schemata -> String -> String -> Html Msg
+schemataDoc s label subpath =
     s
-        |> Maybe.map (\(Schemata s) -> fn s)
+        |> Maybe.map
+            (\(Schemata s) ->
+                col10
+                    [ text label
+                    , s
+                        |> List.map
+                            (\( key, schema ) ->
+                                let
+                                    newSubpath =
+                                        subpath ++ key
+                                in
+                                    col10
+                                        [ schemataKey newSubpath
+                                        , documentation schema newSubpath
+                                        , source schema
+                                        ]
+                            )
+                        |> div []
+                    ]
+            )
         |> Maybe.withDefault (text "")
 
 
-documentation : Schema -> Html Msg
-documentation node =
+documentation : Schema -> String -> Html Msg
+documentation node subpath =
     case node of
         ObjectSchema s ->
             col10
-                [ schemata s.definitions (\defs ->
-                    col10
-                        [ text "definitions: "
-                        , defs
-                            |> List.map (\(key, schema) ->
-                                col10
-                                    [ Html.code [] [ text <| "#/definitions/" ++ key ]
-                                    , text " => "
-                                    , documentation schema
-                                    , source schema
-                                    ]
-                            )
-                            |> div []
-                        ]
-                    )
-                , Html.text (typeToList s.type_ |> String.join ", ")
-                , schemata s.properties (\props ->
-                    col10
-                        [ text "properties: "
-                        , props
-                            |> List.map (\(key, schema) ->
-                                col10
-                                    [ Html.code [] [ text <| "#/properties/" ++ key ]
-                                    , text " => "
-                                    , documentation schema
-                                    , source schema
-                                    ]
-                            )
-                            |> div []
-                        ]
-                    )
+                [ schemataDoc s.definitions "definitions: " <| subpath ++ "/definitions/"
+                , schemataDoc s.properties "properties: " <| subpath ++ "/properties/"
                 ]
 
         BooleanSchema b ->
@@ -116,7 +113,8 @@ documentation node =
 
 
 coreSchemaDraft6 : String
-coreSchemaDraft6 = """
+coreSchemaDraft6 =
+    """
 {
     "$schema": "http://json-schema.org/draft-06/schema#",
     "$id": "http://json-schema.org/draft-06/schema#",
@@ -230,6 +228,7 @@ coreSchemaDraft6 = """
         "patternProperties": {
             "type": "object",
             "additionalProperties": { "$ref": "#" },
+            "propertyNames": { "format": "regex" },
             "default": {}
         },
         "dependencies": {
@@ -269,8 +268,10 @@ coreSchemaDraft6 = """
 }
 """
 
+
 bookingSchema : String
-bookingSchema = """
+bookingSchema =
+    """
 {
  "$schema": "http://json-schema.org/draft-04/schema#",
  "type": "object",
@@ -605,7 +606,7 @@ bookingSchema = """
     "dateTime",
     "airportCode"
    ],
-   "propertyNames": { "enum": [ "dateTime", "airportCode" ] }
+   "propertyNames": { "enum": [ "dateTime", "airportCode", "countryCode" ] }
   },
   "currencyCode": {
    "type": "string",
