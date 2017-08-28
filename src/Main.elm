@@ -2,13 +2,16 @@ module Main exposing (main)
 
 import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html, text, div)
-import Html.Attributes exposing (style)
-import Json.Decode as Decode exposing (decodeString)
+import Html.Attributes as Attrs exposing (style)
+import Json.Decode as Decode exposing (decodeString, Value)
 import Json.Encode as Encode
 import Json.Schema.Definitions as Schema
     exposing
         ( Schema(BooleanSchema, ObjectSchema)
         , Schemata(Schemata)
+        , Type(AnyType, SingleType, NullableType, UnionType)
+        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
+        , blankSubSchema
         )
 
 
@@ -49,13 +52,224 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
     case coreSchemaDraft6 |> decodeString Schema.decoder of
-        Ok s ->
-            div []
-                [ documentation s "#"
-                ]
+        Ok schema ->
+            case bookingSchema |> decodeString Decode.value of
+                Ok v ->
+                    div []
+                        [ form v schema "#"
+                        ]
+
+                Err e ->
+                    Html.text e
 
         Err e ->
             Html.text e
+
+
+form : Value -> Schema -> String -> Html Msg
+form val schema subpath =
+    let
+        path =
+            subpath
+                |> String.split "/"
+                |> List.drop 1
+    in
+        case implyType val schema subpath of
+            Ok ObjectType ->
+                getFields val schema subpath
+                    |> List.map (\(name, _) ->
+                        let
+                            newSubpath =
+                                subpath ++ "/" ++ name
+                        in
+                            div []
+                                [ schemataKey newSubpath
+                                , col10 [ form val schema newSubpath ]
+                                ]
+                    )
+                    |> col10
+
+            Ok StringType ->
+                val
+                    |> Decode.decodeValue (Decode.at path Decode.string)
+                    |> (\s ->
+                        case s of
+                            Ok s ->
+                                Html.input [ Attrs.value s ] []
+
+                            Err e ->
+                                text e
+                        )
+
+            Ok IntegerType ->
+                val
+                    |> Decode.decodeValue (Decode.at path Decode.int)
+                    |> (\s ->
+                        case s of
+                            Ok s ->
+                                Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
+
+                            Err e ->
+                                text e
+                        )
+
+            Ok NumberType ->
+                val
+                    |> Decode.decodeValue (Decode.at path Decode.float)
+                    |> (\s ->
+                        case s of
+                            Ok s ->
+                                Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
+
+                            Err e ->
+                                text e
+                        )
+
+            Ok BooleanType ->
+                val
+                    |> Decode.decodeValue (Decode.at path Decode.bool)
+                    |> (\s ->
+                        case s of
+                            Ok s ->
+                                Html.input [ Attrs.type_ "checkbox", Attrs.checked s ] []
+
+                            Err e ->
+                                text e
+                        )
+
+            x ->
+                x
+                    |> toString
+                    |> (++) "some other type detected: "
+                    |> text
+                    |> (\s -> [s])
+                    |> col10
+
+
+getFields : Value -> Schema -> String -> List (String, Value)
+getFields val schema subpath =
+    let
+        path =
+            subpath
+                |> String.split "/"
+                |> List.drop 1
+    in
+        val
+            |> Decode.decodeValue (Decode.at path <| Decode.keyValuePairs Decode.value)
+            |> Result.withDefault []
+            |> List.reverse
+
+
+implyType : Value -> Schema -> String -> Result String SingleType
+implyType val schema subpath =
+    let
+        resolveReference ref =
+            case schema of
+                ObjectSchema os ->
+                    if ref == "#" then
+                        Just os
+                    else if ref |> String.startsWith "#/definitions/" then
+                        os.definitions
+                            |> Maybe.andThen (\(Schemata defs) ->
+                                defs
+                                    |> List.foldl (\(key, def) res ->
+                                        if res == Nothing && ("#/definitions/" ++ key) == ref then
+                                            case def of
+                                                ObjectSchema d ->
+                                                    Just d
+
+                                                _ ->
+                                                    Nothing
+                                        else
+                                            res
+                                    ) Nothing
+                            )
+                    else
+                        Nothing
+
+                _ ->
+                    Nothing
+
+        path =
+            subpath
+                |> String.split "/"
+                |> List.drop 1
+
+        calcSubSchemaType os =
+            (case os.ref of
+                Just ref ->
+                    resolveReference ref
+
+                Nothing ->
+                    Just os
+            )
+                |> Maybe.andThen (\os ->
+                    if os.type_ == SingleType ObjectType || os.properties /= Nothing then
+                        Just ObjectType
+                    else if os.type_ == SingleType StringType then
+                        Just StringType
+                    else if os.type_ == SingleType IntegerType then
+                        Just IntegerType
+                    else if os.type_ == SingleType NumberType then
+                        Just NumberType
+                    else if os.type_ == SingleType BooleanType then
+                        Just BooleanType
+                    else if os == blankSubSchema then
+                        Just ObjectType
+                    else
+                        Nothing
+                )
+    in
+        case schema of
+            ObjectSchema os ->
+                let
+
+                    findProperty name os =
+                        os.properties
+                            |> Maybe.andThen (\(Schemata pp) ->
+                                pp
+                                    |> List.foldl (\(key, s) res ->
+                                        if res /= Nothing || key /= name then
+                                            res
+                                        else
+                                            Just s
+                                    ) Nothing
+                            )
+                            |> (\r ->
+                                if r == Nothing then
+                                    os.additionalProperties
+                                else
+                                    r
+                            )
+
+                    weNeedToGoDeeper key =
+                        Maybe.andThen (\s ->
+                            case s of
+                                ObjectSchema os ->
+                                    case os.ref of
+                                        Just ref ->
+                                            resolveReference ref
+                                                |> Maybe.andThen (findProperty key)
+
+                                        Nothing ->
+                                            findProperty key os
+                                _ ->
+                                    Nothing
+                            )
+                in
+                    path
+                        |> List.foldl weNeedToGoDeeper (Just schema)
+                        |> Maybe.andThen (\s ->
+                            case s of
+                                ObjectSchema ss ->
+                                    calcSubSchemaType ss
+                                _ ->
+                                    Nothing
+                            )
+                        |> Result.fromMaybe ("Can't imply type: " ++ subpath)
+
+            BooleanSchema _ ->
+                Ok BooleanType
 
 
 col10 : List (Html a) -> Html a
@@ -109,7 +323,7 @@ documentation node subpath =
                 ]
 
         BooleanSchema b ->
-            Html.text (toString b)
+            Html.text <| toString b
 
 
 coreSchemaDraft6 : String
