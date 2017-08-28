@@ -55,6 +55,7 @@ view model =
         Err e ->
             Html.text e
 
+col10 : List (Html a) -> Html a
 col10 =
     div [ style [ ("padding", "10px") ] ]
 
