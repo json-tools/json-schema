@@ -555,11 +555,13 @@ bookingSchema = """
    "properties": {
     "line1": {
      "type": "string",
-     "title": "Street name with house number"
+     "title": "Address line 1",
+     "description": "Street name with house number"
     },
     "line2": {
      "type": "string",
-     "title": "Additional address info"
+     "title": "Address line 2",
+     "description": "Additional address info"
     },
     "city": {
      "type": "string"
@@ -587,6 +589,7 @@ bookingSchema = """
     "dateTime": {
      "type": "string",
      "pattern": "^20[0-9]{2}-(?:0[1-9]|1[0-2])-(?:0[1-9]|[1-3][0-9]) [012][0-9]:[0-5][0-9]$",
+     "title": "Date-Time",
      "description": "Date and time of flight (airport local time)"
     },
     "airportCode": {
@@ -594,13 +597,15 @@ bookingSchema = """
      "minLength": 3,
      "maxLength": 3,
      "pattern": "^[A-Z]{3}$",
+     "title": "Airport Code",
      "description": "International Air Transport Association airport code"
     }
    },
    "required": [
     "dateTime",
     "airportCode"
-   ]
+   ],
+   "propertyNames": { "enum": [ "dateTime", "airportCode" ] }
   },
   "currencyCode": {
    "type": "string",
