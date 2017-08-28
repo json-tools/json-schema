@@ -8,6 +8,7 @@ module Json.Schema.Definitions
         , blankSchema
         , blankSubSchema
         , decoder
+        , encode
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
@@ -15,6 +16,7 @@ module Json.Schema.Definitions
 
 import Util exposing (resultToDecoder, foldResults, isInt)
 import Json.Decode.Pipeline exposing (decode, optional)
+import Json.Encode as Encode
 import Json.Decode as Decode
     exposing
         ( Value
@@ -142,6 +144,149 @@ type Items
 type Dependency
     = ArrayPropNames (List String)
     | PropSchema Schema
+
+
+type RowEncoder a
+    = RowEncoder (Maybe a) String (a -> Value)
+
+
+encode : Schema -> Value
+encode s =
+    let
+        optionally : (a -> Value) -> Maybe a -> String -> List (String, Value) -> List (String, Value)
+        optionally fn val key res =
+            case val of
+                Just s ->
+                    (key, fn s) :: res
+
+                Nothing ->
+                    res
+
+        encodeItems : Items -> List (String, Value) -> List (String, Value)
+        encodeItems items res =
+            case items of
+                ItemDefinition id ->
+                    ("items", encode id) :: res
+
+                ArrayOfItems aoi ->
+                    ("items", aoi |> List.map encode |> Encode.list) :: res
+
+                NoItems ->
+                    res
+
+        encodeDependency : Dependency -> Value
+        encodeDependency dep =
+            case dep of
+                PropSchema ps ->
+                    encode ps
+
+                ArrayPropNames apn ->
+                    apn |> List.map Encode.string |> Encode.list
+
+        encodeDependencies : List (String, Dependency) -> List (String, Value) -> List (String, Value)
+        encodeDependencies deps res =
+            if List.isEmpty deps then
+                res
+            else
+                ("dependencies", deps |> List.map (\(key, dep) -> (key, encodeDependency dep)) |> Encode.object) :: res
+
+        singleTypeToString : SingleType -> String
+        singleTypeToString st =
+            case st of
+                StringType ->
+                    "string"
+
+                IntegerType ->
+                    "integer"
+
+                NumberType ->
+                    "float"
+
+                BooleanType ->
+                    "boolean"
+
+                ObjectType ->
+                    "object"
+
+                ArrayType ->
+                    "array"
+
+                NullType ->
+                    "null"
+
+        encodeType : Type -> List (String, Value) -> List (String, Value)
+        encodeType t res =
+            case t of
+                SingleType st ->
+                    ("type", st |> singleTypeToString |> Encode.string ) :: res
+
+                NullableType st ->
+                    ("type", st |> singleTypeToString |> Encode.string ) :: res
+
+                UnionType ut ->
+                    ("type", ut |> List.map (singleTypeToString >> Encode.string) |> Encode.list ) :: res
+
+                AnyType ->
+                    res
+
+        encodeListSchemas : List Schema -> Value
+        encodeListSchemas l =
+            l
+                |> List.map encode
+                |> Encode.list
+
+        encodeSchemata : Schemata -> Value
+        encodeSchemata (Schemata l) =
+            l
+                |> List.map (\(s, x) -> (s, encode x))
+                |> Encode.object
+    in
+        case s of
+            BooleanSchema bs ->
+                Encode.bool bs
+
+            ObjectSchema os ->
+                [ encodeType os.type_
+                , optionally Encode.string os.id "$id"
+                , optionally Encode.string os.ref "$ref"
+                , optionally Encode.string os.title "title"
+                , optionally Encode.string os.description "description"
+                , optionally identity os.default "default"
+                , optionally Encode.list os.examples "examples"
+                , optionally encodeSchemata  os.definitions "definitions"
+                , optionally Encode.float os.multipleOf "multipleOf"
+                , optionally Encode.float os.maximum "maximum"
+                , optionally Encode.float os.exclusiveMaximum "exclusiveMaximum"
+                , optionally Encode.float os.minimum "minimum"
+                , optionally Encode.float os.exclusiveMinimum "exclusiveMinimum"
+                , optionally Encode.int os.maxLength "maxLength"
+                , optionally Encode.int os.minLength "minLength"
+                , optionally Encode.string os.pattern "pattern"
+                , optionally Encode.string os.format "format"
+                , encodeItems os.items
+                , optionally encode os.additionalItems "additionalItems"
+                , optionally Encode.int os.maxItems "maxItems"
+                , optionally Encode.int os.minItems "minItems"
+                , optionally Encode.bool os.uniqueItems "uniqueItems"
+                , optionally encode os.contains "contains"
+                , optionally Encode.int os.maxProperties "maxProperties"
+                , optionally Encode.int os.minProperties "minProperties"
+                , optionally (\s -> s |> List.map Encode.string |> Encode.list) os.required "required"
+                , optionally encodeSchemata os.properties "properties"
+                , optionally encodeSchemata os.patternProperties "patternProperties"
+                , optionally encode os.additionalProperties "additionalProperties"
+                , encodeDependencies os.dependencies
+                , optionally encode os.propertyNames "propertyNames"
+                , optionally Encode.list os.enum "enum"
+                , optionally identity os.const "const"
+                , optionally encodeListSchemas os.allOf "allOf"
+                , optionally encodeListSchemas os.anyOf "anyOf"
+                , optionally encodeListSchemas os.oneOf "oneOf"
+                , optionally encode os.not "not"
+                ]
+                    |> List.foldl identity []
+                    |> List.reverse
+                    |> Encode.object
 
 
 decoder : Decoder Schema

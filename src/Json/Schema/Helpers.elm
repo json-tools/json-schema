@@ -6,7 +6,6 @@ import Json.Schema.Definitions
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         )
 
-
 singleTypeToString : SingleType -> String
 singleTypeToString st =
     case st of

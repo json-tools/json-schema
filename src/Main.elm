@@ -4,6 +4,7 @@ import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html, text, div)
 import Html.Attributes exposing (style)
 import Json.Decode as Decode exposing (decodeString)
+import Json.Encode as Encode
 import Json.Schema.Helpers as Helpers exposing (typeToList)
 import Json.Schema.Definitions as Schema exposing
     ( Schema(BooleanSchema, ObjectSchema)
