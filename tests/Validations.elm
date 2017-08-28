@@ -3,6 +3,7 @@ module Validations exposing (all)
 import Json.Schema.Builder as JSB
     exposing
         ( buildSchema
+        , boolSchema
         , withItem
         , withItems
         , withAdditionalItems
@@ -399,6 +400,15 @@ all =
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
                         |> Expect.equal (Ok True)
+            , test "success: boolean true" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "foo", buildSchema |> withMaximum 100 )
+                            ]
+                        |> withAdditionalProperties (boolSchema True)
+                        |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
+                        |> Expect.equal (Ok True)
             , test "failure" <|
                 \() ->
                     buildSchema
@@ -408,6 +418,15 @@ all =
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
                         |> Expect.equal (Err "Invalid property 'bar': Value is above the maximum of 20")
+            , test "failure: boolean false" <|
+                \() ->
+                    buildSchema
+                        |> withPatternProperties
+                            [ ( "o{2}", buildSchema |> withMaximum 100 )
+                            ]
+                        |> withAdditionalProperties (boolSchema False)
+                        |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
+                        |> Expect.equal (Err "Additional properties are not allowed, but I see additional property \"bar\"")
             ]
         , describe "dependencies"
             [ test "success" <|

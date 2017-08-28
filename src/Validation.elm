@@ -404,8 +404,15 @@ validateAdditionalProperties v s =
                     |> List.foldl
                         (\( key, value ) res ->
                             if res == (Ok True) then
-                                validate value additionalProperties
-                                    |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
+                                case additionalProperties of
+                                    BooleanSchema bs ->
+                                        if bs then
+                                            Ok True
+                                        else
+                                            Err <| "Additional properties are not allowed, but I see additional property \"" ++ key ++ "\""
+                                    ObjectSchema _ ->
+                                        validate value additionalProperties
+                                            |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
                             else
                                 res
                         )
