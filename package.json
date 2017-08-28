@@ -6,10 +6,11 @@
   "author": "",
   "license": "ISC",
   "scripts": {
-    "start": "webpack-dev-server --hot --inline --port 4000 --content-base src/"
+    "start": "elm-live src/Main.elm"
   },
   "devDependencies": {
     "elm": "^0.18.0",
-    "elm-test": "^0.18.7"
+    "elm-test": "^0.18.7",
+    "elm-live": "^2.7.4"
   }
 }
