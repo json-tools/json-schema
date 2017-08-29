@@ -8,6 +8,7 @@ import Json.Encode as Encode
 import Json.Schema.Definitions as Schema
     exposing
         ( Schema(BooleanSchema, ObjectSchema)
+        , SubSchema
         , Schemata(Schemata)
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
@@ -161,14 +162,26 @@ getFields val schema subpath =
             |> List.reverse
 
 
+
+whenObjectSchema : Schema -> Maybe SubSchema
+whenObjectSchema schema =
+    case schema of
+        ObjectSchema os ->
+            Just os
+
+        BooleanSchema _ ->
+            Nothing
+
+
 implyType : Value -> Schema -> String -> Result String Type
 implyType val schema subpath =
     let
+        resolveReference : String -> Maybe Schema
         resolveReference ref =
             case schema of
                 ObjectSchema os ->
                     if ref == "#" then
-                        Just os
+                        Just schema
                     else if ref |> String.startsWith "#/definitions/" then
                         os.definitions
                             |> Maybe.andThen (\(Schemata defs) ->
@@ -177,10 +190,15 @@ implyType val schema subpath =
                                         if res == Nothing && ("#/definitions/" ++ key) == ref then
                                             case def of
                                                 ObjectSchema d ->
-                                                    Just d
+                                                    case d.ref of
+                                                        Just ref ->
+                                                            resolveReference ref
 
-                                                _ ->
-                                                    Nothing
+                                                        Nothing ->
+                                                            Just def
+
+                                                BooleanSchema _ ->
+                                                    Just def
                                         else
                                             res
                                     ) Nothing
@@ -196,14 +214,22 @@ implyType val schema subpath =
                 |> String.split "/"
                 |> List.drop 1
 
+        calcSubSchemaType : SubSchema -> Maybe Type
         calcSubSchemaType os =
             (case os.ref of
                 Just ref ->
                     resolveReference ref
 
                 Nothing ->
-                    Just os
+                    Just <| ObjectSchema os
             )
+                |> Maybe.andThen (\x ->
+                    case x of
+                        ObjectSchema os ->
+                            Just os
+                        _ ->
+                            Nothing
+                )
                 |> Maybe.andThen (\os ->
                     case os.type_ of
                         AnyType ->
@@ -228,8 +254,11 @@ implyType val schema subpath =
             ObjectSchema os ->
                 let
 
-                    findProperty name os =
-                        os.properties
+                    findProperty : String -> Schema -> Maybe Schema
+                    findProperty name schema =
+                        schema
+                            |> whenObjectSchema
+                            |> Maybe.andThen .properties
                             |> Maybe.andThen (\(Schemata pp) ->
                                 pp
                                     |> List.foldl (\(key, s) res ->
@@ -241,24 +270,26 @@ implyType val schema subpath =
                             )
                             |> (\r ->
                                 if r == Nothing then
-                                    os.additionalProperties
+                                    schema
+                                        |> whenObjectSchema
+                                        |> Maybe.andThen .additionalProperties
                                 else
                                     r
                             )
 
-                    weNeedToGoDeeper key =
-                        Maybe.andThen (\s ->
-                            case s of
-                                ObjectSchema os ->
-                                    case os.ref of
-                                        Just ref ->
-                                            resolveReference ref
-                                                |> Maybe.andThen (findProperty key)
-
-                                        Nothing ->
-                                            findProperty key os
-                                _ ->
-                                    Nothing
+                    weNeedToGoDeeper key schema =
+                        schema
+                            |> Maybe.andThen whenObjectSchema
+                            |> Maybe.andThen .ref
+                            |> (\ref ->
+                                case ref of
+                                    Just r ->
+                                        r
+                                            |> resolveReference
+                                            |> Maybe.andThen (findProperty key)
+                                    Nothing ->
+                                        schema
+                                            |> Maybe.andThen (findProperty key)
                             )
                 in
                     path
