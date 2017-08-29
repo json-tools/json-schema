@@ -274,6 +274,7 @@ implyType val schema subpath =
                                 Just x
                     )
 
+        weNeedToGoDeeper : String -> Maybe Schema -> Maybe Schema
         weNeedToGoDeeper key schema =
             schema
                 |> Maybe.andThen whenObjectSchema
