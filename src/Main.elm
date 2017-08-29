@@ -147,7 +147,7 @@ form val schema subpath =
                     |> (++) "some other type detected: "
                     |> text
                     |> (\s -> [ s ])
-                    |> col10
+                    |> div [ style [ ( "color", "red" )] ]
 
 
 getFields : Value -> Schema -> String -> List ( String, Value )
