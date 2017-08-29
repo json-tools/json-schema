@@ -176,6 +176,32 @@ whenObjectSchema schema =
 implyType : Value -> Schema -> String -> Result String Type
 implyType val schema subpath =
     let
+        findProperty : String -> Schema -> Maybe Schema
+        findProperty name schema =
+            schema
+                |> whenObjectSchema
+                |> Maybe.andThen .properties
+                |> Maybe.andThen
+                    (\(Schemata pp) ->
+                        pp
+                            |> List.foldl
+                                (\( key, s ) res ->
+                                    if res /= Nothing || key /= name then
+                                        res
+                                    else
+                                        Just s
+                                )
+                                Nothing
+                    )
+                |> (\r ->
+                        if r == Nothing then
+                            schema
+                                |> whenObjectSchema
+                                |> Maybe.andThen .additionalProperties
+                        else
+                            r
+                   )
+
         findDefinition : String -> Schemata -> Maybe SubSchema
         findDefinition ref (Schemata defs) =
             defs
@@ -226,15 +252,7 @@ implyType val schema subpath =
                 Nothing ->
                     Just <| ObjectSchema os
             )
-                |> Maybe.andThen
-                    (\x ->
-                        case x of
-                            ObjectSchema os ->
-                                Just os
-
-                            _ ->
-                                Nothing
-                    )
+                |> Maybe.andThen whenObjectSchema
                 |> Maybe.andThen
                     (\os ->
                         case os.type_ of
@@ -255,67 +273,28 @@ implyType val schema subpath =
                             x ->
                                 Just x
                     )
+
+        weNeedToGoDeeper key schema =
+            schema
+                |> Maybe.andThen whenObjectSchema
+                |> Maybe.andThen .ref
+                |> (\ref ->
+                        case ref of
+                            Just r ->
+                                r
+                                    |> resolveReference
+                                    |> Maybe.andThen (findProperty key)
+
+                            Nothing ->
+                                schema
+                                    |> Maybe.andThen (findProperty key)
+                   )
     in
-        case schema of
-            ObjectSchema os ->
-                let
-                    findProperty : String -> Schema -> Maybe Schema
-                    findProperty name schema =
-                        schema
-                            |> whenObjectSchema
-                            |> Maybe.andThen .properties
-                            |> Maybe.andThen
-                                (\(Schemata pp) ->
-                                    pp
-                                        |> List.foldl
-                                            (\( key, s ) res ->
-                                                if res /= Nothing || key /= name then
-                                                    res
-                                                else
-                                                    Just s
-                                            )
-                                            Nothing
-                                )
-                            |> (\r ->
-                                    if r == Nothing then
-                                        schema
-                                            |> whenObjectSchema
-                                            |> Maybe.andThen .additionalProperties
-                                    else
-                                        r
-                               )
-
-                    weNeedToGoDeeper key schema =
-                        schema
-                            |> Maybe.andThen whenObjectSchema
-                            |> Maybe.andThen .ref
-                            |> (\ref ->
-                                    case ref of
-                                        Just r ->
-                                            r
-                                                |> resolveReference
-                                                |> Maybe.andThen (findProperty key)
-
-                                        Nothing ->
-                                            schema
-                                                |> Maybe.andThen (findProperty key)
-                               )
-                in
-                    path
-                        |> List.foldl weNeedToGoDeeper (Just schema)
-                        |> Maybe.andThen
-                            (\s ->
-                                case s of
-                                    ObjectSchema ss ->
-                                        calcSubSchemaType ss
-
-                                    _ ->
-                                        Nothing
-                            )
-                        |> Result.fromMaybe ("Can't imply type: " ++ subpath)
-
-            BooleanSchema _ ->
-                Ok <| SingleType BooleanType
+        path
+            |> List.foldl weNeedToGoDeeper (Just schema)
+            |> Maybe.andThen whenObjectSchema
+            |> Maybe.andThen calcSubSchemaType
+            |> Result.fromMaybe ("Can't imply type: " ++ subpath)
 
 
 col10 : List (Html a) -> Html a
