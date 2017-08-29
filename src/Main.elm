@@ -186,8 +186,8 @@ implyType val schema subpath =
         actualValue : Maybe Value
         actualValue =
             val
-            |> Decode.decodeValue (Decode.at path Decode.value)
-            |> Result.toMaybe
+                |> Decode.decodeValue (Decode.at path Decode.value)
+                |> Result.toMaybe
 
         findProperty : String -> Schema -> Maybe Schema
         findProperty name schema =
@@ -254,14 +254,15 @@ implyType val schema subpath =
                         else if ref |> String.startsWith "#/definitions/" then
                             os.definitions
                                 |> Maybe.andThen (findDefinition ref)
-                                |> Maybe.andThen (\def ->
-                                    case def.ref of
-                                        Just r ->
-                                            resolveReference r
+                                |> Maybe.andThen
+                                    (\def ->
+                                        case def.ref of
+                                            Just r ->
+                                                resolveReference r
 
-                                        Nothing ->
-                                            Just <| ObjectSchema def
-                                   )
+                                            Nothing ->
+                                                Just <| ObjectSchema def
+                                    )
                         else
                             Nothing
                     )
@@ -295,6 +296,7 @@ implyType val schema subpath =
                                                                         schema
                                                                             |> whenObjectSchema
                                                                             |> Maybe.andThen calcSubSchemaType
+
                                                                     Err _ ->
                                                                         Nothing
 
@@ -302,7 +304,8 @@ implyType val schema subpath =
                                                                 Nothing
                                                     else
                                                         res
-                                                ) Nothing
+                                                )
+                                                Nothing
 
                                     Nothing ->
                                         if os.properties /= Nothing || os.additionalProperties /= Nothing then
@@ -331,6 +334,7 @@ implyType val schema subpath =
             case Decode.decodeValue Decode.string val of
                 Ok _ ->
                     Just <| SingleType StringType
+
                 Err _ ->
                     Nothing
 
@@ -353,7 +357,7 @@ implyType val schema subpath =
 
                             Nothing ->
                                 schema
-                   )
+                    )
                 |> Maybe.andThen (findProperty key)
     in
         path
