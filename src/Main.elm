@@ -5,6 +5,7 @@ import Html exposing (Html, text, div)
 import Html.Attributes as Attrs exposing (style)
 import Json.Decode as Decode exposing (decodeString, Value)
 import Json.Encode as Encode
+import Validation
 import Json.Schema.Definitions as Schema
     exposing
         ( Schema(BooleanSchema, ObjectSchema)
@@ -176,6 +177,18 @@ whenObjectSchema schema =
 implyType : Value -> Schema -> String -> Result String Type
 implyType val schema subpath =
     let
+        path : List String
+        path =
+            subpath
+                |> String.split "/"
+                |> List.drop 1
+
+        actualValue : Maybe Value
+        actualValue =
+            val
+            |> Decode.decodeValue (Decode.at path Decode.value)
+            |> Result.toMaybe
+
         findProperty : String -> Schema -> Maybe Schema
         findProperty name schema =
             schema
@@ -208,12 +221,27 @@ implyType val schema subpath =
                 |> List.foldl
                     (\( key, def ) res ->
                         if res == Nothing && ("#/definitions/" ++ key) == ref then
-                            def
-                                |> whenObjectSchema
+                            whenObjectSchema def
                         else
                             res
                     )
                     Nothing
+
+        resolve : Schema -> Schema
+        resolve schema =
+            schema
+                |> whenObjectSchema
+                |> Maybe.andThen
+                    (\os ->
+                        case os.ref of
+                            Just ref ->
+                                ref
+                                    |> resolveReference
+
+                            Nothing ->
+                                Nothing
+                    )
+                |> Maybe.withDefault schema
 
         resolveReference : String -> Maybe Schema
         resolveReference ref =
@@ -238,31 +266,55 @@ implyType val schema subpath =
                             Nothing
                     )
 
-        path =
-            subpath
-                |> String.split "/"
-                |> List.drop 1
-
         calcSubSchemaType : SubSchema -> Maybe Type
         calcSubSchemaType os =
             (case os.ref of
                 Just ref ->
-                    resolveReference ref
+                    ref
+                        |> resolveReference
+                        |> Maybe.andThen whenObjectSchema
 
                 Nothing ->
-                    Just <| ObjectSchema os
+                    Just os
             )
-                |> Maybe.andThen whenObjectSchema
                 |> Maybe.andThen
                     (\os ->
                         case os.type_ of
                             AnyType ->
-                                if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                    Just <| SingleType ObjectType
-                                else if os == blankSubSchema then
-                                    Just AnyType
-                                else
-                                    Nothing
+                                case os.anyOf of
+                                    Just anyOf ->
+                                        anyOf
+                                            |> List.map resolve
+                                            |> List.foldl
+                                                (\schema res ->
+                                                    if res == Nothing then
+                                                        case actualValue of
+                                                            Just av ->
+                                                                case Validation.validate av schema of
+                                                                    Ok _ ->
+                                                                        schema
+                                                                            |> whenObjectSchema
+                                                                            |> Maybe.andThen calcSubSchemaType
+                                                                    Err _ ->
+                                                                        Nothing
+
+                                                            Nothing ->
+                                                                Nothing
+                                                    else
+                                                        res
+                                                ) Nothing
+
+                                    Nothing ->
+                                        if os.properties /= Nothing || os.additionalProperties /= Nothing then
+                                            Just <| SingleType ObjectType
+                                        else if os.enum /= Nothing then
+                                            os.enum
+                                                |> deriveTypeFromEnum
+                                                |> Just
+                                        else if os == blankSubSchema then
+                                            Just AnyType
+                                        else
+                                            Nothing
 
                             UnionType ut ->
                                 if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
@@ -274,22 +326,35 @@ implyType val schema subpath =
                                 Just x
                     )
 
+        deriveTypeFromValue : Value -> Maybe Type
+        deriveTypeFromValue val =
+            case Decode.decodeValue Decode.string val of
+                Ok _ ->
+                    Just <| SingleType StringType
+                Err _ ->
+                    Nothing
+
+        deriveTypeFromEnum : Maybe (List Value) -> Type
+        deriveTypeFromEnum enum =
+            enum
+                |> Maybe.andThen List.head
+                |> Maybe.andThen deriveTypeFromValue
+                |> Maybe.withDefault AnyType
+
         weNeedToGoDeeper : String -> Maybe Schema -> Maybe Schema
         weNeedToGoDeeper key schema =
             schema
                 |> Maybe.andThen whenObjectSchema
-                |> Maybe.andThen .ref
-                |> (\ref ->
-                        case ref of
+                |> Maybe.andThen
+                    (\os ->
+                        case os.ref of
                             Just r ->
-                                r
-                                    |> resolveReference
-                                    |> Maybe.andThen (findProperty key)
+                                resolveReference r
 
                             Nothing ->
                                 schema
-                                    |> Maybe.andThen (findProperty key)
                    )
+                |> Maybe.andThen (findProperty key)
     in
         path
             |> List.foldl weNeedToGoDeeper (Just schema)
