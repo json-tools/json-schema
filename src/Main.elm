@@ -53,20 +53,29 @@ subscriptions _ =
 
 view : Model -> Html Msg
 view model =
-    case coreSchemaDraft6 |> decodeString Schema.decoder of
-        Ok schema ->
-            case bookingSchema |> decodeString Decode.value of
-                Ok v ->
+    let
+        editMe =
+            """
+            { "properties": { "passengers": { "items": { "type": "object" } } } }
+            """
+        
+        res =
+            Result.map2
+                (\schema val ->
                     div []
                         [ coreSchemaDraft6 |> toString |> text
-                        , form v schema "#"
+                        , form val schema "#"
                         ]
+                )
+                (coreSchemaDraft6 |> decodeString Schema.decoder)
+                (editMe |> decodeString Decode.value)
+    in
+        case res of
+            Ok html ->
+                html
 
-                Err e ->
-                    Html.text e
-
-        Err e ->
-            Html.text e
+            Err e ->
+                Html.text e
 
 
 form : Value -> Schema -> String -> Html Msg
@@ -203,29 +212,50 @@ implyType val schema subpath =
 
         findProperty : String -> Schema -> Maybe Schema
         findProperty name schema =
-            schema
-                |> whenObjectSchema
-                |> Maybe.andThen .properties
-                |> Maybe.andThen
-                    (\(Schemata pp) ->
-                        pp
-                            |> List.foldl
-                                (\( key, s ) res ->
-                                    if res /= Nothing || key /= name then
-                                        res
-                                    else
-                                        Just s
-                                )
-                                Nothing
-                    )
-                |> (\r ->
-                        if r == Nothing then
-                            schema
-                                |> whenObjectSchema
-                                |> Maybe.andThen .additionalProperties
-                        else
-                            r
-                   )
+            let
+                os =
+                    whenObjectSchema schema
+            in
+                os
+                    |> Maybe.andThen .properties
+                    |> Maybe.andThen
+                        (\(Schemata pp) ->
+                            pp
+                                |> List.foldl
+                                    (\( key, s ) res ->
+                                        if res /= Nothing || key /= name then
+                                            res
+                                        else
+                                            Just s
+                                    )
+                                    Nothing
+                        )
+                    |> (\r ->
+                            if r == Nothing then
+                                os
+                                    |> Maybe.andThen .additionalProperties
+                            else
+                                r
+                       )
+                    |> (\r ->
+                            if r == Nothing then
+                                os
+                                    |> Maybe.andThen .anyOf
+                                    |> Maybe.andThen
+                                        (\anyOf ->
+                                            anyOf
+                                                |> List.foldl (\s r ->
+                                                    if r == Nothing then
+                                                        s
+                                                            |> resolve
+                                                            |> findProperty name
+                                                    else
+                                                        r
+                                                ) Nothing
+                                        )
+                            else
+                                r
+                       )
 
         findDefinition : String -> Schemata -> Maybe SubSchema
         findDefinition ref (Schemata defs) =
@@ -381,6 +411,7 @@ implyType val schema subpath =
                                 schema
                     )
                 |> Maybe.andThen (findProperty key)
+                |> Maybe.map resolve
     in
         path
             |> List.foldl weNeedToGoDeeper (Just schema)
