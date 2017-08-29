@@ -279,6 +279,32 @@ implyType val schema subpath =
                             Nothing
                     )
 
+
+        tryAllSchemas : List Schema -> Maybe Type
+        tryAllSchemas listSchemas =
+            listSchemas
+                |> List.map resolve
+                |> List.foldl
+                    (\schema res ->
+                        if res == Nothing then
+                            case actualValue of
+                                Just av ->
+                                    case Validation.validate av schema of
+                                        Ok _ ->
+                                            schema
+                                                |> whenObjectSchema
+                                                |> Maybe.andThen calcSubSchemaType
+
+                                        Err _ ->
+                                            Nothing
+
+                                Nothing ->
+                                    Nothing
+                        else
+                            res
+                    )
+                    Nothing
+
         calcSubSchemaType : SubSchema -> Maybe Type
         calcSubSchemaType os =
             (case os.ref of
@@ -296,40 +322,24 @@ implyType val schema subpath =
                             AnyType ->
                                 case os.anyOf of
                                     Just anyOf ->
-                                        anyOf
-                                            |> List.map resolve
-                                            |> List.foldl
-                                                (\schema res ->
-                                                    if res == Nothing then
-                                                        case actualValue of
-                                                            Just av ->
-                                                                case Validation.validate av schema of
-                                                                    Ok _ ->
-                                                                        schema
-                                                                            |> whenObjectSchema
-                                                                            |> Maybe.andThen calcSubSchemaType
-
-                                                                    Err _ ->
-                                                                        Nothing
-
-                                                            Nothing ->
-                                                                Nothing
-                                                    else
-                                                        res
-                                                )
-                                                Nothing
+                                        tryAllSchemas anyOf
 
                                     Nothing ->
-                                        if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                            Just <| SingleType ObjectType
-                                        else if os.enum /= Nothing then
-                                            os.enum
-                                                |> deriveTypeFromEnum
-                                                |> Just
-                                        else if os == blankSubSchema then
-                                            Just AnyType
-                                        else
-                                            Nothing
+                                        case os.allOf of
+                                            Just allOf ->
+                                                tryAllSchemas allOf
+
+                                            Nothing ->
+                                                if os.properties /= Nothing || os.additionalProperties /= Nothing then
+                                                    Just <| SingleType ObjectType
+                                                else if os.enum /= Nothing then
+                                                    os.enum
+                                                        |> deriveTypeFromEnum
+                                                        |> Just
+                                                else if os == blankSubSchema then
+                                                    Just AnyType
+                                                else
+                                                    Nothing
 
                             UnionType ut ->
                                 if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
