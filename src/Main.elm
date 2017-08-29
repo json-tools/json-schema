@@ -58,7 +58,7 @@ view model =
             """
             { "properties": { "passengers": { "items": { "type": "object" } } } }
             """
-        
+
         res =
             Result.map2
                 (\schema val ->
@@ -68,7 +68,7 @@ view model =
                         ]
                 )
                 (coreSchemaDraft6 |> decodeString Schema.decoder)
-                (editMe |> decodeString Decode.value)
+                (bookingSchema |> decodeString Decode.value)
     in
         case res of
             Ok html ->
