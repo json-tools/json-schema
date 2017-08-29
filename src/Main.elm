@@ -141,6 +141,18 @@ form val schema subpath =
                                     text e
                        )
 
+            Ok (SingleType ArrayType) ->
+                val
+                    |> Decode.decodeValue (Decode.at path (Decode.list Decode.value))
+                    |> (\list ->
+                            case list of
+                                Ok list ->
+                                    text <| toString list
+
+                                Err e ->
+                                    text e
+                       )
+
             x ->
                 x
                     |> toString
