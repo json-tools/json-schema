@@ -79,76 +79,77 @@ form val schema subpath =
         case implyType val schema subpath of
             Ok (SingleType ObjectType) ->
                 getFields val schema subpath
-                    |> List.map (\(name, _) ->
-                        let
-                            newSubpath =
-                                subpath ++ "/" ++ name
-                        in
-                            div []
-                                [ schemataKey newSubpath
-                                , col10 [ form val schema newSubpath ]
-                                ]
-                    )
+                    |> List.map
+                        (\( name, _ ) ->
+                            let
+                                newSubpath =
+                                    subpath ++ "/" ++ name
+                            in
+                                div []
+                                    [ schemataKey newSubpath
+                                    , col10 [ form val schema newSubpath ]
+                                    ]
+                        )
                     |> col10
 
             Ok (SingleType StringType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.string)
                     |> (\s ->
-                        case s of
-                            Ok s ->
-                                Html.input [ Attrs.value s ] []
+                            case s of
+                                Ok s ->
+                                    Html.input [ Attrs.value s ] []
 
-                            Err e ->
-                                text e
-                        )
+                                Err e ->
+                                    text e
+                       )
 
             Ok (SingleType IntegerType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.int)
                     |> (\s ->
-                        case s of
-                            Ok s ->
-                                Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
+                            case s of
+                                Ok s ->
+                                    Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
 
-                            Err e ->
-                                text e
-                        )
+                                Err e ->
+                                    text e
+                       )
 
             Ok (SingleType NumberType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.float)
                     |> (\s ->
-                        case s of
-                            Ok s ->
-                                Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
+                            case s of
+                                Ok s ->
+                                    Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
 
-                            Err e ->
-                                text e
-                        )
+                                Err e ->
+                                    text e
+                       )
 
             Ok (SingleType BooleanType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.bool)
                     |> (\s ->
-                        case s of
-                            Ok s ->
-                                Html.input [ Attrs.type_ "checkbox", Attrs.checked s ] []
+                            case s of
+                                Ok s ->
+                                    Html.input [ Attrs.type_ "checkbox", Attrs.checked s ] []
 
-                            Err e ->
-                                text e
-                        )
+                                Err e ->
+                                    text e
+                       )
 
             x ->
                 x
                     |> toString
                     |> (++) "some other type detected: "
                     |> text
-                    |> (\s -> [s])
+                    |> (\s -> [ s ])
                     |> col10
 
 
-getFields : Value -> Schema -> String -> List (String, Value)
+getFields : Value -> Schema -> String -> List ( String, Value )
 getFields val schema subpath =
     let
         path =
@@ -160,7 +161,6 @@ getFields val schema subpath =
             |> Decode.decodeValue (Decode.at path <| Decode.keyValuePairs Decode.value)
             |> Result.withDefault []
             |> List.reverse
-
 
 
 whenObjectSchema : Schema -> Maybe SubSchema
@@ -176,38 +176,41 @@ whenObjectSchema schema =
 implyType : Value -> Schema -> String -> Result String Type
 implyType val schema subpath =
     let
+        findDefinition : String -> Schemata -> Maybe SubSchema
+        findDefinition ref (Schemata defs) =
+            defs
+                |> List.foldl
+                    (\( key, def ) res ->
+                        if res == Nothing && ("#/definitions/" ++ key) == ref then
+                            def
+                                |> whenObjectSchema
+                        else
+                            res
+                    )
+                    Nothing
+
         resolveReference : String -> Maybe Schema
         resolveReference ref =
-            case schema of
-                ObjectSchema os ->
-                    if ref == "#" then
-                        Just schema
-                    else if ref |> String.startsWith "#/definitions/" then
-                        os.definitions
-                            |> Maybe.andThen (\(Schemata defs) ->
-                                defs
-                                    |> List.foldl (\(key, def) res ->
-                                        if res == Nothing && ("#/definitions/" ++ key) == ref then
-                                            case def of
-                                                ObjectSchema d ->
-                                                    case d.ref of
-                                                        Just ref ->
-                                                            resolveReference ref
+            schema
+                |> whenObjectSchema
+                |> Maybe.andThen
+                    (\os ->
+                        if ref == "#" then
+                            Just schema
+                        else if ref |> String.startsWith "#/definitions/" then
+                            os.definitions
+                                |> Maybe.andThen (findDefinition ref)
+                                |> Maybe.andThen (\def ->
+                                    case def.ref of
+                                        Just r ->
+                                            resolveReference r
 
-                                                        Nothing ->
-                                                            Just def
-
-                                                BooleanSchema _ ->
-                                                    Just def
-                                        else
-                                            res
-                                    ) Nothing
-                            )
-                    else
-                        Nothing
-
-                _ ->
-                    Nothing
+                                        Nothing ->
+                                            Just <| ObjectSchema def
+                                   )
+                        else
+                            Nothing
+                    )
 
         path =
             subpath
@@ -223,83 +226,91 @@ implyType val schema subpath =
                 Nothing ->
                     Just <| ObjectSchema os
             )
-                |> Maybe.andThen (\x ->
-                    case x of
-                        ObjectSchema os ->
-                            Just os
-                        _ ->
-                            Nothing
-                )
-                |> Maybe.andThen (\os ->
-                    case os.type_ of
-                        AnyType ->
-                            if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                Just <| SingleType ObjectType
-                            else if os == blankSubSchema then
-                                Just AnyType
-                            else
+                |> Maybe.andThen
+                    (\x ->
+                        case x of
+                            ObjectSchema os ->
+                                Just os
+
+                            _ ->
                                 Nothing
+                    )
+                |> Maybe.andThen
+                    (\os ->
+                        case os.type_ of
+                            AnyType ->
+                                if os.properties /= Nothing || os.additionalProperties /= Nothing then
+                                    Just <| SingleType ObjectType
+                                else if os == blankSubSchema then
+                                    Just AnyType
+                                else
+                                    Nothing
 
-                        UnionType ut ->
-                            if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
-                                Just <| SingleType ObjectType
-                            else
-                                Just os.type_
+                            UnionType ut ->
+                                if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
+                                    Just <| SingleType ObjectType
+                                else
+                                    Just os.type_
 
-                        x ->
-                            Just x
-                )
+                            x ->
+                                Just x
+                    )
     in
         case schema of
             ObjectSchema os ->
                 let
-
                     findProperty : String -> Schema -> Maybe Schema
                     findProperty name schema =
                         schema
                             |> whenObjectSchema
                             |> Maybe.andThen .properties
-                            |> Maybe.andThen (\(Schemata pp) ->
-                                pp
-                                    |> List.foldl (\(key, s) res ->
-                                        if res /= Nothing || key /= name then
-                                            res
-                                        else
-                                            Just s
-                                    ) Nothing
-                            )
+                            |> Maybe.andThen
+                                (\(Schemata pp) ->
+                                    pp
+                                        |> List.foldl
+                                            (\( key, s ) res ->
+                                                if res /= Nothing || key /= name then
+                                                    res
+                                                else
+                                                    Just s
+                                            )
+                                            Nothing
+                                )
                             |> (\r ->
-                                if r == Nothing then
-                                    schema
-                                        |> whenObjectSchema
-                                        |> Maybe.andThen .additionalProperties
-                                else
-                                    r
-                            )
+                                    if r == Nothing then
+                                        schema
+                                            |> whenObjectSchema
+                                            |> Maybe.andThen .additionalProperties
+                                    else
+                                        r
+                               )
 
                     weNeedToGoDeeper key schema =
                         schema
                             |> Maybe.andThen whenObjectSchema
                             |> Maybe.andThen .ref
                             |> (\ref ->
-                                case ref of
-                                    Just r ->
-                                        r
-                                            |> resolveReference
-                                            |> Maybe.andThen (findProperty key)
-                                    Nothing ->
-                                        schema
-                                            |> Maybe.andThen (findProperty key)
-                            )
+                                    case ref of
+                                        Just r ->
+                                            r
+                                                |> resolveReference
+                                                |> Maybe.andThen (findProperty key)
+
+                                        Nothing ->
+                                            schema
+                                                |> Maybe.andThen (findProperty key)
+                               )
                 in
                     path
                         |> List.foldl weNeedToGoDeeper (Just schema)
-                        |> Maybe.andThen (\s ->
-                            case s of
-                                ObjectSchema ss ->
-                                    calcSubSchemaType ss
-                                _ ->
-                                    Nothing
+                        |> Maybe.andThen
+                            (\s ->
+                                case s of
+                                    ObjectSchema ss ->
+                                        calcSubSchemaType ss
+
+                                    _ ->
+                                        Nothing
                             )
                         |> Result.fromMaybe ("Can't imply type: " ++ subpath)
 
