@@ -345,31 +345,28 @@ implyType val schema subpath =
                     (\os ->
                         case os.type_ of
                             AnyType ->
-                                case os.anyOf of
-                                    Just anyOf ->
-                                        tryAllSchemas anyOf
-
-                                    Nothing ->
-                                        case os.allOf of
-                                            Just allOf ->
-                                                tryAllSchemas allOf
-
-                                            Nothing ->
-                                                case os.oneOf of
-                                                    Just oneOf ->
-                                                        tryAllSchemas oneOf
-
-                                                    Nothing ->
-                                                        if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                                            Just <| SingleType ObjectType
-                                                        else if os.enum /= Nothing then
-                                                            os.enum
-                                                                |> deriveTypeFromEnum
-                                                                |> Just
-                                                        else if os == blankSubSchema then
-                                                            Just AnyType
-                                                        else
-                                                            Nothing
+                                [ os.anyOf
+                                , os.allOf
+                                , os.oneOf
+                                ]
+                                    |> List.map (Maybe.withDefault [])
+                                    |> List.concat
+                                    |> tryAllSchemas
+                                    |> (\res ->
+                                        if res == Nothing then
+                                            if os.properties /= Nothing || os.additionalProperties /= Nothing then
+                                                Just <| SingleType ObjectType
+                                            else if os.enum /= Nothing then
+                                                os.enum
+                                                    |> deriveTypeFromEnum
+                                                    |> Just
+                                            else if os == blankSubSchema then
+                                                Just AnyType
+                                            else
+                                                Nothing
+                                        else
+                                            res
+                                        )
 
                             UnionType ut ->
                                 if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
