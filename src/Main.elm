@@ -56,7 +56,8 @@ view model =
             case bookingSchema |> decodeString Decode.value of
                 Ok v ->
                     div []
-                        [ form v schema "#"
+                        [ coreSchemaDraft6 |> toString |> text
+                        , form v schema "#"
                         ]
 
                 Err e ->
@@ -75,7 +76,7 @@ form val schema subpath =
                 |> List.drop 1
     in
         case implyType val schema subpath of
-            Ok ObjectType ->
+            Ok (SingleType ObjectType) ->
                 getFields val schema subpath
                     |> List.map (\(name, _) ->
                         let
@@ -89,7 +90,7 @@ form val schema subpath =
                     )
                     |> col10
 
-            Ok StringType ->
+            Ok (SingleType StringType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.string)
                     |> (\s ->
@@ -101,7 +102,7 @@ form val schema subpath =
                                 text e
                         )
 
-            Ok IntegerType ->
+            Ok (SingleType IntegerType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.int)
                     |> (\s ->
@@ -113,7 +114,7 @@ form val schema subpath =
                                 text e
                         )
 
-            Ok NumberType ->
+            Ok (SingleType NumberType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.float)
                     |> (\s ->
@@ -125,7 +126,7 @@ form val schema subpath =
                                 text e
                         )
 
-            Ok BooleanType ->
+            Ok (SingleType BooleanType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.bool)
                     |> (\s ->
@@ -160,7 +161,7 @@ getFields val schema subpath =
             |> List.reverse
 
 
-implyType : Value -> Schema -> String -> Result String SingleType
+implyType : Value -> Schema -> String -> Result String Type
 implyType val schema subpath =
     let
         resolveReference ref =
@@ -204,20 +205,23 @@ implyType val schema subpath =
                     Just os
             )
                 |> Maybe.andThen (\os ->
-                    if os.type_ == SingleType ObjectType || os.properties /= Nothing then
-                        Just ObjectType
-                    else if os.type_ == SingleType StringType then
-                        Just StringType
-                    else if os.type_ == SingleType IntegerType then
-                        Just IntegerType
-                    else if os.type_ == SingleType NumberType then
-                        Just NumberType
-                    else if os.type_ == SingleType BooleanType then
-                        Just BooleanType
-                    else if os == blankSubSchema then
-                        Just ObjectType
-                    else
-                        Nothing
+                    case os.type_ of
+                        AnyType ->
+                            if os.properties /= Nothing || os.additionalProperties /= Nothing then
+                                Just <| SingleType ObjectType
+                            else if os == blankSubSchema then
+                                Just AnyType
+                            else
+                                Nothing
+
+                        UnionType ut ->
+                            if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
+                                Just <| SingleType ObjectType
+                            else
+                                Just os.type_
+
+                        x ->
+                            Just x
                 )
     in
         case schema of
@@ -269,7 +273,7 @@ implyType val schema subpath =
                         |> Result.fromMaybe ("Can't imply type: " ++ subpath)
 
             BooleanSchema _ ->
-                Ok BooleanType
+                Ok <| SingleType BooleanType
 
 
 col10 : List (Html a) -> Html a
