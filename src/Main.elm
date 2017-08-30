@@ -3,9 +3,10 @@ module Main exposing (main)
 import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html, text, div)
 import Html.Attributes as Attrs exposing (style)
+import Html.Events exposing (onInput)
 import Json.Decode as Decode exposing (decodeString, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (implyType)
+import Json.Schema.Helpers exposing (implyType, setValue)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
     exposing
@@ -19,12 +20,15 @@ import Json.Schema.Definitions as Schema
 
 
 type alias Model =
-    {}
+    { schema : Result String Schema
+    , value : Result String Value
+    }
 
 
 type Msg
     = NoOp
     | UrlChange Location
+    | ValueChange String String
 
 
 main : Program Never Model Msg
@@ -39,12 +43,29 @@ main =
 
 init : Location -> ( Model, Cmd Msg )
 init location =
-    {} ! []
+    Model
+        (coreSchemaDraft6 |> decodeString Schema.decoder)
+        (bookingSchema |> decodeString Decode.value)
+    ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    model ! []
+    case msg of
+        ValueChange path str ->
+            let
+                value =
+                    Result.map2 (\schema v ->
+                        setValue schema schema path ( Encode.string str ) v
+                    ) model.schema model.value
+                        |> Debug.log "res"
+                        |> Result.withDefault model.value
+            in
+                { model | value = value } ! []
+
+
+        _ ->
+            model ! []
 
 
 subscriptions : Model -> Sub Msg
@@ -64,12 +85,12 @@ view model =
             Result.map2
                 (\schema val ->
                     div []
-                        [ coreSchemaDraft6 |> toString |> text
-                        , form val schema "#"
+                        --[ schema |> toString |> text
+                        [ form val schema "#"
                         ]
                 )
-                (coreSchemaDraft6 |> decodeString Schema.decoder)
-                (bookingSchema |> decodeString Decode.value)
+                model.schema
+                model.value
     in
         case res of
             Ok html ->
@@ -87,7 +108,7 @@ form val schema subpath =
                 |> String.split "/"
                 |> List.drop 1
     in
-        case implyType val schema subpath of
+        case implyType val schema schema subpath of
             Ok (SingleType ObjectType) ->
                 getFields val schema subpath
                     |> List.map
@@ -109,7 +130,7 @@ form val schema subpath =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Html.input [ Attrs.value s ] []
+                                    Html.input [ Attrs.value s, onInput <| ValueChange subpath ] []
 
                                 Err e ->
                                     text e
