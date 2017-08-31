@@ -1,10 +1,11 @@
 module DataManipulation exposing (all)
 
-import Test exposing (Test, test, describe)
+import Test exposing (Test, test, describe, only)
 import Expect
 import Json.Encode as Encode
 import Json.Schema.Helpers as Helpers exposing (setValue)
-import Json.Schema.Builder exposing (toSchema, buildSchema, withType, withProperties, withDefinitions, withRef)
+import Json.Schema.Definitions exposing (Schema)
+import Json.Schema.Builder exposing (toSchema, buildSchema, withType, withProperties, withDefinitions, withRef, withOneOf, withAnyOf)
 
 
 all : Test
@@ -103,6 +104,40 @@ all =
                         |> Result.andThen (setValue Encode.null "#/bar/0" (Encode.float 1.1))
                         |> Result.map (Encode.encode 0)
                         |> Expect.equal (Ok """{"bar":[1.1]}""")
+            , test "should work with oneOf" <|
+                \() ->
+                    buildSchema
+                        |> withDefinitions
+                            [ ( "foo", buildSchema |> withAnyOf
+                                [ buildSchema |> withType "array"
+                                , buildSchema |> withType "object"
+                                ]
+                              )
+                            ]
+                        |> withProperties
+                            [ ( "bar", buildSchema |> withRef "#/definitions/foo" )
+                            ]
+                        |> toSchema
+                        -- |> debugSchema
+                        |> Result.andThen (setValue Encode.null "#/bar/0" (Encode.object [("hello", Encode.float 1.1)]))
+                        |> Result.map (Encode.encode 0)
+                        |> Expect.equal (Ok """{"bar":[{"hello":1.1}]}""")
 
             ]
         ]
+
+debugSchema : Result String Schema -> Result String Schema
+debugSchema s =
+    let
+        a =
+            case s of
+                Ok schema ->
+                    schema
+                        |> Json.Schema.Definitions.encode
+                        |> Encode.encode 4
+                        |> Debug.log
+                        |> (\f -> f "schema")
+                Err s ->
+                    Debug.log "error" s
+    in
+        s

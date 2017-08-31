@@ -125,7 +125,7 @@ getPropertyValue path value =
         |> Result.withDefault Encode.null
 
 
-setPropertyValue : String -> Value -> List String -> Schema -> Value -> Value
+setPropertyValue : String -> Value -> List String -> Schema -> Value -> Result String Value
 setPropertyValue key value path schema object =
     let
         jsonPointer =
@@ -155,6 +155,7 @@ setPropertyValue key value path schema object =
                     |> List.reverse
                     |> updateOrAppend
                     |> Encode.object
+                    |> Ok
 
             Ok (SingleType ArrayType) ->
                 object
@@ -179,9 +180,10 @@ setPropertyValue key value path schema object =
                                     list ++ [ value ]
                        )
                     |> Encode.list
+                    |> Ok
 
-            _ ->
-                object
+            x ->
+                Err <| "Unable to indentify type of this node, " ++ (toString x)
 
 
 setValue : Value -> String -> Value -> Schema -> Result String Value
@@ -205,9 +207,13 @@ setValue hostValue jsonPath valueToSet schema =
                                     List.reverse path
 
                                 v =
-                                    hostValue
-                                        |> getPropertyValue p
-                                        |> setPropertyValue key value p schema
+                                    value
+                                        |> Result.andThen
+                                            (\vv ->
+                                                hostValue
+                                                    |> getPropertyValue p
+                                                    |> setPropertyValue key vv p schema
+                                            )
                             in
                                 case path of
                                     [] ->
@@ -216,8 +222,8 @@ setValue hostValue jsonPath valueToSet schema =
                                     head :: tail ->
                                         ( tail, v )
                         )
-                        ( subpath, valueToSet )
-                    |> (\( _, v ) -> Ok v)
+                        ( subpath, Ok valueToSet )
+                    |> (\( _, v ) -> v)
 
 
 setValue_ : Schema -> Schema -> String -> Value -> Value -> Result String Value
@@ -562,7 +568,9 @@ tryAllSchemas actualValue rootSchema listSchemas =
                                     Nothing
 
                         Nothing ->
-                            Nothing
+                            schema
+                                |> whenObjectSchema
+                                |> Maybe.andThen (calcSubSchemaType actualValue rootSchema)
                 else
                     res
             )
