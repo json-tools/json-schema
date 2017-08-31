@@ -1,7 +1,7 @@
 module Json.Schema.Helpers exposing (typeToString, typeToList, implyType, setValue)
 
 import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Value)
+import Json.Decode as Decode exposing (Value, decodeValue)
 import Json.Encode as Encode
 import Validation
 import Json.Schema.Definitions
@@ -97,6 +97,7 @@ parseJsonPointer subpath =
     subpath
         |> String.split "/"
         |> List.drop 1
+        |> List.filter ((/=) "")
 
 
 implyType : Value -> Schema -> Schema -> String -> Result String Type
@@ -117,8 +118,35 @@ implyType val rootSchema schema subpath =
             |> Result.fromMaybe ("Can't imply type: " ++ subpath)
 
 
-setValue : Schema -> Schema -> String -> Value -> Value -> Result String Value
-setValue rootSchema subSchema subpath finalValue dataNode =
+setValue : Value -> String -> Value -> Schema -> Result String Value
+setValue rootValue jsonPath valueToSet rootSchema =
+    case implyType rootValue rootSchema rootSchema "#/" of
+        Ok (SingleType ObjectType) ->
+            rootValue
+                |> decodeValue (Decode.keyValuePairs Decode.value)
+                |> Result.withDefault []
+                |> List.map (\(key, val) ->
+                    if "#/" ++ key == jsonPath then
+                        (key, valueToSet)
+                    else
+                        (key, val)
+                )
+                |> Encode.object
+                |> Ok
+
+        Ok (SingleType StringType) ->
+            Ok valueToSet
+    
+        Ok x ->
+            Err <| "Sorry, can't handle this type yet (the type was " ++ (toString x) ++ ")"
+
+        Err s ->
+            Err s
+
+
+
+setValue_ : Schema -> Schema -> String -> Value -> Value -> Result String Value
+setValue_ rootSchema subSchema subpath finalValue dataNode =
     let
         schemaType =
             implyType dataNode rootSchema subSchema "#/"
@@ -166,7 +194,7 @@ setValue rootSchema subSchema subpath finalValue dataNode =
                                             |> withDefaultFor (ObjectSchema schema)
 
                                     updatedValue prop =
-                                        setValue
+                                        setValue_
                                             rootSchema
                                             prop
                                             ("#/" ++ (String.join "/" tail))
@@ -207,7 +235,7 @@ setValue rootSchema subSchema subpath finalValue dataNode =
                                         ItemDefinition prop ->
                                             case getListItem index nodeList of
                                                 Just oldItem ->
-                                                    case setValue rootSchema prop ("#/" ++ (String.join "/" tail)) finalValue oldItem of
+                                                    case setValue_ rootSchema prop ("#/" ++ (String.join "/" tail)) finalValue oldItem of
                                                         Ok newValue ->
                                                             setListItem index newValue nodeList
                                                                 |> Encode.list
@@ -218,7 +246,7 @@ setValue rootSchema subSchema subpath finalValue dataNode =
 
                                                 Nothing ->
                                                     nodeList
-                                                        ++ [ defaultFor prop |> setValue rootSchema prop ("#/" ++ (String.join "/" tail)) finalValue |> Result.withDefault (defaultFor prop) ]
+                                                        ++ [ defaultFor prop |> setValue_ rootSchema prop ("#/" ++ (String.join "/" tail)) finalValue |> Result.withDefault (defaultFor prop) ]
                                                         |> Encode.list
                                                         |> \v -> Ok v
 
@@ -348,6 +376,7 @@ weNeedToGoDeeper rootSchema key schema =
                         schema
             )
         |> Maybe.andThen (findProperty key)
+        |> Debug.log ("weNeedToGoDeeper(" ++ key ++ ")")
         |> Maybe.map resolve
 
 
