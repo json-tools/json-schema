@@ -55,10 +55,10 @@ update msg model =
         ValueChange path str ->
             let
                 value =
-                    Result.map2 (\schema v ->
-                        setValue schema schema path ( Encode.string str ) v
-                    ) model.schema model.value
-                        |> Debug.log "res"
+                    Result.map2 (\v ->
+                        setValue v path ( Encode.string str )
+                    ) model.value model.schema
+                        --|> Debug.log "res"
                         |> Result.withDefault model.value
             in
                 { model | value = value } ! []

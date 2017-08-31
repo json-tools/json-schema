@@ -121,18 +121,26 @@ implyType val schema subpath =
 getPropertyValue : List String -> Value -> Value
 getPropertyValue path value =
     value
-        |> Decode.decodeValue ( Decode.at (Debug.log "papa" path) Decode.value )
+        |> Decode.decodeValue ( Decode.at path Decode.value )
         |> Result.withDefault Encode.null
 
 
 setPropertyValue : String -> Value -> Value -> Value
 setPropertyValue key value object =
-    object
-        |> decodeValue (Decode.keyValuePairs Decode.value)
-        |> Result.withDefault []
-        |> List.filter (\(k, _) -> k /= key)
-        |> (++) [(key, value)]
-        |> Encode.object
+    let
+        updateOrAppend list =
+            if List.any (\(k, _) -> k == key) list then
+                list
+                    |> List.map (\(k, v) -> if k == key then (key, value) else (k, v))
+            else
+                list ++ [(key, value)]
+    in
+        object
+            |> decodeValue (Decode.keyValuePairs Decode.value)
+            |> Result.withDefault []
+            |> List.reverse
+            |> updateOrAppend
+            |> Encode.object
 
 
 setValue : Value -> String -> Value -> Schema -> Result String Value
@@ -143,9 +151,9 @@ setValue hostValue jsonPath valueToSet schema =
                 |> parseJsonPointer
                 |> List.reverse
     in
-        Ok (case path of
+        case path of
             [] ->
-                valueToSet
+                Ok valueToSet
 
             key :: subpath ->
                 path
@@ -164,9 +172,7 @@ setValue hostValue jsonPath valueToSet schema =
                                     head :: tail ->
                                         (tail, v)
                         ) (subpath, valueToSet)
-                    |> (\(_, v) -> v)
-
-        )
+                    |> (\(_, v) -> Ok v)
 
 
 
@@ -175,7 +181,7 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
     let
         schemaType =
             implyType dataNode subSchema "#/"
-                |> Debug.log ("implied type for path " ++ subpath)
+                -- |> Debug.log ("implied type for path " ++ subpath)
     in
         case subSchema of
             BooleanSchema _ ->
@@ -401,7 +407,6 @@ weNeedToGoDeeper rootSchema key schema =
                         schema
             )
         |> Maybe.andThen (findProperty key)
-        |> Debug.log ("weNeedToGoDeeper(" ++ key ++ ")")
         |> Maybe.map resolve
 
 

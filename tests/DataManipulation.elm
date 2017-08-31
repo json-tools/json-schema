@@ -4,7 +4,7 @@ import Test exposing (Test, test, describe)
 import Expect
 import Json.Encode as Encode
 import Json.Schema.Helpers as Helpers exposing (setValue)
-import Json.Schema.Builder exposing (toSchema, buildSchema, withType, withProperties)
+import Json.Schema.Builder exposing (toSchema, buildSchema, withType, withProperties, withDefinitions, withRef)
 
 
 all : Test
@@ -57,9 +57,6 @@ all =
                                           )
                                         ]
                               )
-                            , ( "goo"
-                              , buildSchema |> withType "string"
-                              )
                             ]
                         |> toSchema
                         |> Result.andThen
@@ -82,6 +79,20 @@ all =
                                 (Encode.string "fiz")
                             )
                         |> Result.map (Encode.encode 0)
-                        |> Expect.equal (Ok """{"foo":{"bar":{"baz":"fiz","zim":"zam"},"tar":"har"},"goo":"doo"}""")
+                        |> Expect.equal (Ok """{"goo":"doo","foo":{"tar":"har","bar":{"zim":"zam","baz":"fiz"}}}""")
+            , test "should work with $ref" <|
+                \() ->
+                    buildSchema
+                        |> withDefinitions
+                            [ ( "foo", buildSchema |> withType "number" )
+                            ]
+                        |> withProperties
+                            [ ( "bar", buildSchema |> withRef "#/definitions/foo" )
+                            ]
+                        |> toSchema
+                        |> Result.andThen (setValue Encode.null "#/bar" (Encode.float 1.1))
+                        |> Result.map (Encode.encode 0)
+                        |> Expect.equal (Ok """{"bar":1.1}""")
+
             ]
         ]
