@@ -121,7 +121,7 @@ implyType val schema subpath =
 getPropertyValue : List String -> Value -> Value
 getPropertyValue path value =
     value
-        |> Decode.decodeValue ( Decode.at path Decode.value )
+        |> Decode.decodeValue (Decode.at path Decode.value)
         |> Result.withDefault Encode.null
 
 
@@ -129,11 +129,17 @@ setPropertyValue : String -> Value -> Value -> Value
 setPropertyValue key value object =
     let
         updateOrAppend list =
-            if List.any (\(k, _) -> k == key) list then
+            if List.any (\( k, _ ) -> k == key) list then
                 list
-                    |> List.map (\(k, v) -> if k == key then (key, value) else (k, v))
+                    |> List.map
+                        (\( k, v ) ->
+                            if k == key then
+                                ( key, value )
+                            else
+                                ( k, v )
+                        )
             else
-                list ++ [(key, value)]
+                list ++ [ ( key, value ) ]
     in
         object
             |> decodeValue (Decode.keyValuePairs Decode.value)
@@ -158,7 +164,7 @@ setValue hostValue jsonPath valueToSet schema =
             key :: subpath ->
                 path
                     |> List.foldl
-                        (\key (path, value) ->
+                        (\key ( path, value ) ->
                             let
                                 v =
                                     hostValue
@@ -167,13 +173,13 @@ setValue hostValue jsonPath valueToSet schema =
                             in
                                 case path of
                                     [] ->
-                                        ([], v)
+                                        ( [], v )
 
                                     head :: tail ->
-                                        (tail, v)
-                        ) (subpath, valueToSet)
-                    |> (\(_, v) -> Ok v)
-
+                                        ( tail, v )
+                        )
+                        ( subpath, valueToSet )
+                    |> (\( _, v ) -> Ok v)
 
 
 setValue_ : Schema -> Schema -> String -> Value -> Value -> Result String Value
@@ -181,7 +187,8 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
     let
         schemaType =
             implyType dataNode subSchema "#/"
-                -- |> Debug.log ("implied type for path " ++ subpath)
+
+        -- |> Debug.log ("implied type for path " ++ subpath)
     in
         case subSchema of
             BooleanSchema _ ->
@@ -342,8 +349,7 @@ calcSubSchemaType actualValue schema os =
                                             Just <| SingleType ObjectType
                                         else if os.enum /= Nothing then
                                             os.enum
-                                                |> deriveTypeFromEnum
-                                                |> Just
+                                                |> Just << deriveTypeFromEnum
                                         else if os == blankSubSchema then
                                             Just AnyType
                                         else
@@ -381,14 +387,14 @@ deriveTypeFromEnum enum =
         |> Maybe.withDefault AnyType
 
 
-resolve : Schema -> Schema
-resolve schema =
+resolve : Schema -> Schema -> Schema
+resolve rootSchema schema =
     schema
         |> whenObjectSchema
         |> Maybe.andThen
             (\os ->
                 os.ref
-                    |> Maybe.andThen (resolveReference schema)
+                    |> Maybe.andThen (resolveReference rootSchema)
             )
         |> Maybe.withDefault schema
 
@@ -406,8 +412,8 @@ weNeedToGoDeeper rootSchema key schema =
                     Nothing ->
                         schema
             )
-        |> Maybe.andThen (findProperty key)
-        |> Maybe.map resolve
+        |> Maybe.andThen (findProperty key rootSchema)
+        |> Maybe.map (resolve rootSchema)
 
 
 resolveReference : Schema -> String -> Maybe Schema
@@ -435,8 +441,8 @@ resolveReference schema ref =
             )
 
 
-findProperty : String -> Schema -> Maybe Schema
-findProperty name schema =
+findProperty : String -> Schema -> Schema -> Maybe Schema
+findProperty name rootSchema schema =
     let
         os =
             whenObjectSchema schema
@@ -473,8 +479,8 @@ findProperty name schema =
                                             (\s r ->
                                                 if r == Nothing then
                                                     s
-                                                        |> resolve
-                                                        |> findProperty name
+                                                        |> resolve rootSchema
+                                                        |> findProperty name rootSchema
                                                 else
                                                     r
                                             )
@@ -501,7 +507,7 @@ findDefinition ref (Schemata defs) =
 tryAllSchemas : Maybe Value -> Schema -> List Schema -> Maybe Type
 tryAllSchemas actualValue rootSchema listSchemas =
     listSchemas
-        |> List.map resolve
+        |> List.map (resolve rootSchema)
         |> List.foldl
             (\schema res ->
                 if res == Nothing then
