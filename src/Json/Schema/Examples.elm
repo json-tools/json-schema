@@ -163,168 +163,6 @@ bookingSchema =
     """
 {
  "$schema": "http://json-schema.org/draft-04/schema#",
- "type": "object",
- "properties": {
-  "url": {
-   "type": "string",
-   "format": "uri"
-  },
-  "account": {
-   "type": "object",
-   "properties": {
-    "email": {
-     "type": "string",
-     "format": "email"
-    },
-    "password": {
-     "type": "string",
-     "format": "string"
-    },
-    "phone": {
-     "$ref": "#/definitions/phone"
-    },
-    "isExisting": {
-     "type": "boolean",
-     "enum": [
-      true,
-      false
-     ]
-    }
-   },
-   "required": [
-    "email",
-    "phone",
-    "isExisting"
-   ]
-  },
-  "flight": {
-   "type": "object",
-   "properties": {
-    "from": {
-     "$ref": "#/definitions/datePlace"
-    },
-    "to": {
-     "$ref": "#/definitions/datePlace"
-    },
-    "return": {
-     "type": "object",
-     "properties": {
-      "from": {
-       "$ref": "#/definitions/datePlace"
-      },
-      "to": {
-       "$ref": "#/definitions/datePlace"
-      }
-     },
-     "required": [
-      "from",
-      "to"
-     ]
-    },
-    "price": {
-     "$ref": "#/definitions/price"
-    },
-    "cabinClass": {
-     "type": "string",
-     "enum": [
-      "economy",
-      "economy premium",
-      "business",
-      "first"
-     ]
-    }
-   },
-   "required": [
-    "cabinClass",
-    "from",
-    "to",
-    "price"
-   ],
-   "additionalProperties": true
-  },
-  "passengers": {
-   "type": "array",
-   "minItems": 1,
-   "maxItems": 1,
-   "items": {
-    "type": "object",
-    "properties": {
-     "title": {
-      "enum": [
-       "mr",
-       "miss",
-       "ms",
-       "mrs"
-      ]
-     },
-     "firstName": {
-      "type": "string"
-     },
-     "lastName": {
-      "type": "string"
-     },
-     "dateOfBirth": {
-      "type": "string",
-      "format": "date"
-     },
-     "hasHoldLuggage": {
-      "type": "boolean",
-      "enum": [
-       true,
-       false
-      ]
-     },
-     "id": {
-      "type": "object",
-      "properties": {
-       "type": {
-        "type": "string"
-       },
-       "number": {
-        "type": "string"
-       },
-       "expDate": {
-        "type": "string",
-        "format": "date"
-       },
-       "countryCode": {
-        "$ref": "#/definitions/countryCode"
-       }
-      }
-     }
-    },
-    "required": [
-     "title",
-     "firstName",
-     "lastName",
-     "dateOfBirth",
-     "hasHoldLuggage"
-    ]
-   }
-  },
-  "payment": {
-   "type": "object",
-   "properties": {
-    "card": {
-     "$ref": "#/definitions/paymentCard"
-    },
-    "address": {
-     "$ref": "#/definitions/personAddress"
-    }
-   },
-   "required": [
-    "card",
-    "address"
-   ]
-  }
- },
- "required": [
-  "url",
-  "account",
-  "passengers",
-  "payment",
-  "flight"
- ],
  "definitions": {
   "basicPerson": {
    "type": "object",
@@ -873,6 +711,168 @@ bookingSchema =
    "description": "2-letter ISO code representing the country. United Kingdom is officially assigned the alpha-2 code gb rather than uk. Lowercase."
   }
  },
+ "type": "object",
+ "properties": {
+  "url": {
+   "type": "string",
+   "format": "uri"
+  },
+  "account": {
+   "type": "object",
+   "properties": {
+    "email": {
+     "type": "string",
+     "format": "email"
+    },
+    "password": {
+     "type": "string",
+     "format": "string"
+    },
+    "phone": {
+     "$ref": "#/definitions/phone"
+    },
+    "isExisting": {
+     "type": "boolean",
+     "enum": [
+      true,
+      false
+     ]
+    }
+   },
+   "required": [
+    "email",
+    "phone",
+    "isExisting"
+   ]
+  },
+  "flight": {
+   "type": "object",
+   "properties": {
+    "from": {
+     "$ref": "#/definitions/datePlace"
+    },
+    "to": {
+     "$ref": "#/definitions/datePlace"
+    },
+    "return": {
+     "type": "object",
+     "properties": {
+      "from": {
+       "$ref": "#/definitions/datePlace"
+      },
+      "to": {
+       "$ref": "#/definitions/datePlace"
+      }
+     },
+     "required": [
+      "from",
+      "to"
+     ]
+    },
+    "price": {
+     "$ref": "#/definitions/price"
+    },
+    "cabinClass": {
+     "type": "string",
+     "enum": [
+      "economy",
+      "economy premium",
+      "business",
+      "first"
+     ]
+    }
+   },
+   "required": [
+    "cabinClass",
+    "from",
+    "to",
+    "price"
+   ],
+   "additionalProperties": true
+  },
+  "passengers": {
+   "type": "array",
+   "minItems": 1,
+   "maxItems": 1,
+   "items": {
+    "type": "object",
+    "properties": {
+     "title": {
+      "enum": [
+       "mr",
+       "miss",
+       "ms",
+       "mrs"
+      ]
+     },
+     "firstName": {
+      "type": "string"
+     },
+     "lastName": {
+      "type": "string"
+     },
+     "dateOfBirth": {
+      "type": "string",
+      "format": "date"
+     },
+     "hasHoldLuggage": {
+      "type": "boolean",
+      "enum": [
+       true,
+       false
+      ]
+     },
+     "id": {
+      "type": "object",
+      "properties": {
+       "type": {
+        "type": "string"
+       },
+       "number": {
+        "type": "string"
+       },
+       "expDate": {
+        "type": "string",
+        "format": "date"
+       },
+       "countryCode": {
+        "$ref": "#/definitions/countryCode"
+       }
+      }
+     }
+    },
+    "required": [
+     "title",
+     "firstName",
+     "lastName",
+     "dateOfBirth",
+     "hasHoldLuggage"
+    ]
+   }
+  },
+  "payment": {
+   "type": "object",
+   "properties": {
+    "card": {
+     "$ref": "#/definitions/paymentCard"
+    },
+    "address": {
+     "$ref": "#/definitions/personAddress"
+    }
+   },
+   "required": [
+    "card",
+    "address"
+   ]
+  }
+ },
+ "required": [
+  "url",
+  "account",
+  "passengers",
+  "payment",
+  "flight"
+ ],
  "additionalProperties": false
 }
 """

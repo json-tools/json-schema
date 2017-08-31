@@ -16,6 +16,13 @@ import Json.Schema.Definitions
         )
 
 
+type alias ImpliedType =
+    { type_ : Type
+    , schema : SubSchema
+    , error : Maybe String
+    }
+
+
 singleTypeToString : SingleType -> String
 singleTypeToString st =
     case st of
@@ -100,7 +107,7 @@ parseJsonPointer subpath =
         |> List.filter ((/=) "")
 
 
-implyType : Value -> Schema -> String -> Result String Type
+implyType : Value -> Schema -> String -> ImpliedType
 implyType val schema subpath =
     let
         path =
@@ -115,7 +122,20 @@ implyType val schema subpath =
             |> List.foldl (weNeedToGoDeeper schema) (Just schema)
             |> Maybe.andThen whenObjectSchema
             |> Maybe.andThen (calcSubSchemaType actualValue schema)
-            |> Result.fromMaybe ("Can't imply type: " ++ subpath)
+            |> (\x ->
+                case x of
+                    Nothing ->
+                        { type_ = AnyType
+                        , schema = blankSubSchema
+                        , error = Just <| "Can't imply type: " ++ subpath
+                        }
+
+                    Just (t, os) ->
+                        { type_ = t
+                        , schema = os
+                        , error = Nothing
+                        }
+                )
 
 
 getPropertyValue : List String -> Value -> Value
@@ -147,8 +167,8 @@ setPropertyValue key value path schema object =
             else
                 list ++ [ ( key, value ) ]
     in
-        case nodeType of
-            Ok (SingleType ObjectType) ->
+        case nodeType.type_ of
+            SingleType ObjectType ->
                 object
                     |> decodeValue (Decode.keyValuePairs Decode.value)
                     |> Result.withDefault []
@@ -157,7 +177,7 @@ setPropertyValue key value path schema object =
                     |> Encode.object
                     |> Ok
 
-            Ok (SingleType ArrayType) ->
+            SingleType ArrayType ->
                 object
                     |> decodeValue (Decode.list Decode.value)
                     |> Result.withDefault []
@@ -183,7 +203,12 @@ setPropertyValue key value path schema object =
                     |> Ok
 
             x ->
-                Err <| "Unable to indentify type of this node, " ++ (toString x)
+                case nodeType.error of
+                    Just e ->
+                        Err e
+
+                    Nothing ->
+                        Err <| "Unable to indentify type of this node, " ++ (toString x)
 
 
 setValue : Value -> String -> Value -> Schema -> Result String Value
@@ -250,22 +275,22 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
                                     Err x ->
                                         Err x
                         in
-                            case schemaType of
-                                Ok (SingleType IntegerType) ->
+                            case schemaType.type_ of
+                                (SingleType IntegerType) ->
                                     tryDecoding Decode.int
 
-                                Ok (SingleType StringType) ->
+                                (SingleType StringType) ->
                                     tryDecoding Decode.string
 
-                                Ok (SingleType BooleanType) ->
+                                (SingleType BooleanType) ->
                                     tryDecoding Decode.bool
 
                                 _ ->
                                     Ok finalValue
 
                     key :: tail ->
-                        case schemaType of
-                            Ok (SingleType ObjectType) ->
+                        case schemaType.type_ of
+                            (SingleType ObjectType) ->
                                 let
                                     nodeDict =
                                         decodeDict dataNode
@@ -298,7 +323,7 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
                                         Nothing ->
                                             Err ("Key '" ++ key ++ "' not found")
 
-                            Ok (SingleType ArrayType) ->
+                            (SingleType ArrayType) ->
                                 let
                                     index =
                                         String.toInt key |> Result.withDefault 0
@@ -365,7 +390,7 @@ setListItem index a list =
         list
 
 
-calcSubSchemaType : Maybe Value -> Schema -> SubSchema -> Maybe Type
+calcSubSchemaType : Maybe Value -> Schema -> SubSchema -> Maybe (Type, SubSchema)
 calcSubSchemaType actualValue schema os =
     (case os.ref of
         Just ref ->
@@ -390,13 +415,13 @@ calcSubSchemaType actualValue schema os =
                             |> (\res ->
                                     if res == Nothing then
                                         if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                            Just <| SingleType ObjectType
+                                            Just (SingleType ObjectType, os)
                                         else if os.enum /= Nothing then
                                             os.enum
-                                                |> Just
-                                                << deriveTypeFromEnum
+                                                |> deriveTypeFromEnum
+                                                |> (\t -> Just (t, os))
                                         else if os == blankSubSchema then
-                                            Just AnyType
+                                            Just (AnyType, os)
                                         else
                                             Nothing
                                     else
@@ -405,12 +430,12 @@ calcSubSchemaType actualValue schema os =
 
                     UnionType ut ->
                         if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
-                            Just <| SingleType ObjectType
+                            Just (SingleType ObjectType, os)
                         else
-                            Just os.type_
+                            Just (os.type_, os)
 
                     x ->
-                        Just x
+                        Just (x, os)
             )
 
 
@@ -549,7 +574,7 @@ findDefinition ref (Schemata defs) =
             Nothing
 
 
-tryAllSchemas : Maybe Value -> Schema -> List Schema -> Maybe Type
+tryAllSchemas : Maybe Value -> Schema -> List Schema -> Maybe (Type, SubSchema)
 tryAllSchemas actualValue rootSchema listSchemas =
     listSchemas
         |> List.map (resolve rootSchema)

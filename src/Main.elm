@@ -107,9 +107,12 @@ form val schema subpath =
             subpath
                 |> String.split "/"
                 |> List.drop 1
+
+        implied =
+            implyType val schema subpath
     in
-        case implyType val schema subpath of
-            Ok (SingleType ObjectType) ->
+        case implied.type_ of
+            (SingleType ObjectType) ->
                 getFields val schema subpath
                     |> List.map
                         (\( name, _ ) ->
@@ -124,19 +127,34 @@ form val schema subpath =
                         )
                     |> col10
 
-            Ok (SingleType StringType) ->
+            (SingleType StringType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.string)
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Html.input [ Attrs.value s, onInput <| ValueChange subpath ] []
+                                    case implied.schema.enum of
+                                        Nothing ->
+                                            Html.input [ Attrs.value s, onInput <| ValueChange subpath ] []
+
+                                        Just enum ->
+                                            enum
+                                                |> List.map (\v ->
+                                                    v
+                                                        |> Decode.decodeValue Decode.string
+                                                        |> Result.withDefault ""
+                                                        |> (\val ->
+                                                            Html.option [ Attrs.selected <| s == val ] [ text val ]
+                                                           )
+                                                    )
+                                                |> Html.select
+                                                    [ onInput <| ValueChange subpath ]
 
                                 Err e ->
                                     text e
                        )
 
-            Ok (SingleType IntegerType) ->
+            (SingleType IntegerType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.int)
                     |> (\s ->
@@ -148,7 +166,7 @@ form val schema subpath =
                                     text e
                        )
 
-            Ok (SingleType NumberType) ->
+            (SingleType NumberType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.float)
                     |> (\s ->
@@ -160,7 +178,7 @@ form val schema subpath =
                                     text e
                        )
 
-            Ok (SingleType BooleanType) ->
+            (SingleType BooleanType) ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.bool)
                     |> (\s ->
@@ -172,7 +190,7 @@ form val schema subpath =
                                     text e
                        )
 
-            Ok (SingleType ArrayType) ->
+            (SingleType ArrayType) ->
                 val
                     |> Decode.decodeValue (Decode.at path (Decode.list Decode.value))
                     |> (\list ->
