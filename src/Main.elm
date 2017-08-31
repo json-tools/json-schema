@@ -108,7 +108,7 @@ form val schema subpath =
                 |> String.split "/"
                 |> List.drop 1
     in
-        case implyType val schema schema subpath of
+        case implyType val schema subpath of
             Ok (SingleType ObjectType) ->
                 getFields val schema subpath
                     |> List.map

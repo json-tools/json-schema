@@ -100,8 +100,8 @@ parseJsonPointer subpath =
         |> List.filter ((/=) "")
 
 
-implyType : Value -> Schema -> Schema -> String -> Result String Type
-implyType val rootSchema schema subpath =
+implyType : Value -> Schema -> String -> Result String Type
+implyType val schema subpath =
     let
         path =
             parseJsonPointer subpath
@@ -112,36 +112,61 @@ implyType val rootSchema schema subpath =
                 |> Result.toMaybe
     in
         path
-            |> List.foldl (weNeedToGoDeeper rootSchema) (Just schema)
+            |> List.foldl (weNeedToGoDeeper schema) (Just schema)
             |> Maybe.andThen whenObjectSchema
-            |> Maybe.andThen (calcSubSchemaType actualValue rootSchema)
+            |> Maybe.andThen (calcSubSchemaType actualValue schema)
             |> Result.fromMaybe ("Can't imply type: " ++ subpath)
 
 
+getPropertyValue : List String -> Value -> Value
+getPropertyValue path value =
+    value
+        |> Decode.decodeValue ( Decode.at (Debug.log "papa" path) Decode.value )
+        |> Result.withDefault Encode.null
+
+
+setPropertyValue : String -> Value -> Value -> Value
+setPropertyValue key value object =
+    object
+        |> decodeValue (Decode.keyValuePairs Decode.value)
+        |> Result.withDefault []
+        |> List.filter (\(k, _) -> k /= key)
+        |> (++) [(key, value)]
+        |> Encode.object
+
+
 setValue : Value -> String -> Value -> Schema -> Result String Value
-setValue rootValue jsonPath valueToSet rootSchema =
-    case implyType rootValue rootSchema rootSchema "#/" of
-        Ok (SingleType ObjectType) ->
-            rootValue
-                |> decodeValue (Decode.keyValuePairs Decode.value)
-                |> Result.withDefault []
-                |> List.map (\(key, val) ->
-                    if "#/" ++ key == jsonPath then
-                        (key, valueToSet)
-                    else
-                        (key, val)
-                )
-                |> Encode.object
-                |> Ok
+setValue hostValue jsonPath valueToSet schema =
+    let
+        path =
+            jsonPath
+                |> parseJsonPointer
+                |> List.reverse
+    in
+        Ok (case path of
+            [] ->
+                valueToSet
 
-        Ok (SingleType StringType) ->
-            Ok valueToSet
-    
-        Ok x ->
-            Err <| "Sorry, can't handle this type yet (the type was " ++ (toString x) ++ ")"
+            key :: subpath ->
+                path
+                    |> List.foldl
+                        (\key (path, value) ->
+                            let
+                                v =
+                                    hostValue
+                                        |> getPropertyValue (List.reverse path)
+                                        |> setPropertyValue key value
+                            in
+                                case path of
+                                    [] ->
+                                        ([], v)
 
-        Err s ->
-            Err s
+                                    head :: tail ->
+                                        (tail, v)
+                        ) (subpath, valueToSet)
+                    |> (\(_, v) -> v)
+
+        )
 
 
 
@@ -149,7 +174,7 @@ setValue_ : Schema -> Schema -> String -> Value -> Value -> Result String Value
 setValue_ rootSchema subSchema subpath finalValue dataNode =
     let
         schemaType =
-            implyType dataNode rootSchema subSchema "#/"
+            implyType dataNode subSchema "#/"
                 |> Debug.log ("implied type for path " ++ subpath)
     in
         case subSchema of
