@@ -1,7 +1,7 @@
 module Json.Schema.Helpers exposing (typeToString, typeToList, implyType, setValue)
 
 import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Value, decodeValue)
+import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
 import Json.Encode as Encode
 import Validation
 import Json.Schema.Definitions
@@ -125,9 +125,15 @@ getPropertyValue path value =
         |> Result.withDefault Encode.null
 
 
-setPropertyValue : String -> Value -> Value -> Value
-setPropertyValue key value object =
+setPropertyValue : String -> Value -> List String -> Schema -> Value -> Value
+setPropertyValue key value path schema object =
     let
+        jsonPointer =
+            "#/" ++ (String.join "/" path)
+
+        nodeType =
+            implyType object schema jsonPointer
+
         updateOrAppend list =
             if List.any (\( k, _ ) -> k == key) list then
                 list
@@ -141,12 +147,41 @@ setPropertyValue key value object =
             else
                 list ++ [ ( key, value ) ]
     in
-        object
-            |> decodeValue (Decode.keyValuePairs Decode.value)
-            |> Result.withDefault []
-            |> List.reverse
-            |> updateOrAppend
-            |> Encode.object
+        case nodeType of
+            Ok (SingleType ObjectType) ->
+                object
+                    |> decodeValue (Decode.keyValuePairs Decode.value)
+                    |> Result.withDefault []
+                    |> List.reverse
+                    |> updateOrAppend
+                    |> Encode.object
+
+            Ok (SingleType ArrayType) ->
+                object
+                    |> decodeValue (Decode.list Decode.value)
+                    |> Result.withDefault []
+                    |> (\list ->
+                            let
+                                index =
+                                    key
+                                        |> decodeString Decode.int
+                                        |> Result.withDefault 0
+                            in
+                                if List.length list < index - 1 then
+                                    list
+                                        |> List.indexedMap (\i v ->
+                                            if i == index then
+                                                value
+                                            else
+                                                v
+                                        )
+                                else
+                                    list ++ [ value ]
+                       )
+                    |> Encode.list
+
+            _ ->
+                object
 
 
 setValue : Value -> String -> Value -> Schema -> Result String Value
@@ -166,10 +201,13 @@ setValue hostValue jsonPath valueToSet schema =
                     |> List.foldl
                         (\key ( path, value ) ->
                             let
+                                p =
+                                    List.reverse path
+
                                 v =
                                     hostValue
-                                        |> getPropertyValue (List.reverse path)
-                                        |> setPropertyValue key value
+                                        |> getPropertyValue p
+                                        |> setPropertyValue key value p schema
                             in
                                 case path of
                                     [] ->
@@ -349,7 +387,8 @@ calcSubSchemaType actualValue schema os =
                                             Just <| SingleType ObjectType
                                         else if os.enum /= Nothing then
                                             os.enum
-                                                |> Just << deriveTypeFromEnum
+                                                |> Just
+                                                << deriveTypeFromEnum
                                         else if os == blankSubSchema then
                                             Just AnyType
                                         else

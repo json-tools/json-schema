@@ -80,19 +80,29 @@ all =
                             )
                         |> Result.map (Encode.encode 0)
                         |> Expect.equal (Ok """{"goo":"doo","foo":{"tar":"har","bar":{"zim":"zam","baz":"fiz"}}}""")
+
+            , test "array should remain array" <|
+                \() ->
+                    buildSchema
+                        |> withType "array"
+                        |> toSchema
+                        |> Result.andThen (setValue (Encode.list [Encode.string "hello"]) "#/1" (Encode.string "world"))
+                        |> Result.map (Encode.encode 0)
+                        |> Expect.equal (Ok """["hello","world"]""")
+
             , test "should work with $ref" <|
                 \() ->
                     buildSchema
                         |> withDefinitions
-                            [ ( "foo", buildSchema |> withType "number" )
+                            [ ( "foo", buildSchema |> withType "array" )
                             ]
                         |> withProperties
                             [ ( "bar", buildSchema |> withRef "#/definitions/foo" )
                             ]
                         |> toSchema
-                        |> Result.andThen (setValue Encode.null "#/bar" (Encode.float 1.1))
+                        |> Result.andThen (setValue Encode.null "#/bar/0" (Encode.float 1.1))
                         |> Result.map (Encode.encode 0)
-                        |> Expect.equal (Ok """{"bar":1.1}""")
+                        |> Expect.equal (Ok """{"bar":[1.1]}""")
 
             ]
         ]
