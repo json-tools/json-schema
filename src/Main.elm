@@ -4,7 +4,7 @@ import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html, text, div)
 import Html.Attributes as Attrs exposing (style)
 import Html.Events exposing (onInput)
-import Json.Decode as Decode exposing (decodeString, Value)
+import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
 import Json.Schema.Helpers exposing (implyType, setValue)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
@@ -72,9 +72,16 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
 
-
 view : Model -> Html Msg
 view model =
+    model.value
+        |> Result.andThen (decodeValue Schema.decoder)
+        |> Result.map (documentation "#")
+        |> Result.withDefault (text "")
+
+
+viewForm : Model -> Html Msg
+viewForm model =
     let
         editMe =
             """
@@ -257,8 +264,8 @@ schemataDoc s label subpath =
                                 in
                                     col10
                                         [ schemataKey newSubpath
-                                        , documentation schema newSubpath
-                                        , source schema
+                                        , documentation newSubpath schema
+                                        --, source schema
                                         ]
                             )
                         |> div []
@@ -267,8 +274,8 @@ schemataDoc s label subpath =
         |> Maybe.withDefault (text "")
 
 
-documentation : Schema -> String -> Html Msg
-documentation node subpath =
+documentation : String -> Schema -> Html Msg
+documentation subpath node =
     case node of
         ObjectSchema s ->
             col10
