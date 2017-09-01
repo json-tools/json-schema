@@ -6,7 +6,8 @@
   "author": "",
   "license": "ISC",
   "scripts": {
-    "start": "elm-live src/Main.elm"
+    "start": "elm-live src/Main.elm",
+    "test": "elm-test tests/Tests.elm --watch"
   },
   "devDependencies": {
     "elm": "^0.18.0",
