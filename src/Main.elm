@@ -1,9 +1,11 @@
 module Main exposing (main)
 
 import Navigation exposing (Location, program, newUrl)
-import Html exposing (Html, text, div)
-import Html.Attributes as Attrs exposing (style)
-import Html.Events exposing (onInput)
+import Html exposing (Html)
+import StyleSheet exposing (Styles(None, Main, Error, Bordered, Button), Variations, stylesheet)
+import Element.Events exposing (onClick, onMouseOver, onMouseOut, onInput)
+import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, width, yScrollbar, fill, px)
+import Element exposing (Element, el, row, text, column)
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
 import Json.Schema.Helpers exposing (implyType, setValue)
@@ -17,6 +19,10 @@ import Json.Schema.Definitions as Schema
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , blankSubSchema
         )
+
+
+type alias View =
+    Element Styles Variations Msg
 
 
 type alias Model =
@@ -46,7 +52,7 @@ init location =
     Model
         (coreSchemaDraft6 |> decodeString Schema.decoder)
         (bookingSchema |> decodeString Decode.value)
-    ! []
+        ! []
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -55,14 +61,17 @@ update msg model =
         ValueChange path str ->
             let
                 value =
-                    Result.map2 (\v ->
-                        setValue v path ( Encode.string str )
-                    ) model.value model.schema
+                    Result.map2
+                        (\v ->
+                            setValue v path (Encode.string str)
+                        )
+                        model.value
+                        model.schema
                         --|> Debug.log "res"
-                        |> Result.withDefault model.value
+                        |>
+                            Result.withDefault model.value
             in
                 { model | value = value } ! []
-
 
         _ ->
             model ! []
@@ -72,15 +81,56 @@ subscriptions : Model -> Sub Msg
 subscriptions _ =
     Sub.none
 
+
 view : Model -> Html Msg
 view model =
-    model.value
-        |> Result.andThen (decodeValue Schema.decoder)
-        |> Result.map (documentation "#")
-        |> Result.withDefault (text "")
+    let
+        propertiesListing section fn =
+            model.value
+                |> Result.andThen (decodeValue Schema.decoder)
+                |> Result.toMaybe
+                |> Maybe.andThen
+                    (\s ->
+                        case s of
+                            ObjectSchema os ->
+                                Just os
+
+                            _ ->
+                                Nothing
+                    )
+                |> Maybe.andThen fn
+                |> Maybe.withDefault (Schemata [])
+                |> (\(Schemata props) ->
+                        List.map (\( key, _ ) -> row None [] [ Element.link ("#/" ++ section ++ "/" ++ key) <| text key ]) props
+                   )
+                |> column None [ padding 20 ]
+
+        a =
+            model.value
+                |> Result.andThen (decodeValue Schema.decoder)
+                |> Result.map (documentation "#")
+                |> Result.withDefault (text "")
+    in
+        Element.viewport stylesheet <|
+            row Main
+                [ height <| fill 1
+                , width <| fill 1
+                ]
+                [ column None
+                    [ height <| fill 1, minWidth <| px 200, yScrollbar, spacing 10, padding 0 ]
+                    [ el None [ inlineStyle [ ( "font-weight", "bold" ) ] ] <| text "definitions"
+                    , propertiesListing "definitions" .definitions
+                    , el None [ inlineStyle [ ( "font-weight", "bold" ) ] ] <| text "properties"
+                    , propertiesListing "properties" .properties
+                    ]
+                , column None
+                    [ height <| fill 1, width <| fill 1, yScrollbar, padding 10 ]
+                    [ a
+                    ]
+                ]
 
 
-viewForm : Model -> Html Msg
+viewForm : Model -> View
 viewForm model =
     let
         editMe =
@@ -91,7 +141,8 @@ viewForm model =
         res =
             Result.map2
                 (\schema val ->
-                    div []
+                    column None
+                        []
                         --[ schema |> toString |> text
                         [ form val schema "#"
                         ]
@@ -104,10 +155,10 @@ viewForm model =
                 html
 
             Err e ->
-                Html.text e
+                text e
 
 
-form : Value -> Schema -> String -> Html Msg
+form : Value -> Schema -> String -> View
 form val schema subpath =
     let
         path =
@@ -119,7 +170,7 @@ form val schema subpath =
             implyType val schema subpath
     in
         case implied.type_ of
-            (SingleType ObjectType) ->
+            SingleType ObjectType ->
                 getFields val schema subpath
                     |> List.map
                         (\( name, _ ) ->
@@ -127,14 +178,15 @@ form val schema subpath =
                                 newSubpath =
                                     subpath ++ "/" ++ name
                             in
-                                div []
-                                    [ schemataKey newSubpath
+                                column None
+                                    []
+                                    [ schemataKey subpath newSubpath
                                     , col10 [ form val schema newSubpath ]
                                     ]
                         )
                     |> col10
 
-            (SingleType StringType) ->
+            SingleType StringType ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.string)
                     |> (\s ->
@@ -142,62 +194,64 @@ form val schema subpath =
                                 Ok s ->
                                     case implied.schema.enum of
                                         Nothing ->
-                                            Html.input [ Attrs.value s, onInput <| ValueChange subpath ] []
+                                            Element.inputText None [ onInput <| ValueChange subpath ] s
 
                                         Just enum ->
                                             enum
-                                                |> List.map (\v ->
-                                                    v
-                                                        |> Decode.decodeValue Decode.string
-                                                        |> Result.withDefault ""
-                                                        |> (\val ->
-                                                            Html.option [ Attrs.selected <| s == val ] [ text val ]
-                                                           )
+                                                |> List.map
+                                                    (\v ->
+                                                        v
+                                                            |> Decode.decodeValue Decode.string
+                                                            |> Result.withDefault ""
+                                                            |> (\val ->
+                                                                    Element.option val (s == val) (text val)
+                                                               )
                                                     )
-                                                |> Html.select
+                                                |> Element.select ""
+                                                    None
                                                     [ onInput <| ValueChange subpath ]
 
                                 Err e ->
                                     text e
                        )
 
-            (SingleType IntegerType) ->
+            SingleType IntegerType ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.int)
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
+                                    Element.inputText None [ Attributes.type_ "number" ] (toString s)
 
                                 Err e ->
                                     text e
                        )
 
-            (SingleType NumberType) ->
+            SingleType NumberType ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.float)
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Html.input [ Attrs.type_ "number", Attrs.value <| toString s ] []
+                                    Element.inputText None [ Attributes.type_ "number" ] (toString s)
 
                                 Err e ->
                                     text e
                        )
 
-            (SingleType BooleanType) ->
+            SingleType BooleanType ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.bool)
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Html.input [ Attrs.type_ "checkbox", Attrs.checked s ] []
+                                    Element.checkbox s None [ Attributes.type_ "checkbox" ] (text "")
 
                                 Err e ->
                                     text e
                        )
 
-            (SingleType ArrayType) ->
+            SingleType ArrayType ->
                 val
                     |> Decode.decodeValue (Decode.at path (Decode.list Decode.value))
                     |> (\list ->
@@ -215,7 +269,7 @@ form val schema subpath =
                     |> (++) "some other type detected: "
                     |> text
                     |> (\s -> [ s ])
-                    |> div [ style [ ( "color", "red" )] ]
+                    |> column Error []
 
 
 getFields : Value -> Schema -> String -> List ( String, Value )
@@ -232,29 +286,41 @@ getFields val schema subpath =
             |> List.reverse
 
 
-
-col10 : List (Html a) -> Html a
+col10 : List View -> View
 col10 =
-    div [ style [ ( "padding", "20px" ) ] ]
+    column None [ spacing 10, padding 10 ]
 
 
-source : Schema -> Html msg
+source : Schema -> View
 source s =
-    Html.pre [] [ Schema.encode s |> Encode.encode 4 |> text ]
+    Element.node "pre" <| el None [] (Schema.encode s |> Encode.encode 4 |> text)
 
 
-schemataKey : String -> Html msg
-schemataKey s =
-    Html.code [ style [ ( "font-weight", "bold" ) ] ] [ text s ]
+schemataKey : String -> String -> View
+schemataKey parent s =
+    let
+        nodeName =
+            if parent == "#/definitions/" || parent == "#/properties/" then
+                "h1"
+            else
+                "h3"
+    in
+        Element.node nodeName <|
+            el None
+                [ Attributes.tabindex 1
+                , Attributes.id <| String.dropLeft 1 s
+                , inlineStyle [ ( "font-weight", "bold" ) ]
+                ]
+                (text s)
 
 
-schemataDoc : Maybe Schemata -> String -> String -> Html Msg
+schemataDoc : Maybe Schemata -> String -> String -> View
 schemataDoc s label subpath =
     s
         |> Maybe.map
             (\(Schemata s) ->
                 col10
-                    [ text label
+                    [ text ""
                     , s
                         |> List.map
                             (\( key, schema ) ->
@@ -263,18 +329,18 @@ schemataDoc s label subpath =
                                         subpath ++ key
                                 in
                                     col10
-                                        [ schemataKey newSubpath
+                                        [ schemataKey subpath newSubpath
                                         , documentation newSubpath schema
-                                        --, source schema
+                                        , source schema
                                         ]
                             )
-                        |> div []
+                        |> column None []
                     ]
             )
         |> Maybe.withDefault (text "")
 
 
-documentation : String -> Schema -> Html Msg
+documentation : String -> Schema -> View
 documentation subpath node =
     case node of
         ObjectSchema s ->
@@ -284,4 +350,4 @@ documentation subpath node =
                 ]
 
         BooleanSchema b ->
-            Html.text <| toString b
+            text <| toString b
