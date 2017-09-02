@@ -2,10 +2,12 @@ module Main exposing (main)
 
 import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html)
+import Html.Attributes
 import StyleSheet exposing (Styles(None, Main, Error, Bordered, Button), Variations, stylesheet)
 import Element.Events exposing (onClick, onMouseOver, onMouseOut, onInput)
-import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, width, yScrollbar, fill, px)
-import Element exposing (Element, el, row, text, column)
+import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px)
+import Element exposing (Element, el, row, text, column, paragraph)
+import Markdown
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
 import Json.Schema.Helpers exposing (implyType, setValue)
@@ -101,7 +103,12 @@ view model =
                 |> Maybe.andThen fn
                 |> Maybe.withDefault (Schemata [])
                 |> (\(Schemata props) ->
-                        List.map (\( key, _ ) -> row None [] [ Element.link ("#/" ++ section ++ "/" ++ key) <| text key ]) props
+                        List.map (\( key, _ ) -> row None [] [
+                            key
+                                |> text
+                                |> el None [ inlineStyle [("color", "royalblue")] ]
+                                |> Element.link ("#/" ++ section ++ "/" ++ key)
+                            ]) props
                    )
                 |> column None [ padding 20 ]
 
@@ -293,7 +300,9 @@ col10 =
 
 source : Schema -> View
 source s =
-    Element.node "pre" <| el None [] (Schema.encode s |> Encode.encode 4 |> text)
+    Markdown.toHtml [ Html.Attributes.class "hljs" ] ( Schema.encode s |> Encode.encode 2 |> (\s -> "```json\n" ++ s ++ "```" ) )
+        |> Element.html
+        |> el None [ maxWidth <| px 500 ]
 
 
 schemataKey : String -> String -> View
@@ -303,25 +312,24 @@ schemataKey parent s =
             if parent == "#/definitions/" || parent == "#/properties/" then
                 "h1"
             else
-                "h3"
+                "h2"
     in
         Element.node nodeName <|
             el None
                 [ Attributes.tabindex 1
-                , Attributes.id <| String.dropLeft 1 s
-                , inlineStyle [ ( "font-weight", "bold" ) ]
+                , Attributes.id <| String.dropLeft 1 (parent ++ s)
+                , inlineStyle [ ("outline", "none"), ( "font-weight", "bold" ), ( "font-family", "monospace" ), ( "color", "#1184CE" ) ]
                 ]
                 (text s)
 
 
-schemataDoc : Maybe Schemata -> String -> String -> View
-schemataDoc s label subpath =
+schemataDoc : Maybe Schemata -> String -> View
+schemataDoc s subpath =
     s
         |> Maybe.map
             (\(Schemata s) ->
                 col10
-                    [ text ""
-                    , s
+                    [ s
                         |> List.map
                             (\( key, schema ) ->
                                 let
@@ -329,7 +337,7 @@ schemataDoc s label subpath =
                                         subpath ++ key
                                 in
                                     col10
-                                        [ schemataKey subpath newSubpath
+                                        [ schemataKey subpath key
                                         , documentation newSubpath schema
                                         , source schema
                                         ]
@@ -340,13 +348,22 @@ schemataDoc s label subpath =
         |> Maybe.withDefault (text "")
 
 
+metaDoc : SubSchema -> View
+metaDoc s =
+    column None []
+        [ row None [ ] [ s.title |> Maybe.withDefault "" |> Element.bold ]
+        , paragraph None [] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
+        ]
+
+
 documentation : String -> Schema -> View
 documentation subpath node =
     case node of
         ObjectSchema s ->
             col10
-                [ schemataDoc s.definitions "definitions: " <| subpath ++ "/definitions/"
-                , schemataDoc s.properties "properties: " <| subpath ++ "/properties/"
+                [ metaDoc s
+                , schemataDoc s.definitions <| subpath ++ "/definitions/"
+                , schemataDoc s.properties <| subpath ++ "/properties/"
                 ]
 
         BooleanSchema b ->

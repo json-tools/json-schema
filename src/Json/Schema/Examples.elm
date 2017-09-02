@@ -450,7 +450,7 @@ bookingSchema =
     "yer",
     "zwd"
    ],
-   "description": "3-letter ISO code representing the currency. Lowercase."
+   "description": "3-letter ISO code representing the currency. ___Lowercase___."
   },
   "countryCode": {
    "type": "string",
@@ -708,7 +708,7 @@ bookingSchema =
     "zw"
    ],
    "title": "ISO code representing the country",
-   "description": "2-letter ISO code representing the country. United Kingdom is officially assigned the alpha-2 code gb rather than uk. Lowercase."
+   "description": "2-letter ISO code representing the country. United Kingdom is officially assigned the alpha-2 code `gb` rather than `uk`. *Lowercase*."
   }
  },
  "type": "object",
