@@ -81,7 +81,6 @@ update msg model =
             in
                 { model | value = value } ! []
 
-
         UrlChange l ->
             { model | activeSection = l.hash } ! []
 
@@ -90,6 +89,7 @@ update msg model =
 
         _ ->
             model ! []
+
 
 port activeSection : (String -> msg) -> Sub msg
 
@@ -118,19 +118,37 @@ view model =
                 |> Maybe.andThen fn
                 |> Maybe.withDefault (Schemata [])
                 |> (\(Schemata props) ->
-                    let
-                        thisSection key =
-                            "#/" ++ section ++ "/" ++ key
-                    in
                         List.map
                             (\( key, _ ) ->
-                                row None
-                                    []
-                                    [ key
-                                        |> text
-                                        |> el None [ inlineStyle [ ( "color", if thisSection key  == model.activeSection then "red" else "royalblue" ) ] ]
-                                        |> Element.link (thisSection key)
-                                    ]
+                                let
+                                    thisSection =
+                                        "#/" ++ section ++ "/" ++ key
+                                in
+                                    row None
+                                        []
+                                        [ key
+                                            |> text
+                                            |> el None
+                                                [ inlineStyle
+                                                    [ ( "color"
+                                                      , if thisSection == model.activeSection then
+                                                            "white"
+                                                        else
+                                                            "royalblue"
+                                                      )
+                                                    , ( "background"
+                                                      , if thisSection == model.activeSection then
+                                                            "#117bce"
+                                                        else
+                                                            "inherit"
+                                                      )
+                                                    , ( "transition", "all .5s ease" )
+                                                    ]
+                                                , padding 5
+                                                , width <| fill 1
+                                                ]
+                                            |> Element.link thisSection
+                                        ]
                             )
                             props
                    )
