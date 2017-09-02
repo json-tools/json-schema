@@ -365,11 +365,13 @@ schemataDoc level s subpath =
                                         column None
                                             [ spacing 10
                                             , padding 10
-                                            , Attributes.tabindex 1
-                                            , Attributes.id <| String.dropLeft 1 newSubpath
-                                            , inlineStyle [ ( "outline", "none" ) ]
                                             ]
                                             [ schemataKey level subpath key
+                                                |> el None
+                                                    [ Attributes.tabindex 1
+                                                    , Attributes.id <| String.dropLeft 1 newSubpath
+                                                    , inlineStyle [ ( "outline", "none" ) ]
+                                                    ]
                                             , row None
                                                 [ Attributes.justify ]
                                                 [ el None [ width <| percent 50 ] <| documentation (level + 1) newSubpath schema
