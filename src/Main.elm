@@ -3,9 +3,9 @@ module Main exposing (main)
 import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html)
 import Html.Attributes
-import StyleSheet exposing (Styles(None, Main, Error, Bordered, Button), Variations, stylesheet)
+import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader), Variations, stylesheet)
 import Element.Events exposing (onClick, onMouseOver, onMouseOut, onInput)
-import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px)
+import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
@@ -115,7 +115,7 @@ view model =
         a =
             model.value
                 |> Result.andThen (decodeValue Schema.decoder)
-                |> Result.map (documentation "#")
+                |> Result.map (documentation 0 "#")
                 |> Result.withDefault (text "")
     in
         Element.viewport stylesheet <|
@@ -187,7 +187,7 @@ form val schema subpath =
                             in
                                 column None
                                     []
-                                    [ schemataKey subpath newSubpath
+                                    [ schemataKey 0 subpath newSubpath
                                     , col10 [ form val schema newSubpath ]
                                     ]
                         )
@@ -302,29 +302,28 @@ source : Schema -> View
 source s =
     Markdown.toHtml [ Html.Attributes.class "hljs" ] ( Schema.encode s |> Encode.encode 2 |> (\s -> "```json\n" ++ s ++ "```" ) )
         |> Element.html
-        |> el None [ maxWidth <| px 500 ]
+        |> el None [ ]
 
 
-schemataKey : String -> String -> View
-schemataKey parent s =
+schemataKey : Int -> String -> String -> View
+schemataKey level parent s =
     let
         nodeName =
-            if parent == "#/definitions/" || parent == "#/properties/" then
+            if level == 0 then
                 "h1"
             else
                 "h2"
     in
         Element.node nodeName <|
-            el None
+            el SchemaHeader
                 [ Attributes.tabindex 1
                 , Attributes.id <| String.dropLeft 1 (parent ++ s)
-                , inlineStyle [ ("outline", "none"), ( "font-weight", "bold" ), ( "font-family", "monospace" ), ( "color", "#1184CE" ) ]
                 ]
                 (text s)
 
 
-schemataDoc : Maybe Schemata -> String -> View
-schemataDoc s subpath =
+schemataDoc : Int -> Maybe Schemata -> String -> View
+schemataDoc level s subpath =
     s
         |> Maybe.map
             (\(Schemata s) ->
@@ -336,11 +335,20 @@ schemataDoc s subpath =
                                     newSubpath =
                                         subpath ++ key
                                 in
-                                    col10
-                                        [ schemataKey subpath key
-                                        , documentation newSubpath schema
-                                        , source schema
-                                        ]
+                                    if level == 0 then
+                                        col10
+                                            [ schemataKey level subpath key
+                                            , row None [ Attributes.justify ]
+                                                [ el None [ width <| percent 50 ] <| documentation (level + 1) newSubpath schema
+                                                , el None [ width <| percent 50 ] <| source schema
+                                                ]
+                                            ]
+                                    else
+                                        col10
+                                            [ schemataKey level subpath key
+                                            , documentation (level + 1) newSubpath schema
+                                            , source schema
+                                            ]
                             )
                         |> column None []
                     ]
@@ -356,14 +364,14 @@ metaDoc s =
         ]
 
 
-documentation : String -> Schema -> View
-documentation subpath node =
+documentation : Int -> String -> Schema -> View
+documentation level subpath node =
     case node of
         ObjectSchema s ->
             col10
                 [ metaDoc s
-                , schemataDoc s.definitions <| subpath ++ "/definitions/"
-                , schemataDoc s.properties <| subpath ++ "/properties/"
+                , schemataDoc level s.definitions <| subpath ++ "/definitions/"
+                , schemataDoc level s.properties <| subpath ++ "/properties/"
                 ]
 
         BooleanSchema b ->

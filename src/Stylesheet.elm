@@ -19,6 +19,7 @@ type Styles
     | PropertySeparator
     | PropertyValue
     | HtmlElement
+    | SchemaHeader
 
 
 type Variations
@@ -97,5 +98,11 @@ stylesheet =
                 , Style.prop "text-decoration" "none"
                 , Style.cursor "default"
                 ]
+            ]
+        , style SchemaHeader
+            [ Style.prop "outline" "none"
+            , Font.bold
+            , Style.prop "font-family" "monospace"
+            , Color.text <| Color.rgb 17 123 206
             ]
         ]
