@@ -101,7 +101,6 @@ stylesheet =
             ]
         , style SchemaHeader
             [ Style.prop "outline" "none"
-            , Font.bold
             , Style.prop "font-family" "monospace"
             , Color.text <| Color.rgb 17 123 206
             ]

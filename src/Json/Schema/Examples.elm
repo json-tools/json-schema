@@ -165,6 +165,8 @@ bookingSchema =
  "$schema": "http://json-schema.org/draft-04/schema#",
  "definitions": {
   "basicPerson": {
+    "title": "Basic Person",
+    "description": "Minimal information representing a person",
    "type": "object",
    "properties": {
     "title": {
@@ -189,16 +191,19 @@ bookingSchema =
    ]
   },
   "personAddress": {
+      "title": "Person+Address",
+      "description": "Weird combination of a person with an address, early days [Selective breeding](https://en.wikipedia.org/wiki/Selective_breeding) experiment.",
    "allOf": [
-    {
-     "$ref": "#/definitions/basicPerson"
-    },
-    {
-     "$ref": "#/definitions/address"
-    }
-   ]
+       {
+           "$ref": "#/definitions/basicPerson"
+       },
+       {
+           "$ref": "#/definitions/address"
+       }
+       ]
   },
   "phone": {
+      "title": "Phone number",
    "type": "object",
    "properties": {
     "countryCode": {
@@ -234,6 +239,8 @@ bookingSchema =
    "additionalProperties": false
   },
   "paymentCard": {
+     "title": "Payment Card",
+     "description": "Note that instead of card number `panToken` must be supplied because of PCI DSS Compliance limitations",
    "type": "object",
    "properties": {
     "type": {
@@ -450,7 +457,7 @@ bookingSchema =
     "yer",
     "zwd"
    ],
-   "description": "3-letter ISO code representing the currency. ___Lowercase___."
+   "description": "3-letter ISO code representing the currency. __Lowercase__."
   },
   "countryCode": {
    "type": "string",
@@ -708,7 +715,7 @@ bookingSchema =
     "zw"
    ],
    "title": "ISO code representing the country",
-   "description": "2-letter ISO code representing the country. United Kingdom is officially assigned the alpha-2 code `gb` rather than `uk`. *Lowercase*."
+   "description": "2-letter ISO code representing the country. United Kingdom is officially assigned the alpha-2 code `gb` rather than `uk`. __Lowercase__."
   }
  },
  "type": "object",

@@ -1,10 +1,12 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html)
 import Html.Attributes
+import Dom
+import Task
 import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader), Variations, stylesheet)
-import Element.Events exposing (onClick, onMouseOver, onMouseOut, onInput)
+import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput)
 import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
@@ -30,6 +32,7 @@ type alias View =
 type alias Model =
     { schema : Result String Schema
     , value : Result String Value
+    , activeSection : String
     }
 
 
@@ -37,6 +40,8 @@ type Msg
     = NoOp
     | UrlChange Location
     | ValueChange String String
+    | ContentScroll
+    | ActiveSection String
 
 
 main : Program Never Model Msg
@@ -54,7 +59,8 @@ init location =
     Model
         (coreSchemaDraft6 |> decodeString Schema.decoder)
         (bookingSchema |> decodeString Decode.value)
-        ! []
+        location.hash
+        ! [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -75,13 +81,22 @@ update msg model =
             in
                 { model | value = value } ! []
 
+
+        UrlChange l ->
+            { model | activeSection = l.hash } ! []
+
+        ActiveSection s ->
+            { model | activeSection = s } ! []
+
         _ ->
             model ! []
+
+port activeSection : (String -> msg) -> Sub msg
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.none
+    activeSection ActiveSection
 
 
 view : Model -> Html Msg
@@ -103,12 +118,21 @@ view model =
                 |> Maybe.andThen fn
                 |> Maybe.withDefault (Schemata [])
                 |> (\(Schemata props) ->
-                        List.map (\( key, _ ) -> row None [] [
-                            key
-                                |> text
-                                |> el None [ inlineStyle [("color", "royalblue")] ]
-                                |> Element.link ("#/" ++ section ++ "/" ++ key)
-                            ]) props
+                    let
+                        thisSection key =
+                            "#/" ++ section ++ "/" ++ key
+                    in
+                        List.map
+                            (\( key, _ ) ->
+                                row None
+                                    []
+                                    [ key
+                                        |> text
+                                        |> el None [ inlineStyle [ ( "color", if thisSection key  == model.activeSection then "red" else "royalblue" ) ] ]
+                                        |> Element.link (thisSection key)
+                                    ]
+                            )
+                            props
                    )
                 |> column None [ padding 20 ]
 
@@ -131,7 +155,13 @@ view model =
                     , propertiesListing "properties" .properties
                     ]
                 , column None
-                    [ height <| fill 1, width <| fill 1, yScrollbar, padding 10 ]
+                    [ height <| fill 1
+                    , width <| fill 1
+                    , yScrollbar
+                    , padding 10
+                    , Attributes.id "content"
+                      -- , on "scroll" (Json.Decode.succeed ContentScroll)
+                    ]
                     [ a
                     ]
                 ]
@@ -300,9 +330,9 @@ col10 =
 
 source : Schema -> View
 source s =
-    Markdown.toHtml [ Html.Attributes.class "hljs" ] ( Schema.encode s |> Encode.encode 2 |> (\s -> "```json\n" ++ s ++ "```" ) )
+    Markdown.toHtml [ Html.Attributes.class "hljs" ] (Schema.encode s |> Encode.encode 2 |> (\s -> "```json\n" ++ s ++ "```"))
         |> Element.html
-        |> el None [ ]
+        |> el None []
 
 
 schemataKey : Int -> String -> String -> View
@@ -315,11 +345,7 @@ schemataKey level parent s =
                 "h2"
     in
         Element.node nodeName <|
-            el SchemaHeader
-                [ Attributes.tabindex 1
-                , Attributes.id <| String.dropLeft 1 (parent ++ s)
-                ]
-                (text s)
+            el SchemaHeader [] (text s)
 
 
 schemataDoc : Int -> Maybe Schemata -> String -> View
@@ -336,9 +362,16 @@ schemataDoc level s subpath =
                                         subpath ++ key
                                 in
                                     if level == 0 then
-                                        col10
+                                        column None
+                                            [ spacing 10
+                                            , padding 10
+                                            , Attributes.tabindex 1
+                                            , Attributes.id <| String.dropLeft 1 newSubpath
+                                            , inlineStyle [ ( "outline", "none" ) ]
+                                            ]
                                             [ schemataKey level subpath key
-                                            , row None [ Attributes.justify ]
+                                            , row None
+                                                [ Attributes.justify ]
                                                 [ el None [ width <| percent 50 ] <| documentation (level + 1) newSubpath schema
                                                 , el None [ width <| percent 50 ] <| source schema
                                                 ]
@@ -358,8 +391,9 @@ schemataDoc level s subpath =
 
 metaDoc : SubSchema -> View
 metaDoc s =
-    column None []
-        [ row None [ ] [ s.title |> Maybe.withDefault "" |> Element.bold ]
+    column None
+        []
+        [ row None [] [ s.title |> Maybe.withDefault "" |> Element.bold ]
         , paragraph None [] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
         ]
 
