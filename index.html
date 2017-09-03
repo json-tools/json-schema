@@ -1,0 +1,46 @@
+<!doctype html>
+<head>
+    <meta charset="utf-8" />
+    <title>JSON Schema Builder</title>
+    <link rel="stylesheet" href="style.css" />
+    <!--link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/gruvbox-dark.min.css"-->
+    <!--link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/gruvbox-light.min.css"-->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/solarized-light.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
+</head>
+
+<body>
+    <script src="elm.js"></script>
+    <script>const elm = Elm.Main.fullscreen();
+
+// this is hack to update url and highlight menu
+// TODO: discover the right way of doing this
+setTimeout(() => {
+    const content = document.querySelector('#content');
+    const headers = content.querySelectorAll('div[tabindex] > h1');
+    const checkpoints = Array.from(headers).map(el => ({
+        hash: '#' + el.parentNode.id,
+        offsetTop: offsetTop(el, content) - 100,
+    })).reverse();
+    let timeout = null;
+    let hash = location.hash;
+    content.addEventListener('scroll', ({ target }) => {
+        const found = checkpoints.filter(x => x.offsetTop < target.scrollTop )[0];
+        if (found) {
+            if (hash !== found.hash) {
+                hash = history.replaceState({}, "", found.hash);
+                elm.ports.activeSection.send(found.hash);
+            }
+        }
+    });
+
+    function offsetTop(el, limit) {
+        if (el === limit) {
+            return 0;
+        } else {
+            return el.offsetTop + offsetTop(el.parentNode, limit);
+        }
+    }
+}, 100);
+    </script>
+</body>

@@ -413,8 +413,8 @@ metaDoc : SubSchema -> View
 metaDoc s =
     column None
         []
-        [ row None [] [ s.title |> Maybe.withDefault "" |> Element.bold ]
-        , paragraph None [] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
+        [ row None [ inlineStyle [ ("font-size", "18px") ] ] [ s.title |> Maybe.withDefault "" |> Element.bold ]
+        , paragraph None [ inlineStyle [ ("font-size", "16px") ] ] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
         ]
 
 

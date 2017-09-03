@@ -4,7 +4,6 @@ elm-stuff
 dist
 .DS_Store
 npm-debug.log
-index.html
 deps
 documentation.json
 elm.js
