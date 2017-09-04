@@ -6,7 +6,7 @@ import Html.Attributes
 import Dom
 import Task
 import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader), Variations, stylesheet)
-import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput)
+import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput, onCheck)
 import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
@@ -33,13 +33,16 @@ type alias Model =
     { schema : Result String Schema
     , value : Result String Value
     , activeSection : String
+    , error : Maybe String
     }
 
 
 type Msg
     = NoOp
     | UrlChange Location
-    | ValueChange String String
+    | StringChange String String
+    | NumberChange String String
+    | BooleanChange String Bool
     | ContentScroll
     | ActiveSection String
 
@@ -59,27 +62,33 @@ init location =
     Model
         (coreSchemaDraft6 |> decodeString Schema.decoder)
         (bookingSchema |> decodeString Decode.value)
-        location.hash
+        location.hash -- activeSection
+        Nothing -- error
         ! [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
+
+
+updateValue : Model -> String -> Result String Value -> Model
+updateValue model path newStuff =
+    case newStuff of
+        Ok val ->
+            model.schema
+                |> Result.map2 (\v -> setValue v path val) model.value
+                --|> Debug.log "res"
+                |> Result.withDefault model.value
+                |> (\v -> { model | value = v, error = Nothing })
+
+        Err s ->
+            { model | error = Just s }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        ValueChange path str ->
-            let
-                value =
-                    Result.map2
-                        (\v ->
-                            setValue v path (Encode.string str)
-                        )
-                        model.value
-                        model.schema
-                        --|> Debug.log "res"
-                        |>
-                            Result.withDefault model.value
-            in
-                { model | value = value } ! []
+        StringChange path str ->
+            updateValue model path (str |> Encode.string |> Ok) ! []
+
+        NumberChange path str ->
+            updateValue model path (str |> String.toFloat |> Result.map Encode.float) ! []
 
         UrlChange l ->
             { model | activeSection = l.hash } ! []
