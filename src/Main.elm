@@ -208,7 +208,7 @@ viewForm model =
                     column None
                         []
                         --[ schema |> toString |> text
-                        [ form val schema "#"
+                        [ form val schema "#" ""
                         ]
                 )
                 model.schema
@@ -222,13 +222,14 @@ viewForm model =
                 text e
 
 
-form : Value -> Schema -> String -> View
-form val schema subpath =
+form : Value -> Schema -> String -> String -> View
+form val schema subpath key =
     let
         path =
             subpath
                 |> String.split "/"
                 |> List.drop 1
+                |> (\s -> s ++ [ key ])
 
         implied =
             implyType val schema subpath
@@ -240,12 +241,12 @@ form val schema subpath =
                         (\( name, _ ) ->
                             let
                                 newSubpath =
-                                    subpath ++ "/" ++ name
+                                    subpath ++ "/" ++ key ++ "/" ++ name
                             in
                                 column None
                                     []
-                                    [ schemataKey 0 subpath newSubpath
-                                    , col10 [ form val schema newSubpath ]
+                                    [ schemataKey 0 subpath name
+                                    , col10 [ form val schema subpath name ]
                                     ]
                         )
                     |> col10
@@ -258,7 +259,7 @@ form val schema subpath =
                                 Ok s ->
                                     case implied.schema.enum of
                                         Nothing ->
-                                            Element.inputText None [ onInput <| ValueChange subpath ] s
+                                            Element.inputText None [ onInput <| StringChange subpath ] s
 
                                         Just enum ->
                                             enum
@@ -273,7 +274,7 @@ form val schema subpath =
                                                     )
                                                 |> Element.select ""
                                                     None
-                                                    [ onInput <| ValueChange subpath ]
+                                                    [ onInput <| StringChange subpath ]
 
                                 Err e ->
                                     text e
@@ -285,7 +286,7 @@ form val schema subpath =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Element.inputText None [ Attributes.type_ "number" ] (toString s)
+                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange subpath ] (toString s)
 
                                 Err e ->
                                     text e
@@ -297,7 +298,7 @@ form val schema subpath =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Element.inputText None [ Attributes.type_ "number" ] (toString s)
+                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange subpath  ] (toString s)
 
                                 Err e ->
                                     text e
@@ -309,7 +310,7 @@ form val schema subpath =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Element.checkbox s None [ Attributes.type_ "checkbox" ] (text "")
+                                    Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange subpath ] (text "")
 
                                 Err e ->
                                     text e
