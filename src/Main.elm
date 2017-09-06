@@ -4,6 +4,7 @@ import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html)
 import Html.Attributes
 import Dict exposing (Dict)
+import Set exposing (Set)
 import Dom
 import Task
 import StyleSheet
@@ -21,7 +22,7 @@ import StyleSheet
         , Variations(Active)
         , stylesheet
         )
-import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput, onCheck)
+import Element.Events exposing (on, onClick, onMouseDown, onMouseOver, onMouseOut, onInput, onCheck, onDoubleClick)
 import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
@@ -49,6 +50,7 @@ type alias Model =
     { schema : Result String Schema
     , value : Result String Value
     , activeSection : String
+    , editPaths : Set String
     , error : Maybe String
     , valueUpdateErrors : Dict String String
     }
@@ -63,6 +65,7 @@ type Msg
     | ValueChange String String
     | ContentScroll
     | ActiveSection String
+    | ToggleEditing String
 
 
 main : Program Never Model Msg
@@ -80,14 +83,15 @@ init location =
     Model
         (coreSchemaDraft6 |> decodeString Schema.decoder)
         (bookingSchema |> decodeString Decode.value)
-        location.hash
         -- activeSection
-        Nothing
+        location.hash
+        -- editPaths
+        Set.empty
         -- error
-        Dict.empty
+        Nothing
         -- valueUpdateErrors
-        !
-            [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
+        Dict.empty
+        ! [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
 
 
 updateValue : Model -> String -> Result String Value -> Model
@@ -100,7 +104,7 @@ updateValue model path newStuff =
         update val =
             model.schema
                 |> Result.map2 (,) model.value
-                |> Result.andThen (\(v,s) -> setValue v path val s)
+                |> Result.andThen (\( v, s ) -> setValue v path val s)
     in
         case newStuff of
             Ok val ->
@@ -135,6 +139,16 @@ update msg model =
 
         ActiveSection s ->
             { model | activeSection = s } ! []
+
+        ToggleEditing p ->
+            { model
+                | editPaths =
+                    if Set.member p model.editPaths then
+                        Set.remove p model.editPaths
+                    else
+                        Set.insert p model.editPaths
+            }
+                ! []
 
         _ ->
             model ! []
@@ -358,7 +372,7 @@ form model val schema subpath key =
                                 |> List.map
                                     (\( name, _ ) ->
                                         text ""
-                                        {-
+                                     {-
                                         let
                                             newSubpath =
                                                 subpath ++ "/" ++ key ++ "/" ++ name
@@ -368,7 +382,7 @@ form model val schema subpath key =
                                                 [ schemataKey 0 subpath name
                                                 , col10 [ form model val schema subpath name ]
                                                 ]
-                                        -}
+                                     -}
                                     )
                                 |> col10
 
@@ -411,11 +425,27 @@ col10 =
     column None [ spacing 10, padding 10 ]
 
 
-source : Schema -> View
-source s =
-    Markdown.toHtml [ Html.Attributes.class "hljs" ] (Schema.encode s |> Encode.encode 2 |> (\s -> "```json\n" ++ s ++ "```"))
+source : Model -> Schema -> String -> View
+source model s subpath =
+    s
+        |> Schema.encode
+        |> Encode.encode 2
+        |> (\s -> "```json\n" ++ s ++ "```")
+        |> Markdown.toHtml [ Html.Attributes.class "hljs" ]
         |> Element.html
-        |> el None []
+        |> el None [ onDoubleClick <| ToggleEditing subpath ]
+        |> Element.within
+            [ column None
+                [ Attributes.alignRight
+                ]
+                [ el None [
+                    onMouseDown <| ToggleEditing subpath
+                    , inlineStyle [ ( "cursor", "pointer" ), ("background", "rgba(255,255,255,0.5)"), ("color", "royalblue") ]
+                    , padding 10
+                    ] <|
+                    text (if Set.member subpath model.editPaths then "done editing" else "edit")
+                ]
+            ]
 
 
 schemataKey : Int -> String -> String -> String -> View
@@ -477,7 +507,7 @@ schemataDoc model level s metaSchema subpath =
                 targetSchema
                     |> whenObjectSchema
                     |> Maybe.andThen (calcSubSchemaType Nothing rootSchema)
-                    |> Maybe.map (\(t, _) -> typeToString t)
+                    |> Maybe.map (\( t, _ ) -> typeToString t)
                     |> Maybe.withDefault "any"
 
         printProperty ( key, schema ) =
@@ -491,14 +521,14 @@ schemataDoc model level s metaSchema subpath =
                             [ key |> heading newSubpath
                             , displayNextToEachOther
                                 [ documentation model (level + 1) newSubpath schema ms
-                                , source schema
+                                , source model schema newSubpath
                                 ]
                             ]
                         else
                             [ key |> heading newSubpath
                             , displayOneUnderAnother
                                 [ documentation model (level + 1) newSubpath schema ms
-                                , source schema
+                                , source model schema newSubpath
                                 ]
                             ]
 
@@ -528,17 +558,27 @@ metaDoc s =
 
 documentation : Model -> Int -> String -> Schema -> Schema -> View
 documentation model level jsonPointer schema metaSchema =
-    case schema of
-        ObjectSchema s ->
-            col10
-                [ metaDoc s
-                , schemataDoc model level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
-                , schemataDoc model level s.properties metaSchema <| jsonPointer ++ "/properties/"
-                , if s.properties == Nothing && s.definitions == Nothing then
-                    form model (schema |> Schema.encode) metaSchema jsonPointer ""
-                  else
-                    text ""
-                ]
+    if Set.member jsonPointer model.editPaths then
+        case schema of
+            ObjectSchema s ->
+                col10
+                    [ metaDoc s
+                    , form model (schema |> Schema.encode) metaSchema jsonPointer ""
+                    ]
+            _ ->
+                text ""
+    else
+        case schema of
+            ObjectSchema s ->
+                col10
+                    [ metaDoc s
+                    , schemataDoc model level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
+                    , schemataDoc model level s.properties metaSchema <| jsonPointer ++ "/properties/"
+                    , if s.properties == Nothing && s.definitions == Nothing && Set.member jsonPointer model.editPaths then
+                        form model (schema |> Schema.encode) metaSchema jsonPointer ""
+                      else
+                        text ""
+                    ]
 
-        BooleanSchema b ->
-            text <| toString b
+            BooleanSchema b ->
+                text <| toString b
