@@ -105,7 +105,7 @@ stylesheet =
             , Style.prop "color" "royalblue"
             , Style.prop "background " "inherit"
             , Style.cursor "pointer"
-            , Style.prop "transition" "all .5s ease"
+            --, Style.prop "transition" "all .5s ease"
             , Style.variation Active
                 [ Color.text Color.white
                 , Style.prop "background " "#117bce"

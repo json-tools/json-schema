@@ -26,13 +26,17 @@ setTimeout(() => {
     let timeout = null;
     let hash = location.hash;
     content.addEventListener('scroll', ({ target }) => {
-        const found = checkpoints.filter(x => x.offsetTop < target.scrollTop )[0];
-        if (found) {
-            if (hash !== found.hash) {
-                hash = history.replaceState({}, "", found.hash);
-                elm.ports.activeSection.send(found.hash);
+        clearTimeout(timeout);
+        timeout = setTimeout(() => {
+            const found = checkpoints.filter(x => x.offsetTop < target.scrollTop )[0];
+            if (found) {
+                if (hash !== found.hash) {
+                    hash = found.hash
+                    elm.ports.activeSection.send(found.hash);
+                    // history.replaceState({}, "", found.hash);
+                }
             }
-        }
+        }, 200);
     });
 
     function offsetTop(el, limit) {
