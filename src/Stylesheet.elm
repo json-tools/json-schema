@@ -20,6 +20,7 @@ type Styles
     | PropertyValue
     | HtmlElement
     | SchemaHeader
+    | JsonEditor
 
 
 type Variations
@@ -103,5 +104,9 @@ stylesheet =
             [ Style.prop "outline" "none"
             , Style.prop "font-family" "monospace"
             , Color.text <| Color.rgb 17 123 206
+            ]
+        , style JsonEditor
+            [ Style.prop "font-family" "monospace"
+            , Font.size 10
             ]
         ]

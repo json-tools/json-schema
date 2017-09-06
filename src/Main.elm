@@ -5,7 +5,7 @@ import Html exposing (Html)
 import Html.Attributes
 import Dom
 import Task
-import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader), Variations, stylesheet)
+import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader, JsonEditor), Variations, stylesheet)
 import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput, onCheck)
 import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
@@ -74,7 +74,7 @@ updateValue model path newStuff =
         Ok val ->
             model.schema
                 |> Result.map2 (\v -> setValue v path val) model.value
-                --|> Debug.log "res"
+                -- |> Debug.log "res"
                 |> Result.withDefault model.value
                 |> (\v -> { model | value = v, error = Nothing })
 
@@ -337,7 +337,7 @@ form val schema subpath key =
                     if editAsValue then
                         val
                             |> Encode.encode 4
-                            |> Element.textArea None [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
+                            |> Element.textArea JsonEditor [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
                     else
                         getFields val schema subpath
                             |> List.map
@@ -481,6 +481,10 @@ documentation level jsonPointer schema metaSchema =
                 [ metaDoc s
                 , schemataDoc level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
                 , schemataDoc level s.properties metaSchema <| jsonPointer ++ "/properties/"
+                , if s.properties == Nothing && s.definitions == Nothing then
+                    form (schema |> Schema.encode) metaSchema jsonPointer ""
+                  else
+                    text ""
                 ]
 
         BooleanSchema b ->
