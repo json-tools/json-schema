@@ -429,7 +429,6 @@ schemataDoc level s metaSchema subpath =
                                 |> schemataKey level subpath
                             , displayOneUnderAnother
                                 [ documentation (level + 1) newSubpath schema ms
-                                , form (schema |> Schema.encode) ms subpath key
                                 , source schema
                                 ]
                             ]
