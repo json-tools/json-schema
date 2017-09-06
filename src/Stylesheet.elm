@@ -13,6 +13,7 @@ type Styles
     | Bordered
     | Error
     | Button
+    | NoOutline
     | MenuItem
     | HtmlAttribute
     | PropertyName
@@ -89,15 +90,19 @@ stylesheet =
             , Style.paddingTopHint 3
             , Style.paddingBottomHint 3
             ]
+        , style NoOutline
+            [ Style.prop "outline" "none"
+            ]
         , style MenuItem
             [ Style.paddingHint 5
-            , Color.text Color.blue
-            , Font.underline
+            , Style.prop "color" "royalblue"
+            , Style.prop "background " "inherit"
             , Style.cursor "pointer"
+            , Style.prop "transition" "all .5s ease"
             , Style.variation Active
-                [ Color.text Color.black
+                [ Color.text Color.white
+                , Style.prop "background " "#117bce"
                 , Style.prop "text-decoration" "none"
-                , Style.cursor "default"
                 ]
             ]
         , style SchemaHeader

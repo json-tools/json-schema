@@ -5,9 +5,9 @@ import Html exposing (Html)
 import Html.Attributes
 import Dom
 import Task
-import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader, JsonEditor), Variations, stylesheet)
+import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader, JsonEditor, MenuItem, NoOutline), Variations(Active), stylesheet)
 import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput, onCheck)
-import Element.Attributes as Attributes exposing (inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
+import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
@@ -144,22 +144,8 @@ view model =
                                         []
                                         [ key
                                             |> text
-                                            |> el None
-                                                [ inlineStyle
-                                                    [ ( "color"
-                                                      , if thisSection == model.activeSection then
-                                                            "white"
-                                                        else
-                                                            "royalblue"
-                                                      )
-                                                    , ( "background"
-                                                      , if thisSection == model.activeSection then
-                                                            "#117bce"
-                                                        else
-                                                            "inherit"
-                                                      )
-                                                    , ( "transition", "all .5s ease" )
-                                                    ]
+                                            |> el MenuItem
+                                                [ vary Active <| thisSection == model.activeSection
                                                 , padding 5
                                                 , width <| fill 1
                                                 ]
@@ -183,9 +169,9 @@ view model =
                 ]
                 [ column None
                     [ height <| fill 1, minWidth <| px 200, yScrollbar, spacing 10, padding 0 ]
-                    [ el None [ inlineStyle [ ( "font-weight", "bold" ) ] ] <| text "definitions"
+                    [ Element.bold "definitions"
                     , propertiesListing "definitions" .definitions
-                    , el None [ inlineStyle [ ( "font-weight", "bold" ) ] ] <| text "properties"
+                    , Element.bold "properties"
                     , propertiesListing "properties" .properties
                     ]
                 , column None
@@ -409,10 +395,9 @@ schemataDoc level s metaSchema subpath =
             el None [ width <| percent 50 ]
 
         dropAnchor newSubpath =
-            el None
+            el NoOutline
                 [ Attributes.tabindex 1
                 , Attributes.id <| String.dropLeft 1 newSubpath
-                , inlineStyle [ ( "outline", "none" ) ]
                 ]
 
         displayNextToEachOther list =
