@@ -1,4 +1,4 @@
-module Json.Schema.Helpers exposing (typeToString, typeToList, implyType, setValue)
+module Json.Schema.Helpers exposing (typeToString, typeToList, implyType, setValue, for)
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
@@ -105,6 +105,13 @@ parseJsonPointer subpath =
         |> String.split "/"
         |> List.drop 1
         |> List.filter ((/=) "")
+
+
+for : String -> Schema -> Maybe Schema
+for jsonPointer schema =
+    jsonPointer
+        |> parseJsonPointer
+        |> List.foldl (weNeedToGoDeeper schema) (Just schema)
 
 
 implyType : Value -> Schema -> String -> ImpliedType

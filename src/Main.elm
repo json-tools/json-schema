@@ -12,7 +12,7 @@ import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (implyType, setValue)
+import Json.Schema.Helpers exposing (implyType, setValue, for)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
     exposing
