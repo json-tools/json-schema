@@ -6,7 +6,21 @@ import Html.Attributes
 import Dict exposing (Dict)
 import Dom
 import Task
-import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader, JsonEditor, MenuItem, NoOutline), Variations(Active), stylesheet)
+import StyleSheet
+    exposing
+        ( Styles
+            ( None
+            , Main
+            , Error
+            , InlineError
+            , SchemaHeader
+            , JsonEditor
+            , MenuItem
+            , NoOutline
+            )
+        , Variations(Active)
+        , stylesheet
+        )
 import Element.Events exposing (on, onClick, onMouseOver, onMouseOut, onInput, onCheck)
 import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph)
@@ -65,10 +79,14 @@ init location =
     Model
         (coreSchemaDraft6 |> decodeString Schema.decoder)
         (bookingSchema |> decodeString Decode.value)
-        location.hash -- activeSection
-        Nothing -- error
-        Dict.empty -- valueUpdateErrors
-        ! [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
+        location.hash
+        -- activeSection
+        Nothing
+        -- error
+        Dict.empty
+        -- valueUpdateErrors
+        !
+            [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
 
 
 updateValue : Model -> String -> Result String Value -> Model
@@ -78,7 +96,8 @@ updateValue model path newStuff =
             model.schema
                 |> Result.map2 (\v -> setValue v path val) model.value
                 -- |> Debug.log "res"
-                |> Result.withDefault model.value
+                |>
+                    Result.withDefault model.value
                 |> (\v -> { model | value = v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path })
 
         Err s ->
@@ -235,7 +254,6 @@ form model val schema subpath key =
         implied =
             implyType val schema subpath
 
-
         controls =
             case implied.type_ of
                 SingleType StringType ->
@@ -332,11 +350,11 @@ form model val schema subpath key =
                                             newSubpath =
                                                 subpath ++ "/" ++ key ++ "/" ++ name
                                         in
-                                                column None
-                                                    []
-                                                    [ schemataKey 0 subpath name
-                                                    , col10 [ form model val schema subpath name ]
-                                                    ]
+                                            column None
+                                                []
+                                                [ schemataKey 0 subpath name
+                                                , col10 [ form model val schema subpath name ]
+                                                ]
                                     )
                                 |> col10
 
@@ -348,16 +366,15 @@ form model val schema subpath key =
                         |> (\s -> [ s ])
                         |> column Error []
     in
-        column None []
+        column None
+            []
             [ controls
             ]
             |> Element.below
-                [ case model.valueUpdateErrors |> Dict.get jsonPointer of
-                    Just s ->
-                        (el None [ inlineStyle [ ( "border", "1px solid red" ), ("z-index", "1"), ("background", "white") ], padding 10, width (fill 1) ] <| text s)
-                            |> Debug.log "err!"
-                    Nothing ->
-                        text ""
+                [ model.valueUpdateErrors
+                    |> Dict.get jsonPointer
+                    |> Maybe.map (text >> (el InlineError []))
+                    |> Maybe.withDefault (text "")
                 ]
 
 
@@ -420,7 +437,7 @@ schemataDoc model level s metaSchema subpath =
         displayOneUnderAnother list =
             column None [] list
 
-        printProperty (key, schema) =
+        printProperty ( key, schema ) =
             let
                 newSubpath =
                     subpath ++ key
@@ -464,8 +481,8 @@ metaDoc : SubSchema -> View
 metaDoc s =
     column None
         []
-        [ row None [ inlineStyle [ ("font-size", "18px") ] ] [ s.title |> Maybe.withDefault "" |> Element.bold ]
-        , paragraph None [ inlineStyle [ ("font-size", "16px") ] ] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
+        [ row None [ inlineStyle [ ( "font-size", "18px" ) ] ] [ s.title |> Maybe.withDefault "" |> Element.bold ]
+        , paragraph None [ inlineStyle [ ( "font-size", "16px" ) ] ] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
         ]
 
 

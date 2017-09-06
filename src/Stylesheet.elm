@@ -22,6 +22,7 @@ type Styles
     | HtmlElement
     | SchemaHeader
     | JsonEditor
+    | InlineError
 
 
 type Variations
@@ -56,6 +57,12 @@ stylesheet =
             , Font.size 16
             , Style.paddingHint 5
             , Style.prop "margin" "10px"
+            ]
+        , style InlineError
+            [ Style.prop "border" "1px solid red"
+            , Style.prop "z-index" "1"
+            , Style.prop "background" "white"
+            , Style.paddingHint 10
             ]
         , style HtmlAttribute
             [ Color.text Color.darkBlue
