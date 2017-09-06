@@ -91,17 +91,27 @@ init location =
 
 updateValue : Model -> String -> Result String Value -> Model
 updateValue model path newStuff =
-    case newStuff of
-        Ok val ->
-            model.schema
-                |> Result.map2 (\v -> setValue v path val) model.value
-                -- |> Debug.log "res"
-                |>
-                    Result.withDefault model.value
-                |> (\v -> { model | value = v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path })
+    let
+        addError message =
+            { model | valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path message }
 
-        Err s ->
-            { model | valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path s }
+        update : Value -> Result String Value
+        update val =
+            model.schema
+                |> Result.map2 (,) model.value
+                |> Result.andThen (\(v,s) -> setValue v path val s)
+    in
+        case newStuff of
+            Ok val ->
+                case update val of
+                    Err validationErrorMessage ->
+                        addError validationErrorMessage
+
+                    Ok v ->
+                        { model | value = Ok v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path }
+
+            Err s ->
+                addError s
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
