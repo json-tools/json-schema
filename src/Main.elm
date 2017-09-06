@@ -43,6 +43,7 @@ type Msg
     | StringChange String String
     | NumberChange String String
     | BooleanChange String Bool
+    | ValueChange String String
     | ContentScroll
     | ActiveSection String
 
@@ -89,6 +90,12 @@ update msg model =
 
         NumberChange path str ->
             updateValue model path (str |> String.toFloat |> Result.map Encode.float) ! []
+
+        BooleanChange path bool ->
+            updateValue model path (bool |> Encode.bool |> Ok) ! []
+
+        ValueChange path str ->
+            updateValue model path (str |> decodeString Decode.value) ! []
 
         UrlChange l ->
             { model | activeSection = l.hash } ! []
@@ -166,7 +173,7 @@ view model =
         a =
             model.value
                 |> Result.andThen (decodeValue Schema.decoder)
-                |> Result.map (documentation 0 "#")
+                |> Result.map2 (\metaSchema schema -> documentation 0 "#" schema metaSchema) model.schema
                 |> Result.withDefault (text "")
     in
         Element.viewport stylesheet <|
@@ -189,7 +196,12 @@ view model =
                     , Attributes.id "content"
                       -- , on "scroll" (Json.Decode.succeed ContentScroll)
                     ]
-                    [ a
+                    [ case model.error of
+                        Just s ->
+                            text s
+                        Nothing ->
+                            text ""
+                    , a
                     ]
                 ]
 
@@ -231,26 +243,15 @@ form val schema subpath key =
                 |> List.drop 1
                 |> (\s -> s ++ [ key ])
 
+        jsonPointer =
+            path
+                |> String.join "/"
+                |> (\x -> "#/" ++ x)
+
         implied =
             implyType val schema subpath
     in
         case implied.type_ of
-            SingleType ObjectType ->
-                getFields val schema subpath
-                    |> List.map
-                        (\( name, _ ) ->
-                            let
-                                newSubpath =
-                                    subpath ++ "/" ++ key ++ "/" ++ name
-                            in
-                                column None
-                                    []
-                                    [ schemataKey 0 subpath name
-                                    , col10 [ form val schema subpath name ]
-                                    ]
-                        )
-                    |> col10
-
             SingleType StringType ->
                 val
                     |> Decode.decodeValue (Decode.at path Decode.string)
@@ -259,7 +260,7 @@ form val schema subpath key =
                                 Ok s ->
                                     case implied.schema.enum of
                                         Nothing ->
-                                            Element.inputText None [ onInput <| StringChange subpath ] s
+                                            Element.inputText None [ onInput <| StringChange jsonPointer ] s
 
                                         Just enum ->
                                             enum
@@ -286,7 +287,7 @@ form val schema subpath key =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange subpath ] (toString s)
+                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
 
                                 Err e ->
                                     text e
@@ -298,7 +299,7 @@ form val schema subpath key =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange subpath  ] (toString s)
+                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
 
                                 Err e ->
                                     text e
@@ -310,7 +311,7 @@ form val schema subpath key =
                     |> (\s ->
                             case s of
                                 Ok s ->
-                                    Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange subpath ] (text "")
+                                    Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange jsonPointer ] (text "")
 
                                 Err e ->
                                     text e
@@ -327,6 +328,31 @@ form val schema subpath key =
                                 Err e ->
                                     text e
                        )
+
+            SingleType ObjectType ->
+                let
+                    editAsValue =
+                        True
+                in
+                    if editAsValue then
+                        val
+                            |> Encode.encode 4
+                            |> Element.textArea None [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
+                    else
+                        getFields val schema subpath
+                            |> List.map
+                                (\( name, _ ) ->
+                                    let
+                                        newSubpath =
+                                            subpath ++ "/" ++ key ++ "/" ++ name
+                                    in
+                                            column None
+                                                []
+                                                [ schemataKey 0 subpath name
+                                                , col10 [ form val schema subpath name ]
+                                                ]
+                                )
+                            |> col10
 
             x ->
                 x
@@ -428,14 +454,14 @@ metaDoc s =
         ]
 
 
-documentation : Int -> String -> Schema -> View
-documentation level subpath node =
-    case node of
+documentation : Int -> String -> Schema -> Schema -> View
+documentation level jsonPointer schema metaSchema =
+    case schema of
         ObjectSchema s ->
             col10
                 [ metaDoc s
-                , schemataDoc level s.definitions <| subpath ++ "/definitions/"
-                , schemataDoc level s.properties <| subpath ++ "/properties/"
+                , schemataDoc level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
+                , schemataDoc level s.properties metaSchema <| jsonPointer ++ "/properties/"
                 ]
 
         BooleanSchema b ->
