@@ -27,7 +27,7 @@ import Element exposing (Element, el, row, text, column, paragraph)
 import Markdown
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (implyType, setValue, for)
+import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
     exposing
@@ -37,6 +37,7 @@ import Json.Schema.Definitions as Schema
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , blankSubSchema
+        , blankSchema
         )
 
 
@@ -356,6 +357,8 @@ form model val schema subpath key =
                             getFields val schema subpath
                                 |> List.map
                                     (\( name, _ ) ->
+                                        text ""
+                                        {-
                                         let
                                             newSubpath =
                                                 subpath ++ "/" ++ key ++ "/" ++ name
@@ -365,6 +368,7 @@ form model val schema subpath key =
                                                 [ schemataKey 0 subpath name
                                                 , col10 [ form model val schema subpath name ]
                                                 ]
+                                        -}
                                     )
                                 |> col10
 
@@ -414,8 +418,8 @@ source s =
         |> el None []
 
 
-schemataKey : Int -> String -> String -> View
-schemataKey level parent s =
+schemataKey : Int -> String -> String -> String -> View
+schemataKey level parent s impliedType =
     let
         nodeName =
             if level == 0 then
@@ -424,7 +428,8 @@ schemataKey level parent s =
                 "h2"
     in
         Element.node nodeName <|
-            el SchemaHeader [] (text s)
+            -- el SchemaHeader [] (text s)
+            el SchemaHeader [] (text <| s ++ ": " ++ impliedType)
 
 
 schemataDoc : Model -> Int -> Maybe Schemata -> Schema -> String -> View
@@ -447,6 +452,34 @@ schemataDoc model level s metaSchema subpath =
         displayOneUnderAnother list =
             column None [] list
 
+        heading newSubpath key =
+            newSubpath
+                |> implied
+                |> schemataKey level subpath key
+                |> dropAnchor newSubpath
+
+        implied : String -> String
+        implied jsonPointer =
+            let
+                getSchema at =
+                    model.value
+                        |> Result.withDefault (Encode.object [])
+                        |> Decode.decodeValue (Decode.at (parseJsonPointer at) Decode.value)
+                        |> Result.andThen (Decode.decodeValue Schema.decoder)
+                        |> Result.withDefault blankSchema
+
+                rootSchema =
+                    getSchema "#/"
+
+                targetSchema =
+                    getSchema jsonPointer
+            in
+                targetSchema
+                    |> whenObjectSchema
+                    |> Maybe.andThen (calcSubSchemaType Nothing rootSchema)
+                    |> Maybe.map (\(t, _) -> typeToString t)
+                    |> Maybe.withDefault "any"
+
         printProperty ( key, schema ) =
             let
                 newSubpath =
@@ -455,17 +488,14 @@ schemataDoc model level s metaSchema subpath =
                 case metaSchema |> for subpath of
                     Just ms ->
                         if level == 0 then
-                            [ key
-                                |> schemataKey level subpath
-                                |> dropAnchor newSubpath
+                            [ key |> heading newSubpath
                             , displayNextToEachOther
                                 [ documentation model (level + 1) newSubpath schema ms
                                 , source schema
                                 ]
                             ]
                         else
-                            [ key
-                                |> schemataKey level subpath
+                            [ key |> heading newSubpath
                             , displayOneUnderAnother
                                 [ documentation model (level + 1) newSubpath schema ms
                                 , source schema

@@ -18,6 +18,7 @@
 setTimeout(() => {
     const content = document.querySelector('#content');
     const headers = content.querySelectorAll('div[tabindex] > h1');
+    // TODO: recalc on window resize
     const checkpoints = Array.from(headers).map(el => ({
         hash: '#' + el.parentNode.id,
         offsetTop: offsetTop(el, content) - 100,

@@ -1,4 +1,4 @@
-module Json.Schema.Helpers exposing (typeToString, typeToList, implyType, setValue, for)
+module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
