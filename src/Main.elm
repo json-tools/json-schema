@@ -3,6 +3,7 @@ port module Main exposing (main)
 import Navigation exposing (Location, program, newUrl)
 import Html exposing (Html)
 import Html.Attributes
+import Dict exposing (Dict)
 import Dom
 import Task
 import StyleSheet exposing (Styles(None, Main, Error, SchemaHeader, JsonEditor, MenuItem, NoOutline), Variations(Active), stylesheet)
@@ -34,6 +35,7 @@ type alias Model =
     , value : Result String Value
     , activeSection : String
     , error : Maybe String
+    , valueUpdateErrors : Dict String String
     }
 
 
@@ -65,6 +67,7 @@ init location =
         (bookingSchema |> decodeString Decode.value)
         location.hash -- activeSection
         Nothing -- error
+        Dict.empty -- valueUpdateErrors
         ! [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
 
 
@@ -76,10 +79,10 @@ updateValue model path newStuff =
                 |> Result.map2 (\v -> setValue v path val) model.value
                 -- |> Debug.log "res"
                 |> Result.withDefault model.value
-                |> (\v -> { model | value = v, error = Nothing })
+                |> (\v -> { model | value = v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path })
 
         Err s ->
-            { model | error = Just s }
+            { model | valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path s }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -159,7 +162,7 @@ view model =
         a =
             model.value
                 |> Result.andThen (decodeValue Schema.decoder)
-                |> Result.map2 (\metaSchema schema -> documentation 0 "#" schema metaSchema) model.schema
+                |> Result.map2 (\metaSchema schema -> documentation model 0 "#" schema metaSchema) model.schema
                 |> Result.withDefault (text "")
     in
         Element.viewport stylesheet <|
@@ -182,12 +185,7 @@ view model =
                     , Attributes.id "content"
                       -- , on "scroll" (Json.Decode.succeed ContentScroll)
                     ]
-                    [ case model.error of
-                        Just s ->
-                            text s
-                        Nothing ->
-                            text ""
-                    , a
+                    [ a
                     ]
                 ]
 
@@ -206,7 +204,7 @@ viewForm model =
                     column None
                         []
                         --[ schema |> toString |> text
-                        [ form val schema "#" ""
+                        [ form model val schema "#" ""
                         ]
                 )
                 model.schema
@@ -220,8 +218,8 @@ viewForm model =
                 text e
 
 
-form : Value -> Schema -> String -> String -> View
-form val schema subpath key =
+form : Model -> Value -> Schema -> String -> String -> View
+form model val schema subpath key =
     let
         path =
             subpath
@@ -236,117 +234,131 @@ form val schema subpath key =
 
         implied =
             implyType val schema subpath
+
+
+        controls =
+            case implied.type_ of
+                SingleType StringType ->
+                    val
+                        |> Decode.decodeValue (Decode.at path Decode.string)
+                        |> (\s ->
+                                case s of
+                                    Ok s ->
+                                        case implied.schema.enum of
+                                            Nothing ->
+                                                Element.inputText None [ onInput <| StringChange jsonPointer ] s
+
+                                            Just enum ->
+                                                enum
+                                                    |> List.map
+                                                        (\v ->
+                                                            v
+                                                                |> Decode.decodeValue Decode.string
+                                                                |> Result.withDefault ""
+                                                                |> (\val ->
+                                                                        Element.option val (s == val) (text val)
+                                                                   )
+                                                        )
+                                                    |> Element.select ""
+                                                        None
+                                                        [ onInput <| StringChange subpath ]
+
+                                    Err e ->
+                                        text e
+                           )
+
+                SingleType IntegerType ->
+                    val
+                        |> Decode.decodeValue (Decode.at path Decode.int)
+                        |> (\s ->
+                                case s of
+                                    Ok s ->
+                                        Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
+
+                                    Err e ->
+                                        text e
+                           )
+
+                SingleType NumberType ->
+                    val
+                        |> Decode.decodeValue (Decode.at path Decode.float)
+                        |> (\s ->
+                                case s of
+                                    Ok s ->
+                                        Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
+
+                                    Err e ->
+                                        text e
+                           )
+
+                SingleType BooleanType ->
+                    val
+                        |> Decode.decodeValue (Decode.at path Decode.bool)
+                        |> (\s ->
+                                case s of
+                                    Ok s ->
+                                        Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange jsonPointer ] (text "")
+
+                                    Err e ->
+                                        text e
+                           )
+
+                SingleType ArrayType ->
+                    val
+                        |> Decode.decodeValue (Decode.at path (Decode.list Decode.value))
+                        |> (\list ->
+                                case list of
+                                    Ok list ->
+                                        text <| toString list
+
+                                    Err e ->
+                                        text e
+                           )
+
+                SingleType ObjectType ->
+                    let
+                        editAsValue =
+                            True
+                    in
+                        if editAsValue then
+                            val
+                                |> Encode.encode 4
+                                |> Element.textArea JsonEditor [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
+                        else
+                            getFields val schema subpath
+                                |> List.map
+                                    (\( name, _ ) ->
+                                        let
+                                            newSubpath =
+                                                subpath ++ "/" ++ key ++ "/" ++ name
+                                        in
+                                                column None
+                                                    []
+                                                    [ schemataKey 0 subpath name
+                                                    , col10 [ form model val schema subpath name ]
+                                                    ]
+                                    )
+                                |> col10
+
+                x ->
+                    x
+                        |> toString
+                        |> (++) "some other type detected: "
+                        |> text
+                        |> (\s -> [ s ])
+                        |> column Error []
     in
-        case implied.type_ of
-            SingleType StringType ->
-                val
-                    |> Decode.decodeValue (Decode.at path Decode.string)
-                    |> (\s ->
-                            case s of
-                                Ok s ->
-                                    case implied.schema.enum of
-                                        Nothing ->
-                                            Element.inputText None [ onInput <| StringChange jsonPointer ] s
-
-                                        Just enum ->
-                                            enum
-                                                |> List.map
-                                                    (\v ->
-                                                        v
-                                                            |> Decode.decodeValue Decode.string
-                                                            |> Result.withDefault ""
-                                                            |> (\val ->
-                                                                    Element.option val (s == val) (text val)
-                                                               )
-                                                    )
-                                                |> Element.select ""
-                                                    None
-                                                    [ onInput <| StringChange subpath ]
-
-                                Err e ->
-                                    text e
-                       )
-
-            SingleType IntegerType ->
-                val
-                    |> Decode.decodeValue (Decode.at path Decode.int)
-                    |> (\s ->
-                            case s of
-                                Ok s ->
-                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
-
-                                Err e ->
-                                    text e
-                       )
-
-            SingleType NumberType ->
-                val
-                    |> Decode.decodeValue (Decode.at path Decode.float)
-                    |> (\s ->
-                            case s of
-                                Ok s ->
-                                    Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
-
-                                Err e ->
-                                    text e
-                       )
-
-            SingleType BooleanType ->
-                val
-                    |> Decode.decodeValue (Decode.at path Decode.bool)
-                    |> (\s ->
-                            case s of
-                                Ok s ->
-                                    Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange jsonPointer ] (text "")
-
-                                Err e ->
-                                    text e
-                       )
-
-            SingleType ArrayType ->
-                val
-                    |> Decode.decodeValue (Decode.at path (Decode.list Decode.value))
-                    |> (\list ->
-                            case list of
-                                Ok list ->
-                                    text <| toString list
-
-                                Err e ->
-                                    text e
-                       )
-
-            SingleType ObjectType ->
-                let
-                    editAsValue =
-                        True
-                in
-                    if editAsValue then
-                        val
-                            |> Encode.encode 4
-                            |> Element.textArea JsonEditor [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
-                    else
-                        getFields val schema subpath
-                            |> List.map
-                                (\( name, _ ) ->
-                                    let
-                                        newSubpath =
-                                            subpath ++ "/" ++ key ++ "/" ++ name
-                                    in
-                                            column None
-                                                []
-                                                [ schemataKey 0 subpath name
-                                                , col10 [ form val schema subpath name ]
-                                                ]
-                                )
-                            |> col10
-
-            x ->
-                x
-                    |> toString
-                    |> (++) "some other type detected: "
-                    |> text
-                    |> (\s -> [ s ])
-                    |> column Error []
+        column None []
+            [ controls
+            ]
+            |> Element.below
+                [ case model.valueUpdateErrors |> Dict.get jsonPointer of
+                    Just s ->
+                        (el None [ inlineStyle [ ( "border", "1px solid red" ), ("z-index", "1"), ("background", "white") ], padding 10, width (fill 1) ] <| text s)
+                            |> Debug.log "err!"
+                    Nothing ->
+                        text ""
+                ]
 
 
 getFields : Value -> Schema -> String -> List ( String, Value )
@@ -388,8 +400,8 @@ schemataKey level parent s =
             el SchemaHeader [] (text s)
 
 
-schemataDoc : Int -> Maybe Schemata -> Schema -> String -> View
-schemataDoc level s metaSchema subpath =
+schemataDoc : Model -> Int -> Maybe Schemata -> Schema -> String -> View
+schemataDoc model level s metaSchema subpath =
     let
         takeHalfWidth =
             el None [ width <| percent 50 ]
@@ -420,7 +432,7 @@ schemataDoc level s metaSchema subpath =
                                 |> schemataKey level subpath
                                 |> dropAnchor newSubpath
                             , displayNextToEachOther
-                                [ documentation (level + 1) newSubpath schema ms
+                                [ documentation model (level + 1) newSubpath schema ms
                                 , source schema
                                 ]
                             ]
@@ -428,7 +440,7 @@ schemataDoc level s metaSchema subpath =
                             [ key
                                 |> schemataKey level subpath
                             , displayOneUnderAnother
-                                [ documentation (level + 1) newSubpath schema ms
+                                [ documentation model (level + 1) newSubpath schema ms
                                 , source schema
                                 ]
                             ]
@@ -457,16 +469,16 @@ metaDoc s =
         ]
 
 
-documentation : Int -> String -> Schema -> Schema -> View
-documentation level jsonPointer schema metaSchema =
+documentation : Model -> Int -> String -> Schema -> Schema -> View
+documentation model level jsonPointer schema metaSchema =
     case schema of
         ObjectSchema s ->
             col10
                 [ metaDoc s
-                , schemataDoc level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
-                , schemataDoc level s.properties metaSchema <| jsonPointer ++ "/properties/"
+                , schemataDoc model level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
+                , schemataDoc model level s.properties metaSchema <| jsonPointer ++ "/properties/"
                 , if s.properties == Nothing && s.definitions == Nothing then
-                    form (schema |> Schema.encode) metaSchema jsonPointer ""
+                    form model (schema |> Schema.encode) metaSchema jsonPointer ""
                   else
                     text ""
                 ]
