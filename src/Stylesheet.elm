@@ -36,7 +36,7 @@ stylesheet =
         , style Main
             [ Color.text Color.darkCharcoal
             , Color.background Color.white
-            , Font.typeface [ "helvetica", "arial", "sans-serif" ]
+            , Style.prop "font-family" "helvetica, arial, sans-serif"
             , Font.size 14
             , Style.paddingHint 10
             , Font.lineHeight 1.5
@@ -113,5 +113,8 @@ stylesheet =
         , style JsonEditor
             [ Style.prop "font-family" "monospace"
             , Font.size 10
+            , Border.all 1
+            , Color.border Color.lightGrey
+            , Style.paddingHint 10
             ]
         ]
