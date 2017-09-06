@@ -402,47 +402,66 @@ schemataKey level parent s =
             el SchemaHeader [] (text s)
 
 
-schemataDoc : Int -> Maybe Schemata -> String -> View
-schemataDoc level s subpath =
-    s
-        |> Maybe.map
-            (\(Schemata s) ->
-                col10
-                    [ s
-                        |> List.map
-                            (\( key, schema ) ->
-                                let
-                                    newSubpath =
-                                        subpath ++ key
-                                in
-                                    if level == 0 then
-                                        column None
-                                            [ spacing 10
-                                            , padding 10
-                                            ]
-                                            [ schemataKey level subpath key
-                                                |> el None
-                                                    [ Attributes.tabindex 1
-                                                    , Attributes.id <| String.dropLeft 1 newSubpath
-                                                    , inlineStyle [ ( "outline", "none" ) ]
-                                                    ]
-                                            , row None
-                                                [ Attributes.justify ]
-                                                [ el None [ width <| percent 50 ] <| documentation (level + 1) newSubpath schema
-                                                , el None [ width <| percent 50 ] <| source schema
-                                                ]
-                                            ]
-                                    else
-                                        col10
-                                            [ schemataKey level subpath key
-                                            , documentation (level + 1) newSubpath schema
-                                            , source schema
-                                            ]
-                            )
-                        |> column None []
-                    ]
-            )
-        |> Maybe.withDefault (text "")
+schemataDoc : Int -> Maybe Schemata -> Schema -> String -> View
+schemataDoc level s metaSchema subpath =
+    let
+        takeHalfWidth =
+            el None [ width <| percent 50 ]
+
+        dropAnchor newSubpath =
+            el None
+                [ Attributes.tabindex 1
+                , Attributes.id <| String.dropLeft 1 newSubpath
+                , inlineStyle [ ( "outline", "none" ) ]
+                ]
+
+        displayNextToEachOther list =
+            row None
+                [ Attributes.justify ]
+                (list |> List.map takeHalfWidth)
+
+        displayOneUnderAnother list =
+            column None [] list
+
+        printProperty (key, schema) =
+            let
+                newSubpath =
+                    subpath ++ key
+            in
+                case metaSchema |> for subpath of
+                    Just ms ->
+                        if level == 0 then
+                            [ key
+                                |> schemataKey level subpath
+                                |> dropAnchor newSubpath
+                            , displayNextToEachOther
+                                [ documentation (level + 1) newSubpath schema ms
+                                , source schema
+                                ]
+                            ]
+                        else
+                            [ key
+                                |> schemataKey level subpath
+                            , displayOneUnderAnother
+                                [ documentation (level + 1) newSubpath schema ms
+                                , form (schema |> Schema.encode) ms subpath key
+                                , source schema
+                                ]
+                            ]
+
+                    Nothing ->
+                        []
+
+        printSchemata (Schemata s) =
+            col10
+                [ s
+                    |> List.map (printProperty >> col10)
+                    |> column None []
+                ]
+    in
+        s
+            |> Maybe.map printSchemata
+            |> Maybe.withDefault (text "")
 
 
 metaDoc : SubSchema -> View
