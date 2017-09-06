@@ -225,37 +225,47 @@ setValue hostValue jsonPath valueToSet schema =
             jsonPath
                 |> parseJsonPointer
                 |> List.reverse
+
+        newValue =
+            case path of
+                [] ->
+                    Ok valueToSet
+
+                key :: subpath ->
+                    path
+                        |> List.foldl
+                            (\key ( path, value ) ->
+                                let
+                                    p =
+                                        List.reverse path
+
+                                    v =
+                                        value
+                                            |> Result.andThen
+                                                (\vv ->
+                                                    hostValue
+                                                        |> getPropertyValue p
+                                                        |> setPropertyValue key vv p schema
+                                                )
+                                in
+                                    case path of
+                                        [] ->
+                                            ( [], v )
+
+                                        head :: tail ->
+                                            ( tail, v )
+                            )
+                            ( subpath, Ok valueToSet )
+                        |> (\( _, v ) -> v)
     in
-        case path of
-            [] ->
-                Ok valueToSet
+        case schema |> for jsonPath of
+            Just subSchema ->
+                valueToSet
+                    |> (flip Validation.validate) subSchema
+                    |> Result.andThen (\_ -> newValue)
 
-            key :: subpath ->
-                path
-                    |> List.foldl
-                        (\key ( path, value ) ->
-                            let
-                                p =
-                                    List.reverse path
-
-                                v =
-                                    value
-                                        |> Result.andThen
-                                            (\vv ->
-                                                hostValue
-                                                    |> getPropertyValue p
-                                                    |> setPropertyValue key vv p schema
-                                            )
-                            in
-                                case path of
-                                    [] ->
-                                        ( [], v )
-
-                                    head :: tail ->
-                                        ( tail, v )
-                        )
-                        ( subpath, Ok valueToSet )
-                    |> (\( _, v ) -> v)
+            Nothing ->
+                Err ("No schema for path" ++ jsonPath)
 
 
 setValue_ : Schema -> Schema -> String -> Value -> Value -> Result String Value
