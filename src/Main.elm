@@ -18,13 +18,14 @@ import StyleSheet
             , JsonEditor
             , MenuItem
             , NoOutline
+            , Bordered
             )
         , Variations(Active)
         , stylesheet
         )
 import Element.Events exposing (on, onClick, onMouseDown, onMouseOver, onMouseOut, onInput, onCheck, onDoubleClick)
 import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
-import Element exposing (Element, el, row, text, column, paragraph)
+import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
 import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
@@ -207,7 +208,7 @@ view model =
             model.value
                 |> Result.andThen (decodeValue Schema.decoder)
                 |> Result.map2 (\metaSchema schema -> documentation model 0 "#" schema metaSchema) model.schema
-                |> Result.withDefault (text "")
+                |> Result.withDefault empty
     in
         Element.viewport stylesheet <|
             row Main
@@ -340,7 +341,7 @@ form model val schema subpath key =
                         |> (\s ->
                                 case s of
                                     Ok s ->
-                                        Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange jsonPointer ] (text "")
+                                        Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange jsonPointer ] empty
 
                                     Err e ->
                                         text e
@@ -371,7 +372,7 @@ form model val schema subpath key =
                             getFields val schema subpath
                                 |> List.map
                                     (\( name, _ ) ->
-                                        text ""
+                                        empty
                                      {-
                                         let
                                             newSubpath =
@@ -402,7 +403,7 @@ form model val schema subpath key =
                 [ model.valueUpdateErrors
                     |> Dict.get jsonPointer
                     |> Maybe.map (text >> (el InlineError []))
-                    |> Maybe.withDefault (text "")
+                    |> Maybe.withDefault empty
                 ]
 
 
@@ -438,12 +439,18 @@ source model s subpath =
             [ column None
                 [ Attributes.alignRight
                 ]
-                [ el None [
-                    onMouseDown <| ToggleEditing subpath
-                    , inlineStyle [ ( "cursor", "pointer" ), ("background", "rgba(255,255,255,0.5)"), ("color", "royalblue") ]
+                [ el None
+                    [ onMouseDown <| ToggleEditing subpath
+                    , inlineStyle [ ( "cursor", "pointer" ), ( "background", "rgba(255,255,255,0.5)" ), ( "color", "royalblue" ) ]
                     , padding 10
-                    ] <|
-                    text (if Set.member subpath model.editPaths then "done editing" else "edit")
+                    ]
+                  <|
+                    text
+                        (if Set.member subpath model.editPaths then
+                            "done editing"
+                         else
+                            "edit"
+                        )
                 ]
             ]
 
@@ -457,9 +464,10 @@ schemataKey level parent s impliedType =
             else
                 "h2"
     in
-        Element.node nodeName <|
-            -- el SchemaHeader [] (text s)
-            el SchemaHeader [] (text <| s ++ ": " ++ impliedType)
+        s
+            |> text
+            |> el SchemaHeader []
+            |> Element.node nodeName
 
 
 schemataDoc : Model -> Int -> Maybe Schemata -> Schema -> String -> View
@@ -490,26 +498,29 @@ schemataDoc model level s metaSchema subpath =
 
         implied : String -> String
         implied jsonPointer =
-            let
-                getSchema at =
-                    model.value
-                        |> Result.withDefault (Encode.object [])
-                        |> Decode.decodeValue (Decode.at (parseJsonPointer at) Decode.value)
-                        |> Result.andThen (Decode.decodeValue Schema.decoder)
-                        |> Result.withDefault blankSchema
+            ""
 
-                rootSchema =
-                    getSchema "#/"
+        {-
+           let
+               getSchema at =
+                   model.value
+                       |> Result.withDefault (Encode.object [])
+                       |> Decode.decodeValue (Decode.at (parseJsonPointer at) Decode.value)
+                       |> Result.andThen (Decode.decodeValue Schema.decoder)
+                       |> Result.withDefault blankSchema
 
-                targetSchema =
-                    getSchema jsonPointer
-            in
-                targetSchema
-                    |> whenObjectSchema
-                    |> Maybe.andThen (calcSubSchemaType Nothing rootSchema)
-                    |> Maybe.map (\( t, _ ) -> typeToString t)
-                    |> Maybe.withDefault "any"
+               rootSchema =
+                   getSchema "#/"
 
+               targetSchema =
+                   getSchema jsonPointer
+           in
+               targetSchema
+                   |> whenObjectSchema
+                   |> Maybe.andThen (calcSubSchemaType Nothing rootSchema)
+                   |> Maybe.map (\( t, _ ) -> typeToString t)
+                   |> Maybe.withDefault "any"
+        -}
         printProperty ( key, schema ) =
             let
                 newSubpath =
@@ -544,15 +555,25 @@ schemataDoc model level s metaSchema subpath =
     in
         s
             |> Maybe.map printSchemata
-            |> Maybe.withDefault (text "")
+            |> Maybe.withDefault empty
+
+
+when : Maybe a -> (a -> View) -> View
+when a fn =
+    case a of
+        Just s ->
+            fn s
+
+        Nothing ->
+            empty
 
 
 metaDoc : SubSchema -> View
 metaDoc s =
     column None
         []
-        [ row None [ inlineStyle [ ( "font-size", "18px" ) ] ] [ s.title |> Maybe.withDefault "" |> Element.bold ]
-        , paragraph None [ inlineStyle [ ( "font-size", "16px" ) ] ] [ s.description |> Maybe.withDefault "" |> Markdown.toHtml [] |> Element.html ]
+        [ when s.title (\title -> row None [ inlineStyle [ ( "font-size", "18px" ) ] ] [ title |> Element.bold ])
+        , when s.description (\description -> paragraph None [ inlineStyle [ ( "font-size", "16px" ) ] ] [ description |> Markdown.toHtml [] |> Element.html ])
         ]
 
 
@@ -565,8 +586,9 @@ documentation model level jsonPointer schema metaSchema =
                     [ metaDoc s
                     , form model (schema |> Schema.encode) metaSchema jsonPointer ""
                     ]
+
             _ ->
-                text ""
+                empty
     else
         case schema of
             ObjectSchema s ->
@@ -577,7 +599,7 @@ documentation model level jsonPointer schema metaSchema =
                     , if s.properties == Nothing && s.definitions == Nothing && Set.member jsonPointer model.editPaths then
                         form model (schema |> Schema.encode) metaSchema jsonPointer ""
                       else
-                        text ""
+                        empty
                     ]
 
             BooleanSchema b ->
