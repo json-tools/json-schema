@@ -25,6 +25,14 @@ setTimeout(() => {
     })).reverse();
     let timeout = null;
     let hash = location.hash;
+
+    if (hash && hash.length > 1) {
+        const el = document.querySelector('#' + CSS.escape(hash.substr(1)));
+        if (el) {
+            el.focus();
+        }
+    }
+
     content.addEventListener('scroll', ({ target }) => {
         clearTimeout(timeout);
         timeout = setTimeout(() => {
@@ -32,7 +40,7 @@ setTimeout(() => {
             if (found) {
                 if (hash !== found.hash) {
                     hash = found.hash
-                    elm.ports.activeSection.send(found.hash);
+                    // elm.ports.activeSection.send(found.hash);
                     // history.replaceState({}, "", found.hash);
                 }
             }

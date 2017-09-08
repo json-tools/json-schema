@@ -22,6 +22,7 @@ type Styles
     | HtmlElement
     | SchemaHeader
     | JsonEditor
+    | SourceCode
     | InlineError
 
 
@@ -105,7 +106,7 @@ stylesheet =
             , Style.prop "color" "royalblue"
             , Style.prop "background " "inherit"
             , Style.cursor "pointer"
-            --, Style.prop "transition" "all .5s ease"
+              --, Style.prop "transition" "all .5s ease"
             , Style.variation Active
                 [ Color.text Color.white
                 , Style.prop "background " "#117bce"
@@ -122,6 +123,11 @@ stylesheet =
             , Font.size 10
             , Border.all 1
             , Color.border Color.lightGrey
+            , Style.paddingHint 10
+            ]
+        , style SourceCode
+            [ Style.prop "font-family" "monospace"
+            , Font.size 10
             , Style.paddingHint 10
             ]
         ]

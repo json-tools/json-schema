@@ -5,8 +5,6 @@ import Html exposing (Html)
 import Html.Attributes
 import Dict exposing (Dict)
 import Set exposing (Set)
-import Dom
-import Task
 import StyleSheet
     exposing
         ( Styles
@@ -19,6 +17,7 @@ import StyleSheet
             , MenuItem
             , NoOutline
             , Bordered
+            , SourceCode
             )
         , Variations(Active)
         , stylesheet
@@ -31,6 +30,7 @@ import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
 import Json.Encode as Encode
 import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
+import Json.Schema.Builder as Builder
 import Json.Schema.Definitions as Schema
     exposing
         ( Schema(BooleanSchema, ObjectSchema)
@@ -48,7 +48,7 @@ type alias View =
 
 
 type alias Model =
-    { schema : Result String Schema
+    { schema : Schema
     , value : Result String Value
     , activeSection : String
     , editPaths : Set String
@@ -82,8 +82,8 @@ main =
 init : Location -> ( Model, Cmd Msg )
 init location =
     Model
-        (coreSchemaDraft6 |> decodeString Schema.decoder)
-        (bookingSchema |> decodeString Decode.value)
+        coreSchemaDraft6
+        (bookingSchema |> Schema.encode |> Ok)
         -- activeSection
         location.hash
         -- editPaths
@@ -92,7 +92,11 @@ init location =
         Nothing
         -- valueUpdateErrors
         Dict.empty
-        ! [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
+        ! []
+
+
+
+-- [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
 
 
 updateValue : Model -> String -> Result String Value -> Model
@@ -103,7 +107,7 @@ updateValue model path newStuff =
 
         update : Value -> Result String Value
         update val =
-            model.schema
+            (Ok model.schema)
                 |> Result.map2 (,) model.value
                 |> Result.andThen (\( v, s ) -> setValue v path val s)
     in
@@ -207,8 +211,19 @@ view model =
         a =
             model.value
                 |> Result.andThen (decodeValue Schema.decoder)
-                |> Result.map2 (\metaSchema schema -> documentation model 0 "#" schema metaSchema) model.schema
+                |> Result.map (\schema -> documentation model 0 "#" schema model.schema)
                 |> Result.withDefault empty
+
+        {-
+           b =
+              [ model.value
+                  |> Result.withDefault Encode.null
+                  |> Decode.decodeValue Schema.decoder
+                  |> Result.withDefault blankSchema
+                  |> Builder.encode 2
+                  |> text
+                  |> Element.node "pre"
+        -}
     in
         Element.viewport stylesheet <|
             row Main
@@ -235,34 +250,6 @@ view model =
                 ]
 
 
-viewForm : Model -> View
-viewForm model =
-    let
-        editMe =
-            """
-            { "properties": { "passengers": { "items": { "type": "object" } } } }
-            """
-
-        res =
-            Result.map2
-                (\schema val ->
-                    column None
-                        []
-                        --[ schema |> toString |> text
-                        [ form model val schema "#" ""
-                        ]
-                )
-                model.schema
-                model.value
-    in
-        case res of
-            Ok html ->
-                html
-
-            Err e ->
-                text e
-
-
 form : Model -> Value -> Schema -> String -> String -> View
 form model val schema subpath key =
     let
@@ -270,6 +257,7 @@ form model val schema subpath key =
             subpath
                 |> String.split "/"
                 |> List.drop 1
+                |> List.filter ((/=) "")
                 |> (\s -> s ++ [ key ])
 
         jsonPointer =
@@ -278,7 +266,7 @@ form model val schema subpath key =
                 |> (\x -> "#/" ++ x)
 
         implied =
-            implyType val schema subpath
+            implyType val schema jsonPointer
 
         controls =
             case implied.type_ of
@@ -362,30 +350,36 @@ form model val schema subpath key =
                 SingleType ObjectType ->
                     let
                         editAsValue =
-                            True
+                            False
+
+                        v =
+                            model.value |> Result.withDefault Encode.null
                     in
                         if editAsValue then
                             val
                                 |> Encode.encode 4
                                 |> Element.textArea JsonEditor [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
                         else
-                            getFields val schema subpath
+                            getFields v jsonPointer
+                                |> Debug.log jsonPointer
                                 |> List.map
                                     (\( name, _ ) ->
-                                        empty
-                                     {-
-                                        let
-                                            newSubpath =
-                                                subpath ++ "/" ++ key ++ "/" ++ name
-                                        in
-                                            column None
-                                                []
-                                                [ schemataKey 0 subpath name
-                                                , col10 [ form model val schema subpath name ]
-                                                ]
-                                     -}
+                                        row None
+                                            []
+                                            [ text <| "\"" ++ name ++ "\":"
+                                              -- , Element.spacer 10
+                                            , form model v schema subpath name
+                                            ]
                                     )
-                                |> col10
+                                |> column None [ inlineStyle [ ( "margin-left", "2ch" ) ] ]
+                                |> (\x ->
+                                        column None
+                                            []
+                                            [ text "{"
+                                            , x
+                                            , text "}"
+                                            ]
+                                   )
 
                 x ->
                     x
@@ -407,13 +401,14 @@ form model val schema subpath key =
                 ]
 
 
-getFields : Value -> Schema -> String -> List ( String, Value )
-getFields val schema subpath =
+getFields : Value -> String -> List ( String, Value )
+getFields val subpath =
     let
         path =
             subpath
                 |> String.split "/"
                 |> List.drop 1
+                |> List.filter ((/=) "")
     in
         val
             |> Decode.decodeValue (Decode.at path <| Decode.keyValuePairs Decode.value)
@@ -428,15 +423,12 @@ col10 =
 
 source : Model -> Schema -> String -> View
 source model s subpath =
-    s
-        |> Schema.encode
-        |> Encode.encode 2
-        |> (\s -> "```json\n" ++ s ++ "```")
-        |> Markdown.toHtml [ Html.Attributes.class "hljs" ]
-        |> Element.html
-        |> el None [ onDoubleClick <| ToggleEditing subpath ]
-        |> Element.within
-            [ column None
+    let
+        isEditMode =
+            Set.member subpath model.editPaths
+
+        toggleEditingButton =
+            column None
                 [ Attributes.alignRight
                 ]
                 [ el None
@@ -446,13 +438,36 @@ source model s subpath =
                     ]
                   <|
                     text
-                        (if Set.member subpath model.editPaths then
+                        (if isEditMode then
                             "done editing"
                          else
                             "edit"
                         )
                 ]
-            ]
+
+        schemaSource =
+            s
+                |> Schema.encode
+                |> Encode.encode 2
+                |> (\s -> "```json\n" ++ s ++ "```")
+                |> Markdown.toHtml [ Html.Attributes.class "hljs" ]
+                |> Element.html
+                |> el SourceCode [ onDoubleClick <| ToggleEditing subpath ]
+
+        editForm val =
+            form model val model.schema subpath ""
+                |> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
+
+        displaySchemaNode =
+            if isEditMode then
+                model.value
+                    |> Result.withDefault Encode.null
+                    |> editForm
+            else
+                schemaSource
+    in
+        displaySchemaNode
+            |> Element.within [ toggleEditingButton ]
 
 
 schemataKey : Int -> String -> String -> String -> View
@@ -470,25 +485,31 @@ schemataKey level parent s impliedType =
             |> Element.node nodeName
 
 
-schemataDoc : Model -> Int -> Maybe Schemata -> Schema -> String -> View
-schemataDoc model level s metaSchema subpath =
-    let
-        takeHalfWidth =
-            el None [ width <| percent 50 ]
+takeHalfWidth : View -> View
+takeHalfWidth =
+    el None [ width <| percent 50 ]
 
+
+displayNextToEachOther : List View -> View
+displayNextToEachOther list =
+    row None
+        [ Attributes.justify ]
+        (list |> List.map takeHalfWidth)
+
+
+displayOneUnderAnother : List View -> View
+displayOneUnderAnother list =
+    column None [] list
+
+
+schemataDoc : Model -> Int -> Schema -> Maybe Schemata -> Schema -> String -> View
+schemataDoc model level schema s metaSchema subpath =
+    let
         dropAnchor newSubpath =
             el NoOutline
                 [ Attributes.tabindex 1
                 , Attributes.id <| String.dropLeft 1 newSubpath
                 ]
-
-        displayNextToEachOther list =
-            row None
-                [ Attributes.justify ]
-                (list |> List.map takeHalfWidth)
-
-        displayOneUnderAnother list =
-            column None [] list
 
         heading newSubpath key =
             newSubpath
@@ -524,23 +545,32 @@ schemataDoc model level s metaSchema subpath =
         printProperty ( key, schema ) =
             let
                 newSubpath =
-                    subpath ++ key
+                    subpath
+                        ++ key
             in
                 case metaSchema |> for subpath of
                     Just ms ->
                         if level == 0 then
-                            [ key |> heading newSubpath
-                            , displayNextToEachOther
-                                [ documentation model (level + 1) newSubpath schema ms
-                                , source model schema newSubpath
-                                ]
+                            [ key
+                                |> heading newSubpath
+                              --, displayNextToEachOther
+                            , documentation
+                                model
+                                (level + 1)
+                                newSubpath
+                                schema
+                                ms
                             ]
                         else
-                            [ key |> heading newSubpath
-                            , displayOneUnderAnother
-                                [ documentation model (level + 1) newSubpath schema ms
-                                , source model schema newSubpath
-                                ]
+                            [ key
+                                |> heading newSubpath
+                              --, displayOneUnderAnother
+                            , documentation
+                                model
+                                (level + 1)
+                                newSubpath
+                                schema
+                                ms
                             ]
 
                     Nothing ->
@@ -577,30 +607,57 @@ metaDoc s =
         ]
 
 
+
+{-
+   , if s.properties == Nothing && s.definitions == Nothing && Set.member jsonPointer model.editPaths then
+       form model (schema |> Schema.encode) metaSchema jsonPointer ""
+     else
+       empty
+-}
+{-
+   if Set.member jsonPointer model.editPaths then
+       case schema of
+           ObjectSchema s ->
+               col10
+                   [ metaDoc s
+                   , form model (schema |> Schema.encode) metaSchema jsonPointer ""
+                   ]
+
+           _ ->
+               empty
+   else
+-}
+
+
 documentation : Model -> Int -> String -> Schema -> Schema -> View
 documentation model level jsonPointer schema metaSchema =
-    if Set.member jsonPointer model.editPaths then
-        case schema of
-            ObjectSchema s ->
-                col10
-                    [ metaDoc s
-                    , form model (schema |> Schema.encode) metaSchema jsonPointer ""
-                    ]
+    let
+        generatedDocs s =
+            col10
+                [ metaDoc s
+                , schemataDoc model level schema s.definitions metaSchema <| jsonPointer ++ "/definitions/"
+                , schemataDoc model level schema s.properties metaSchema <| jsonPointer ++ "/properties/"
+                ]
 
-            _ ->
-                empty
-    else
+        schemaSource =
+            source model schema jsonPointer
+    in
         case schema of
             ObjectSchema s ->
-                col10
-                    [ metaDoc s
-                    , schemataDoc model level s.definitions metaSchema <| jsonPointer ++ "/definitions/"
-                    , schemataDoc model level s.properties metaSchema <| jsonPointer ++ "/properties/"
-                    , if s.properties == Nothing && s.definitions == Nothing && Set.member jsonPointer model.editPaths then
-                        form model (schema |> Schema.encode) metaSchema jsonPointer ""
-                      else
-                        empty
-                    ]
+                if level == 0 then
+                    generatedDocs s
+                else if level == 1 then
+                    displayNextToEachOther
+                        [ generatedDocs s
+                        , schemaSource
+                        ]
+                else if level > 1 then
+                    displayOneUnderAnother
+                        [ generatedDocs s
+                        , schemaSource
+                        ]
+                else
+                    empty
 
             BooleanSchema b ->
                 text <| toString b

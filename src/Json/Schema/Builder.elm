@@ -5,28 +5,28 @@ module Json.Schema.Builder
         , boolSchema
         , toSchema
         , validate
-        -- type
+          -- type
         , withType
         , withNullableType
         , withUnionType
-        -- meta
+          -- meta
         , withTitle
         , withDescription
         , withDefault
         , withExamples
         , withDefinitions
-        -- numeric
+          -- numeric
         , withMultipleOf
         , withMaximum
         , withMinimum
         , withExclusiveMaximum
         , withExclusiveMinimum
-        -- string
+          -- string
         , withMaxLength
         , withMinLength
         , withPattern
         , withFormat
-        -- array
+          -- array
         , withItems
         , withItem
         , withAdditionalItems
@@ -34,7 +34,7 @@ module Json.Schema.Builder
         , withMinItems
         , withUniqueItems
         , withContains
-        -- object
+          -- object
         , withMaxProperties
         , withMinProperties
         , withRequired
@@ -44,16 +44,18 @@ module Json.Schema.Builder
         , withSchemaDependency
         , withPropNamesDependency
         , withPropertyNames
-        -- generic
+          -- generic
         , withEnum
         , withConst
         , withAllOf
         , withAnyOf
         , withOneOf
         , withNot
-        -- schema
+          -- schema
         , withRef
         , withId
+          -- encode
+        , encode
         )
 
 {-| Convenience API to build a valid JSON schema
@@ -62,7 +64,7 @@ module Json.Schema.Builder
 @docs SchemaBuilder
 
 # Schema builder creation
-@docs buildSchema, boolSchema, toSchema
+@docs buildSchema, boolSchema, toSchema, encode
 
 # Building up schema
 
@@ -112,15 +114,15 @@ will always succeed for any type other than `number` and `integer`
 
 -}
 
-
 import Util exposing (foldResults)
 import Validation
 import Json.Decode exposing (Value)
+import Json.Encode as Encode
 import Json.Schema.Definitions
     exposing
         ( Schema(ObjectSchema, BooleanSchema)
         , Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType)
+        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType, BooleanType)
         , Schemata(Schemata)
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
@@ -147,6 +149,7 @@ import Json.Schema.Definitions
 -}
 type SchemaBuilder
     = SchemaBuilder { errors : List String, schema : Maybe SubSchema, bool : Maybe Bool }
+
 
 
 -- BASIC API
@@ -198,6 +201,7 @@ validate val sb =
             Err <| "Schema is invalid: " ++ s
 
 
+
 -- TYPE
 
 
@@ -219,6 +223,7 @@ withType t sb =
                     Err s ->
                         appendError s sb
            )
+
 
 {-| Set the `type` property of JSON schema to a nullable type.
 
@@ -397,7 +402,7 @@ withTitle x =
 -}
 withDescription : String -> SchemaBuilder -> SchemaBuilder
 withDescription x =
-    updateSchema (\s -> { s | title = Just x })
+    updateSchema (\s -> { s | description = Just x })
 
 
 {-|
@@ -546,7 +551,10 @@ withId : String -> SchemaBuilder -> SchemaBuilder
 withId x =
     updateSchema (\s -> { s | id = Just x })
 
+
+
 -- HELPERS
+
 
 updateSchema : (SubSchema -> SubSchema) -> SchemaBuilder -> SchemaBuilder
 updateSchema fn (SchemaBuilder sb) =
@@ -590,12 +598,14 @@ toListOfSchemas =
                     builder
                         |> toSchema
                         |> Result.map (\schema -> schemas ++ [ schema ])
-                 )
+                )
         )
         (Ok [])
 
 
+
 -- updateWithSubSchema (\sub s -> { s | contains = sub })
+
 
 updateWithSubSchema : (Maybe Schema -> (SubSchema -> SubSchema)) -> SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 updateWithSubSchema fn subSchemaBuilder =
@@ -628,3 +638,175 @@ updateWithListOfSchemas fn schemasBuilder =
             appendError s
 
 
+{-| Encode schema into a builder code (elm)
+-}
+encode : Int -> Schema -> String
+encode level s =
+    let
+        indent : String
+        indent =
+            "\n" ++ (String.repeat level "    ")
+
+        pipe : String
+        pipe =
+            indent ++ "|> "
+
+        comma : String
+        comma =
+            indent ++ ", "
+
+        comma2 : String
+        comma2 =
+            indent ++ "  , "
+
+        optionally : (a -> String) -> Maybe a -> String -> String -> String
+        optionally fn val key res =
+            case val of
+                Just s ->
+                    res ++ pipe ++ key ++ " " ++ (fn s)
+
+                Nothing ->
+                    res
+
+        encodeItems : Items -> String -> String
+        encodeItems items res =
+            case items of
+                ItemDefinition id ->
+                    res ++ pipe ++ "withItem " ++ encode (level + 1) id
+
+                ArrayOfItems aoi ->
+                    res ++ pipe ++ "withItem " ++ (aoi |> List.map (encode (level + 1)) |> String.join comma)
+
+                NoItems ->
+                    res
+
+        encodeDependency : String -> Dependency -> String
+        encodeDependency key dep =
+            case dep of
+                PropSchema ps ->
+                    pipe ++ "withSchemaDependency \"" ++ key ++ "\" " ++ (encode (level + 1) ps)
+
+                ArrayPropNames apn ->
+                    pipe
+                        ++ "withPropNamesDependency \""
+                        ++ key
+                        ++ "\" [ "
+                        ++ (apn
+                                |> List.map (\s -> "\"" ++ s ++ "\"")
+                                |> String.join ", "
+                           )
+                        ++ " ]"
+
+        encodeDependencies : List ( String, Dependency ) -> String -> String
+        encodeDependencies deps res =
+            if List.isEmpty deps then
+                res
+            else
+                res
+                    ++ pipe
+                    ++ "withDependencies"
+                    ++ (deps
+                            |> List.map (\( key, dep ) -> encodeDependency key dep)
+                            |> String.join pipe
+                       )
+
+        singleTypeToString : SingleType -> String
+        singleTypeToString st =
+            case st of
+                StringType ->
+                    "string"
+
+                IntegerType ->
+                    "integer"
+
+                NumberType ->
+                    "number"
+
+                BooleanType ->
+                    "boolean"
+
+                ObjectType ->
+                    "object"
+
+                ArrayType ->
+                    "array"
+
+                NullType ->
+                    "null"
+
+        encodeType : Type -> String -> String
+        encodeType t res =
+            case t of
+                SingleType st ->
+                    res ++ pipe ++ "withType \"" ++ (singleTypeToString st) ++ "\""
+
+                NullableType st ->
+                    res ++ pipe ++ "withNullableType \"" ++ (singleTypeToString st) ++ "\""
+
+                UnionType ut ->
+                    res ++ pipe ++ "withUnionType [" ++ (ut |> List.map (singleTypeToString >> toString) |> String.join ", ") ++ "]"
+
+                AnyType ->
+                    res
+
+        encodeListSchemas : List Schema -> String
+        encodeListSchemas l =
+            l
+                |> List.map (encode (level + 1))
+                |> String.join comma2
+                |> (\s -> indent ++ "  [ " ++ s ++ indent ++ "  ]")
+
+        encodeSchemata : Schemata -> String
+        encodeSchemata (Schemata l) =
+            l
+                |> List.map (\( s, x ) -> "( \"" ++ s ++ "\", " ++ (encode (level + 1) x) ++ indent ++ "    )")
+                |> String.join comma2
+                |> (\s -> indent ++ "  [ " ++ s ++ indent ++ "  ]")
+    in
+        case s of
+            BooleanSchema bs ->
+                if bs then
+                    "(boolSchema True)"
+                else
+                    "(boolSchema False)"
+
+            ObjectSchema os ->
+                [ encodeType os.type_
+                , optionally toString os.id "withId"
+                , optionally toString os.ref "withRef"
+                , optionally toString os.title "withTitle"
+                , optionally toString os.description "withDescription"
+                , optionally (\x -> x |> Encode.encode 0 |> toString |> (\x -> "(" ++ x ++ " |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)")) os.default "withDefault"
+                , optionally (\examples -> examples |> Encode.list |> (Encode.encode 0)) os.examples "withExamples"
+                , optionally encodeSchemata os.definitions "withDefinitions"
+                , optionally toString os.multipleOf "withMultipleOf"
+                , optionally toString os.maximum "withMaximum"
+                , optionally toString os.exclusiveMaximum "withExclusiveMaximum"
+                , optionally toString os.minimum "withMinimum"
+                , optionally toString os.exclusiveMinimum "withExclusiveMinimum"
+                , optionally toString os.maxLength "withMaxLength"
+                , optionally toString os.minLength "withMinLength"
+                , optionally toString os.pattern "withPattern"
+                , optionally toString os.format "withFormat"
+                , encodeItems os.items
+                , optionally (encode (level + 1)) os.additionalItems "withAdditionalItems"
+                , optionally toString os.maxItems "withMaxItems"
+                , optionally toString os.minItems "withMinItems"
+                  --, optionally (encode 0) os.uniqueItems "withUniqueItems"
+                , optionally (encode (level + 1)) os.contains "withContains"
+                , optionally toString os.maxProperties "withMaxProperties"
+                , optionally toString os.minProperties "withMinProperties"
+                , optionally (\s -> s |> List.map Encode.string |> Encode.list |> Encode.encode 0) os.required "withRequired"
+                , optionally encodeSchemata os.properties "withProperties"
+                , optionally encodeSchemata os.patternProperties "withPatternProperties"
+                , optionally (encode (level + 1)) os.additionalProperties "withAdditionalProperties"
+                , encodeDependencies os.dependencies
+                , optionally (encode (level + 1)) os.propertyNames "withPropertyNames"
+                , optionally (\examples -> examples |> Encode.list |> (Encode.encode 0) |> (\x -> "( " ++ x ++ " |> List.map Encode.string )")) os.enum "withEnum"
+                , optionally (Encode.encode 0) os.const "withConst"
+                , optionally encodeListSchemas os.allOf "withAllOf"
+                , optionally encodeListSchemas os.anyOf "withAnyOf"
+                , optionally encodeListSchemas os.oneOf "withOneOf"
+                , optionally (encode (level + 1)) os.not "withNot"
+                ]
+                    |> List.foldl identity "buildSchema"
