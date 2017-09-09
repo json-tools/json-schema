@@ -1,4 +1,4 @@
-module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
+module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
@@ -217,6 +217,56 @@ setPropertyValue key value path schema object =
 
                     Nothing ->
                         Err <| "Unable to indentify type of this node, " ++ (toString x)
+
+
+deleteIn : Value -> String -> Schema -> Result String Value
+deleteIn hostValue jsonPointer schema =
+    let
+        ( key, path ) =
+            jsonPointer
+                |> parseJsonPointer
+                |> List.reverse
+                |> (\x ->
+                        case x of
+                            k :: revPath ->
+                                ( k, List.reverse revPath )
+
+                            [] ->
+                                ( "", [] )
+                   )
+
+        newJsonPointer =
+            "#/" ++ (String.join "/" path)
+
+        rejectKey key val =
+            case Decode.decodeValue (Decode.keyValuePairs Decode.value) val of
+                Ok res ->
+                    res
+                        |> List.filter (\( k, _ ) -> k /= key)
+                        |> List.reverse
+                        |> Encode.object
+
+                Err _ ->
+                    case Decode.decodeValue (Decode.list Decode.value) val of
+                        Ok res ->
+                            res
+                                |> List.indexedMap (\ind v -> ( toString ind, v ))
+                                |> List.filter (\( k, _ ) -> k /= key)
+                                |> List.map (\( _, v ) -> v)
+                                |> Encode.list
+
+                        Err _ ->
+                            val
+
+        targetValue =
+            if key /= "" then
+                hostValue
+                    |> getPropertyValue path
+                    |> rejectKey key
+            else
+                hostValue
+    in
+        setValue hostValue newJsonPointer targetValue schema
 
 
 setValue : Value -> String -> Value -> Schema -> Result String Value

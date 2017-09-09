@@ -29,7 +29,7 @@ import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
 import Json.Decode as Decode exposing (Decoder, decodeString, decodeValue, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
+import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
     exposing
@@ -64,7 +64,7 @@ type Msg
     | NumberChange String String
     | BooleanChange String Bool
     | ValueChange String String
-    | ContentScroll
+    | DeleteMe String
     | ActiveSection String
     | ToggleEditing String
 
@@ -121,9 +121,26 @@ updateValue model path newStuff =
                 addError s
 
 
+deletePath : Model -> String -> Model
+deletePath model pointer =
+    case deleteIn model.value pointer model.schema of
+        Ok val ->
+            { model | value = Debug.log pointer val }
+
+        Err s ->
+            let
+                a =
+                    Debug.log "err" s
+            in
+                model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
+        NoOp ->
+            model ! []
+
         StringChange path str ->
             updateValue model path (str |> Encode.string |> Ok) ! []
 
@@ -152,8 +169,8 @@ update msg model =
             }
                 ! []
 
-        _ ->
-            model ! []
+        DeleteMe pointer ->
+            deletePath model pointer ! []
 
 
 port activeSection : (String -> msg) -> Sub msg
@@ -289,7 +306,8 @@ form model val path =
                         , Attributes.moveRight 5
                         ]
                       <|
-                        text "-"
+                        el None [ onClick <| DeleteMe (path |> String.join "/" |> (++) "#/") ] <|
+                            text "-"
                     ]
 
         jsonPointer =
@@ -343,7 +361,7 @@ form model val path =
                 Ok (OtherValue val) ->
                     [ Element.el JsonEditor
                         [ onInput <| ValueChange jsonPointer
-                        , Attributes.contenteditable True
+                          -- , Attributes.contenteditable True
                         , inlineStyle [ ( "display", "inline-block" ) ]
                         ]
                       <|
