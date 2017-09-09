@@ -22,15 +22,15 @@ import StyleSheet
         , Variations(Active)
         , stylesheet
         )
+import Json.Schema.Builder as Builder
 import Element.Events exposing (on, onClick, onMouseDown, onMouseOver, onMouseOut, onInput, onCheck, onDoubleClick)
 import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
-import Json.Decode as Decode exposing (decodeString, decodeValue, Value)
+import Json.Decode as Decode exposing (Decoder, decodeString, decodeValue, Value)
 import Json.Encode as Encode
 import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
-import Json.Schema.Builder as Builder
 import Json.Schema.Definitions as Schema
     exposing
         ( Schema(BooleanSchema, ObjectSchema)
@@ -49,7 +49,7 @@ type alias View =
 
 type alias Model =
     { schema : Schema
-    , value : Result String Value
+    , value : Value
     , activeSection : String
     , editPaths : Set String
     , error : Maybe String
@@ -83,7 +83,7 @@ init : Location -> ( Model, Cmd Msg )
 init location =
     Model
         coreSchemaDraft6
-        (bookingSchema |> Schema.encode |> Ok)
+        (bookingSchema |> Schema.encode)
         -- activeSection
         location.hash
         -- editPaths
@@ -105,11 +105,8 @@ updateValue model path newStuff =
         addError message =
             { model | valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path message }
 
-        update : Value -> Result String Value
         update val =
-            (Ok model.schema)
-                |> Result.map2 (,) model.value
-                |> Result.andThen (\( v, s ) -> setValue v path val s)
+            setValue model.value path val model.schema
     in
         case newStuff of
             Ok val ->
@@ -118,7 +115,7 @@ updateValue model path newStuff =
                         addError validationErrorMessage
 
                     Ok v ->
-                        { model | value = Ok v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path }
+                        { model | value = v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path }
 
             Err s ->
                 addError s
@@ -172,7 +169,7 @@ view model =
     let
         propertiesListing section fn =
             model.value
-                |> Result.andThen (decodeValue Schema.decoder)
+                |> decodeValue Schema.decoder
                 |> Result.toMaybe
                 |> Maybe.andThen
                     (\s ->
@@ -210,20 +207,22 @@ view model =
 
         a =
             model.value
-                |> Result.andThen (decodeValue Schema.decoder)
+                |> decodeValue Schema.decoder
                 |> Result.map (\schema -> documentation model 0 "#" schema model.schema)
                 |> Result.withDefault empty
 
-        {-
-           b =
-              [ model.value
-                  |> Result.withDefault Encode.null
-                  |> Decode.decodeValue Schema.decoder
-                  |> Result.withDefault blankSchema
-                  |> Builder.encode 2
-                  |> text
-                  |> Element.node "pre"
-        -}
+        b =
+            coreSchemaDraft6
+                --|> Result.withDefault Encode.null
+                --|> Decode.decodeValue Schema.decoder
+                --|> Result.withDefault blankSchema
+                |>
+                    Builder.encode 2
+                |> text
+                |> Element.node "pre"
+
+        c =
+            form model model.value []
     in
         Element.viewport stylesheet <|
             row Main
@@ -237,7 +236,7 @@ view model =
                     , Element.bold "properties"
                     , propertiesListing "properties" .properties
                     ]
-                , column None
+                , column SourceCode
                     [ height <| fill 1
                     , width <| fill 1
                     , yScrollbar
@@ -245,160 +244,127 @@ view model =
                     , Attributes.id "content"
                       -- , on "scroll" (Json.Decode.succeed ContentScroll)
                     ]
-                    [ a
-                    ]
+                    [ Element.textLayout None [] c ]
                 ]
 
 
-form : Model -> Value -> Schema -> String -> String -> View
-form model val schema subpath key =
+type JsonValue
+    = ObjectValue (List ( String, Value ))
+    | ArrayValue (List Value)
+    | OtherValue Value
+
+
+jsonValueDecoder : Decoder JsonValue
+jsonValueDecoder =
     let
-        path =
-            subpath
-                |> String.split "/"
-                |> List.drop 1
-                |> List.filter ((/=) "")
-                |> (\s -> s ++ [ key ])
+        objectValueDecoder =
+            Decode.keyValuePairs Decode.value
+                |> Decode.map ObjectValue
+
+        arrayValueDecoder =
+            Decode.list Decode.value
+                |> Decode.map ArrayValue
+    in
+        Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
+
+
+form : Model -> Value -> List String -> List View
+form model val path =
+    let
+        offset n =
+            el None
+                [ inlineStyle
+                    [ ( "display", "inline-block" )
+                    , ( "margin-left", (path |> List.length |> (+) n |> (*) 4 |> toString) ++ "ch" )
+                    , ( "padding-left", "1ch" )
+                    ]
+                , Attributes.class "deletable"
+                ]
+
+        deleteMe path deletable =
+            deletable
+                |> Element.onLeft
+                    [ el None
+                        [ Attributes.class "delete-me"
+                        , Attributes.moveRight 5
+                        ]
+                      <|
+                        text "-"
+                    ]
 
         jsonPointer =
             path
                 |> String.join "/"
-                |> (\x -> "#/" ++ x)
-
-        implied =
-            implyType val schema jsonPointer
+                |> (++) "#/"
 
         controls =
-            case implied.type_ of
-                SingleType StringType ->
-                    val
-                        |> Decode.decodeValue (Decode.at path Decode.string)
-                        |> (\s ->
-                                case s of
-                                    Ok s ->
-                                        case implied.schema.enum of
-                                            Nothing ->
-                                                Element.inputText None [ onInput <| StringChange jsonPointer ] s
-
-                                            Just enum ->
-                                                enum
-                                                    |> List.map
-                                                        (\v ->
-                                                            v
-                                                                |> Decode.decodeValue Decode.string
-                                                                |> Result.withDefault ""
-                                                                |> (\val ->
-                                                                        Element.option val (s == val) (text val)
-                                                                   )
-                                                        )
-                                                    |> Element.select ""
-                                                        None
-                                                        [ onInput <| StringChange subpath ]
-
-                                    Err e ->
-                                        text e
+            case Decode.decodeValue (Decode.at path jsonValueDecoder) val of
+                Ok (ArrayValue list) ->
+                    list
+                        |> List.indexedMap
+                            (\index _ ->
+                                let
+                                    pp =
+                                        path ++ [ index |> toString ]
+                                in
+                                    (deleteMe pp <| offset 1 <| text <| toString index ++ ": ")
+                                        :: (text " ")
+                                        :: form model val pp
+                            )
+                        |> List.intersperse [ text ",", Element.break ]
+                        |> List.concat
+                        |> (\x ->
+                                (text "[")
+                                    :: Element.break
+                                    :: (x ++ [ Element.break, offset 0 <| text " ]" ])
                            )
 
-                SingleType IntegerType ->
-                    val
-                        |> Decode.decodeValue (Decode.at path Decode.int)
-                        |> (\s ->
-                                case s of
-                                    Ok s ->
-                                        Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
-
-                                    Err e ->
-                                        text e
+                Ok (ObjectValue obj) ->
+                    obj
+                        |> List.reverse
+                        |> List.map
+                            (\( name, _ ) ->
+                                let
+                                    pp =
+                                        path ++ [ name ]
+                                in
+                                    (deleteMe pp <| offset 1 <| text <| "\"" ++ name ++ "\": ")
+                                        :: (text " ")
+                                        :: (form model val pp)
+                            )
+                        |> List.intersperse [ text ",", Element.break ]
+                        |> List.concat
+                        |> (\x ->
+                                (text "{")
+                                    :: Element.break
+                                    :: (x ++ [ Element.break, offset 0 <| text "}" ])
                            )
 
-                SingleType NumberType ->
-                    val
-                        |> Decode.decodeValue (Decode.at path Decode.float)
-                        |> (\s ->
-                                case s of
-                                    Ok s ->
-                                        Element.inputText None [ Attributes.type_ "number", onInput <| NumberChange jsonPointer ] (toString s)
+                Ok (OtherValue val) ->
+                    [ Element.el JsonEditor
+                        [ onInput <| ValueChange jsonPointer
+                        , Attributes.contenteditable True
+                        , inlineStyle [ ( "display", "inline-block" ) ]
+                        ]
+                      <|
+                        text (toString val)
+                    ]
 
-                                    Err e ->
-                                        text e
-                           )
-
-                SingleType BooleanType ->
-                    val
-                        |> Decode.decodeValue (Decode.at path Decode.bool)
-                        |> (\s ->
-                                case s of
-                                    Ok s ->
-                                        Element.checkbox s None [ Attributes.type_ "checkbox", onCheck <| BooleanChange jsonPointer ] empty
-
-                                    Err e ->
-                                        text e
-                           )
-
-                SingleType ArrayType ->
-                    val
-                        |> Decode.decodeValue (Decode.at path (Decode.list Decode.value))
-                        |> (\list ->
-                                case list of
-                                    Ok list ->
-                                        text <| toString list
-
-                                    Err e ->
-                                        text e
-                           )
-
-                SingleType ObjectType ->
-                    let
-                        editAsValue =
-                            False
-
-                        v =
-                            model.value |> Result.withDefault Encode.null
-                    in
-                        if editAsValue then
-                            val
-                                |> Encode.encode 4
-                                |> Element.textArea JsonEditor [ Attributes.rows 10, onInput <| ValueChange jsonPointer ]
-                        else
-                            getFields v jsonPointer
-                                |> Debug.log jsonPointer
-                                |> List.map
-                                    (\( name, _ ) ->
-                                        row None
-                                            []
-                                            [ text <| "\"" ++ name ++ "\":"
-                                              -- , Element.spacer 10
-                                            , form model v schema subpath name
-                                            ]
-                                    )
-                                |> column None [ inlineStyle [ ( "margin-left", "2ch" ) ] ]
-                                |> (\x ->
-                                        column None
-                                            []
-                                            [ text "{"
-                                            , x
-                                            , text "}"
-                                            ]
-                                   )
-
-                x ->
-                    x
-                        |> toString
-                        |> (++) "some other type detected: "
-                        |> text
-                        |> (\s -> [ s ])
-                        |> column Error []
+                Err e ->
+                    [ text e ]
     in
-        column None
-            []
-            [ controls
-            ]
-            |> Element.below
-                [ model.valueUpdateErrors
-                    |> Dict.get jsonPointer
-                    |> Maybe.map (text >> (el InlineError []))
-                    |> Maybe.withDefault empty
-                ]
+        controls
+
+
+
+{-
+   |> Element.below
+       [ model.valueUpdateErrors
+           |> Dict.get jsonPointer
+           |> Maybe.map (text >> (el InlineError []))
+           |> Maybe.withDefault empty
+       ]
+-}
 
 
 getFields : Value -> String -> List ( String, Value )
@@ -455,13 +421,15 @@ source model s subpath =
                 |> el SourceCode [ onDoubleClick <| ToggleEditing subpath ]
 
         editForm val =
-            form model val model.schema subpath ""
-                |> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
+            Element.textLayout None
+                []
+                (form model val (parseJsonPointer subpath)
+                 --|> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
+                )
 
         displaySchemaNode =
             if isEditMode then
                 model.value
-                    |> Result.withDefault Encode.null
                     |> editForm
             else
                 schemaSource

@@ -11,13 +11,12 @@ coreSchemaDraft6 =
     buildSchema
         |> withUnionType [ "boolean", "object" ]
         |> withTitle "Core schema meta-schema"
-        |> withDefault ("{}" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
+        |> withDefault (Encode.object [])
         |> withDefinitions
             [ ( "schemaArray"
               , buildSchema
                     |> withType "array"
-                    |> withItem buildSchema
-                    |> withRef "#"
+                    |> withItem (buildSchema |> withRef "#")
                     |> withMinItems 1
               )
             , ( "nonNegativeInteger"
@@ -31,7 +30,7 @@ coreSchemaDraft6 =
                         [ buildSchema
                             |> withRef "#/definitions/nonNegativeInteger"
                         , buildSchema
-                            |> withDefault ("0" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
+                            |> withDefault (Encode.int 0)
                         ]
               )
             , ( "simpleTypes"
@@ -51,9 +50,8 @@ coreSchemaDraft6 =
             , ( "stringArray"
               , buildSchema
                     |> withType "array"
-                    |> withDefault ("[]" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
-                    |> withItem buildSchema
-                    |> withType "string"
+                    |> withDefault ([] |> Encode.list)
+                    |> withItem (buildSchema |> withType "string")
               )
             ]
         |> withProperties
@@ -73,12 +71,10 @@ coreSchemaDraft6 =
                     |> withFormat "uri-reference"
               )
             , ( "title"
-              , buildSchema
-                    |> withType "string"
+              , buildSchema |> withType "string"
               )
             , ( "description"
-              , buildSchema
-                    |> withType "string"
+              , buildSchema |> withType "string"
               )
             , ( "default"
               , buildSchema
@@ -89,28 +85,22 @@ coreSchemaDraft6 =
                     |> withExclusiveMinimum 0
               )
             , ( "maximum"
-              , buildSchema
-                    |> withType "number"
+              , buildSchema |> withType "number"
               )
             , ( "exclusiveMaximum"
-              , buildSchema
-                    |> withType "number"
+              , buildSchema |> withType "number"
               )
             , ( "minimum"
-              , buildSchema
-                    |> withType "number"
+              , buildSchema |> withType "number"
               )
             , ( "exclusiveMinimum"
-              , buildSchema
-                    |> withType "number"
+              , buildSchema |> withType "number"
               )
             , ( "maxLength"
-              , buildSchema
-                    |> withRef "#/definitions/nonNegativeInteger"
+              , buildSchema |> withRef "#/definitions/nonNegativeInteger"
               )
             , ( "minLength"
-              , buildSchema
-                    |> withRef "#/definitions/nonNegativeIntegerDefault0"
+              , buildSchema |> withRef "#/definitions/nonNegativeIntegerDefault0"
               )
             , ( "pattern"
               , buildSchema
@@ -118,89 +108,74 @@ coreSchemaDraft6 =
                     |> withFormat "regex"
               )
             , ( "additionalItems"
-              , buildSchema
-                    |> withRef "#"
+              , buildSchema |> withRef "#"
               )
             , ( "items"
               , buildSchema
-                    |> withDefault ("{}" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
+                    |> withDefault (Encode.object [])
                     |> withAnyOf
-                        [ buildSchema
-                            |> withRef "#"
-                        , buildSchema
-                            |> withRef "#/definitions/schemaArray"
+                        [ buildSchema |> withRef "#"
+                        , buildSchema |> withRef "#/definitions/schemaArray"
                         ]
               )
             , ( "maxItems"
-              , buildSchema
-                    |> withRef "#/definitions/nonNegativeInteger"
+              , buildSchema |> withRef "#/definitions/nonNegativeInteger"
               )
             , ( "minItems"
-              , buildSchema
-                    |> withRef "#/definitions/nonNegativeIntegerDefault0"
+              , buildSchema |> withRef "#/definitions/nonNegativeIntegerDefault0"
               )
             , ( "uniqueItems"
               , buildSchema
                     |> withType "boolean"
-                    |> withDefault ("false" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
+                    |> withDefault (Encode.bool False)
               )
             , ( "contains"
-              , buildSchema
-                    |> withRef "#"
+              , buildSchema |> withRef "#"
               )
             , ( "maxProperties"
-              , buildSchema
-                    |> withRef "#/definitions/nonNegativeInteger"
+              , buildSchema |> withRef "#/definitions/nonNegativeInteger"
               )
             , ( "minProperties"
-              , buildSchema
-                    |> withRef "#/definitions/nonNegativeIntegerDefault0"
+              , buildSchema |> withRef "#/definitions/nonNegativeIntegerDefault0"
               )
             , ( "required"
-              , buildSchema
-                    |> withRef "#/definitions/stringArray"
+              , buildSchema |> withRef "#/definitions/stringArray"
               )
             , ( "additionalProperties"
-              , buildSchema
-                    |> withRef "#"
+              , buildSchema |> withRef "#"
               )
             , ( "definitions"
               , buildSchema
                     |> withType "object"
-                    |> withDefault ("{}" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
-                    |> withAdditionalProperties buildSchema
-                    |> withRef "#"
+                    |> withDefault (Encode.object [])
+                    |> withAdditionalProperties (buildSchema |> withRef "#")
               )
             , ( "properties"
               , buildSchema
                     |> withType "object"
-                    |> withDefault ("{}" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
-                    |> withAdditionalProperties buildSchema
-                    |> withRef "#"
+                    |> withDefault (Encode.object [])
+                    |> withAdditionalProperties (buildSchema |> withRef "#")
               )
             , ( "patternProperties"
               , buildSchema
                     |> withType "object"
-                    |> withDefault ("{}" |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)
-                    |> withAdditionalProperties buildSchema
-                    |> withRef "#"
-                    |> withPropertyNames buildSchema
-                    |> withFormat "regex"
+                    |> withDefault (Encode.object [])
+                    |> withAdditionalProperties (buildSchema |> withRef "#")
+                -- |> withPropertyNames (buildSchema |> withFormat "regex")
               )
             , ( "dependencies"
               , buildSchema
                     |> withType "object"
-                    |> withAdditionalProperties buildSchema
-                    |> withAnyOf
-                        [ buildSchema
-                            |> withRef "#"
-                        , buildSchema
-                            |> withRef "#/definitions/stringArray"
-                        ]
+                    |> withAdditionalProperties
+                        (buildSchema
+                            |> withAnyOf
+                                [ buildSchema |> withRef "#"
+                                , buildSchema |> withRef "#/definitions/stringArray"
+                                ]
+                        )
               )
             , ( "propertyNames"
-              , buildSchema
-                    |> withRef "#"
+              , buildSchema |> withRef "#"
               )
             , ( "const"
               , buildSchema
@@ -209,6 +184,7 @@ coreSchemaDraft6 =
               , buildSchema
                     |> withType "array"
                     |> withMinItems 1
+                    |> withUniqueItems True
               )
             , ( "type"
               , buildSchema
@@ -217,30 +193,25 @@ coreSchemaDraft6 =
                             |> withRef "#/definitions/simpleTypes"
                         , buildSchema
                             |> withType "array"
-                            |> withItem buildSchema
-                            |> withRef "#/definitions/simpleTypes"
+                            |> withItem (buildSchema |> withRef "#/definitions/simpleTypes")
                             |> withMinItems 1
+                            |> withUniqueItems True
                         ]
               )
             , ( "format"
-              , buildSchema
-                    |> withType "string"
+              , buildSchema |> withType "string"
               )
             , ( "allOf"
-              , buildSchema
-                    |> withRef "#/definitions/schemaArray"
+              , buildSchema |> withRef "#/definitions/schemaArray"
               )
             , ( "anyOf"
-              , buildSchema
-                    |> withRef "#/definitions/schemaArray"
+              , buildSchema |> withRef "#/definitions/schemaArray"
               )
             , ( "oneOf"
-              , buildSchema
-                    |> withRef "#/definitions/schemaArray"
+              , buildSchema |> withRef "#/definitions/schemaArray"
               )
             , ( "not"
-              , buildSchema
-                    |> withRef "#"
+              , buildSchema |> withRef "#"
               )
             ]
         |> toSchema
@@ -515,56 +486,58 @@ bookingSchema =
             , ( "passengers"
               , buildSchema
                     |> withType "array"
-                    |> withItem buildSchema
-                    |> withType "object"
-                    |> withRequired [ "title", "firstName", "lastName", "dateOfBirth", "hasHoldLuggage" ]
-                    |> withProperties
-                        [ ( "title"
-                          , buildSchema
-                                |> withEnum ([ "mr", "miss", "ms", "mrs" ] |> List.map Encode.string)
-                          )
-                        , ( "firstName"
-                          , buildSchema
-                                |> withType "string"
-                          )
-                        , ( "lastName"
-                          , buildSchema
-                                |> withType "string"
-                          )
-                        , ( "dateOfBirth"
-                          , buildSchema
-                                |> withType "string"
-                                |> withFormat "date"
-                          )
-                        , ( "hasHoldLuggage"
-                          , buildSchema
-                                |> withType "boolean"
-                                |> withEnum ([ True, False ] |> List.map Encode.bool)
-                          )
-                        , ( "id"
-                          , buildSchema
-                                |> withType "object"
-                                |> withProperties
-                                    [ ( "type"
-                                      , buildSchema
-                                            |> withType "string"
-                                      )
-                                    , ( "number"
-                                      , buildSchema
-                                            |> withType "string"
-                                      )
-                                    , ( "expDate"
-                                      , buildSchema
-                                            |> withType "string"
-                                            |> withFormat "date"
-                                      )
-                                    , ( "countryCode"
-                                      , buildSchema
-                                            |> withRef "#/definitions/countryCode"
-                                      )
-                                    ]
-                          )
-                        ]
+                    |> withItem
+                        (buildSchema
+                            |> withType "object"
+                            |> withRequired [ "title", "firstName", "lastName", "dateOfBirth", "hasHoldLuggage" ]
+                            |> withProperties
+                                [ ( "title"
+                                  , buildSchema
+                                        |> withEnum ([ "mr", "miss", "ms", "mrs" ] |> List.map Encode.string)
+                                  )
+                                , ( "firstName"
+                                  , buildSchema
+                                        |> withType "string"
+                                  )
+                                , ( "lastName"
+                                  , buildSchema
+                                        |> withType "string"
+                                  )
+                                , ( "dateOfBirth"
+                                  , buildSchema
+                                        |> withType "string"
+                                        |> withFormat "date"
+                                  )
+                                , ( "hasHoldLuggage"
+                                  , buildSchema
+                                        |> withType "boolean"
+                                        |> withEnum ([ True, False ] |> List.map Encode.bool)
+                                  )
+                                , ( "id"
+                                  , buildSchema
+                                        |> withType "object"
+                                        |> withProperties
+                                            [ ( "type"
+                                              , buildSchema
+                                                    |> withType "string"
+                                              )
+                                            , ( "number"
+                                              , buildSchema
+                                                    |> withType "string"
+                                              )
+                                            , ( "expDate"
+                                              , buildSchema
+                                                    |> withType "string"
+                                                    |> withFormat "date"
+                                              )
+                                            , ( "countryCode"
+                                              , buildSchema
+                                                    |> withRef "#/definitions/countryCode"
+                                              )
+                                            ]
+                                  )
+                                ]
+                        )
                     |> withMaxItems 1
                     |> withMinItems 1
               )

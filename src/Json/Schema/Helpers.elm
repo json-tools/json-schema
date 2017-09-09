@@ -130,19 +130,19 @@ implyType val schema subpath =
             |> Maybe.andThen whenObjectSchema
             |> Maybe.andThen (calcSubSchemaType actualValue schema)
             |> (\x ->
-                case x of
-                    Nothing ->
-                        { type_ = AnyType
-                        , schema = blankSubSchema
-                        , error = Just <| "Can't imply type: " ++ subpath
-                        }
+                    case x of
+                        Nothing ->
+                            { type_ = AnyType
+                            , schema = blankSubSchema
+                            , error = Just <| "Can't imply type: " ++ subpath
+                            }
 
-                    Just (t, os) ->
-                        { type_ = t
-                        , schema = os
-                        , error = Nothing
-                        }
-                )
+                        Just ( t, os ) ->
+                            { type_ = t
+                            , schema = os
+                            , error = Nothing
+                            }
+               )
 
 
 getPropertyValue : List String -> Value -> Value
@@ -197,12 +197,13 @@ setPropertyValue key value path schema object =
                             in
                                 if List.length list < index - 1 then
                                     list
-                                        |> List.indexedMap (\i v ->
-                                            if i == index then
-                                                value
-                                            else
-                                                v
-                                        )
+                                        |> List.indexedMap
+                                            (\i v ->
+                                                if i == index then
+                                                    value
+                                                else
+                                                    v
+                                            )
                                 else
                                     list ++ [ value ]
                        )
@@ -293,13 +294,13 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
                                         Err x
                         in
                             case schemaType.type_ of
-                                (SingleType IntegerType) ->
+                                SingleType IntegerType ->
                                     tryDecoding Decode.int
 
-                                (SingleType StringType) ->
+                                SingleType StringType ->
                                     tryDecoding Decode.string
 
-                                (SingleType BooleanType) ->
+                                SingleType BooleanType ->
                                     tryDecoding Decode.bool
 
                                 _ ->
@@ -307,7 +308,7 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
 
                     key :: tail ->
                         case schemaType.type_ of
-                            (SingleType ObjectType) ->
+                            SingleType ObjectType ->
                                 let
                                     nodeDict =
                                         decodeDict dataNode
@@ -340,7 +341,7 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
                                         Nothing ->
                                             Err ("Key '" ++ key ++ "' not found")
 
-                            (SingleType ArrayType) ->
+                            SingleType ArrayType ->
                                 let
                                     index =
                                         String.toInt key |> Result.withDefault 0
@@ -407,7 +408,7 @@ setListItem index a list =
         list
 
 
-calcSubSchemaType : Maybe Value -> Schema -> SubSchema -> Maybe (Type, SubSchema)
+calcSubSchemaType : Maybe Value -> Schema -> SubSchema -> Maybe ( Type, SubSchema )
 calcSubSchemaType actualValue schema os =
     (case os.ref of
         Just ref ->
@@ -432,13 +433,13 @@ calcSubSchemaType actualValue schema os =
                             |> (\res ->
                                     if res == Nothing then
                                         if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                            Just (SingleType ObjectType, os)
+                                            Just ( SingleType ObjectType, os )
                                         else if os.enum /= Nothing then
                                             os.enum
                                                 |> deriveTypeFromEnum
-                                                |> (\t -> Just (t, os))
+                                                |> (\t -> Just ( t, os ))
                                         else if os == blankSubSchema then
-                                            Just (AnyType, os)
+                                            Just ( AnyType, os )
                                         else
                                             Nothing
                                     else
@@ -447,12 +448,12 @@ calcSubSchemaType actualValue schema os =
 
                     UnionType ut ->
                         if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
-                            Just (SingleType ObjectType, os)
+                            Just ( SingleType ObjectType, os )
                         else
-                            Just (os.type_, os)
+                            Just ( os.type_, os )
 
                     x ->
-                        Just (x, os)
+                        Just ( x, os )
             )
 
 
@@ -591,7 +592,7 @@ findDefinition ref (Schemata defs) =
             Nothing
 
 
-tryAllSchemas : Maybe Value -> Schema -> List Schema -> Maybe (Type, SubSchema)
+tryAllSchemas : Maybe Value -> Schema -> List Schema -> Maybe ( Type, SubSchema )
 tryAllSchemas actualValue rootSchema listSchemas =
     listSchemas
         |> List.map (resolve rootSchema)

@@ -659,6 +659,10 @@ encode level s =
         comma2 =
             indent ++ "  , "
 
+        comma4 : String
+        comma4 =
+            indent ++ "    , "
+
         optionally : (a -> String) -> Maybe a -> String -> String -> String
         optionally fn val key res =
             case val of
@@ -672,7 +676,7 @@ encode level s =
         encodeItems items res =
             case items of
                 ItemDefinition id ->
-                    res ++ pipe ++ "withItem " ++ encode (level + 1) id
+                    res ++ pipe ++ "withItem " ++ (encode (level + 1) >> addParens) id
 
                 ArrayOfItems aoi ->
                     res ++ pipe ++ "withItem " ++ (aoi |> List.map (encode (level + 1)) |> String.join comma)
@@ -759,16 +763,21 @@ encode level s =
         encodeSchemata : Schemata -> String
         encodeSchemata (Schemata l) =
             l
-                |> List.map (\( s, x ) -> "( \"" ++ s ++ "\", " ++ (encode (level + 1) x) ++ indent ++ "    )")
+                |> List.map (\( s, x ) -> "( \"" ++ s ++ "\"" ++ comma4 ++ (encode (level + 2) x) ++ indent ++ "    )")
                 |> String.join comma2
                 |> (\s -> indent ++ "  [ " ++ s ++ indent ++ "  ]")
+
+        addParens s =
+            "( "
+                ++ s
+                ++ " )"
     in
         case s of
             BooleanSchema bs ->
                 if bs then
-                    "(boolSchema True)"
+                    "boolSchema True"
                 else
-                    "(boolSchema False)"
+                    "boolSchema False"
 
             ObjectSchema os ->
                 [ encodeType os.type_
@@ -789,24 +798,24 @@ encode level s =
                 , optionally toString os.pattern "withPattern"
                 , optionally toString os.format "withFormat"
                 , encodeItems os.items
-                , optionally (encode (level + 1)) os.additionalItems "withAdditionalItems"
+                , optionally (encode (level + 1) >> addParens) os.additionalItems "withAdditionalItems"
                 , optionally toString os.maxItems "withMaxItems"
                 , optionally toString os.minItems "withMinItems"
-                  --, optionally (encode 0) os.uniqueItems "withUniqueItems"
-                , optionally (encode (level + 1)) os.contains "withContains"
+                , optionally (Encode.bool >> toString) os.uniqueItems "withUniqueItems"
+                , optionally (encode (level + 1) >> addParens) os.contains "withContains"
                 , optionally toString os.maxProperties "withMaxProperties"
                 , optionally toString os.minProperties "withMinProperties"
                 , optionally (\s -> s |> List.map Encode.string |> Encode.list |> Encode.encode 0) os.required "withRequired"
                 , optionally encodeSchemata os.properties "withProperties"
                 , optionally encodeSchemata os.patternProperties "withPatternProperties"
-                , optionally (encode (level + 1)) os.additionalProperties "withAdditionalProperties"
+                , optionally (encode (level + 1) >> addParens) os.additionalProperties "withAdditionalProperties"
                 , encodeDependencies os.dependencies
-                , optionally (encode (level + 1)) os.propertyNames "withPropertyNames"
+                , optionally (encode (level + 1) >> addParens) os.propertyNames "withPropertyNames"
                 , optionally (\examples -> examples |> Encode.list |> (Encode.encode 0) |> (\x -> "( " ++ x ++ " |> List.map Encode.string )")) os.enum "withEnum"
-                , optionally (Encode.encode 0) os.const "withConst"
+                , optionally (Encode.encode 0 >> addParens) os.const "withConst"
                 , optionally encodeListSchemas os.allOf "withAllOf"
                 , optionally encodeListSchemas os.anyOf "withAnyOf"
                 , optionally encodeListSchemas os.oneOf "withOneOf"
-                , optionally (encode (level + 1)) os.not "withNot"
+                , optionally (encode (level + 1) >> addParens) os.not "withNot"
                 ]
                     |> List.foldl identity "buildSchema"

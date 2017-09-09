@@ -32,7 +32,7 @@ type Variations
 
 stylesheet : StyleSheet Styles Variations
 stylesheet =
-    Style.stylesheet
+    Style.styleSheetWith [ Style.unguarded ]
         [ style None []
           -- It's handy to have a blank style
         , style Main
@@ -123,7 +123,11 @@ stylesheet =
             , Font.size 10
             , Border.all 1
             , Color.border Color.lightGrey
-            , Style.paddingHint 10
+            , Style.prop "resize" "none"
+            , Style.prop "box-shadow" "1px 1px 3px 0px rgba(0, 0, 0, 0.1)"
+            , Style.prop "outline" "none"
+            , Style.prop "display" "inline-block"
+              --, Style.paddingHint 10
             ]
         , style SourceCode
             [ Style.prop "font-family" "monospace"
