@@ -50,10 +50,13 @@ type alias View =
 type alias Model =
     { schema : Schema
     , value : Value
+    , jsonValue : JsonValue
     , activeSection : String
     , editPaths : Set String
     , error : Maybe String
     , valueUpdateErrors : Dict String String
+    , editPath : String
+    , editValue : String
     }
 
 
@@ -67,6 +70,7 @@ type Msg
     | DeleteMe String
     | ActiveSection String
     | ToggleEditing String
+    | SetEditPath String Value
 
 
 main : Program Never Model Msg
@@ -83,7 +87,14 @@ init : Location -> ( Model, Cmd Msg )
 init location =
     Model
         coreSchemaDraft6
-        (bookingSchema |> Schema.encode)
+        -- value
+        (coreSchemaDraft6 |> Schema.encode)
+        -- jsonValue
+        (coreSchemaDraft6
+            |> Schema.encode
+            |> Decode.decodeValue jsonValueDecoder
+            |> Result.withDefault (ObjectValue [])
+        )
         -- activeSection
         location.hash
         -- editPaths
@@ -92,6 +103,10 @@ init location =
         Nothing
         -- valueUpdateErrors
         Dict.empty
+        -- editPath
+        ""
+        -- editValue
+        "null"
         ! []
 
 
@@ -123,9 +138,9 @@ updateValue model path newStuff =
 
 deletePath : Model -> String -> Model
 deletePath model pointer =
-    case deleteIn model.value pointer model.schema of
+    case deleteIn model.value (Debug.log "deleteMe" pointer) model.schema of
         Ok val ->
-            { model | value = Debug.log pointer val }
+            { model | value = val }
 
         Err s ->
             let
@@ -141,6 +156,13 @@ update msg model =
         NoOp ->
             model ! []
 
+        SetEditPath jsonPointer value ->
+            { model
+                | editPath = jsonPointer
+                , editValue = value |> Encode.encode 2
+            }
+                ! []
+
         StringChange path str ->
             updateValue model path (str |> Encode.string |> Ok) ! []
 
@@ -151,8 +173,22 @@ update msg model =
             updateValue model path (bool |> Encode.bool |> Ok) ! []
 
         ValueChange path str ->
-            updateValue model path (str |> decodeString Decode.value) ! []
+            case decodeString Decode.value str of
+                Ok _ ->
+                    { model
+                        | editValue = str
+                        , valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path
+                    }
+                        ! []
 
+                Err s ->
+                    let
+                        a =
+                            Debug.log "Oh no" s
+                    in
+                        { model | editValue = str, valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path s } ! []
+
+        --updateValue model path (str |> decodeString Decode.value) ! []
         UrlChange l ->
             { model | activeSection = l.hash } ! []
 
@@ -185,9 +221,8 @@ view : Model -> Html Msg
 view model =
     let
         propertiesListing section fn =
-            model.value
-                |> decodeValue Schema.decoder
-                |> Result.toMaybe
+            bookingSchema
+                |> Just
                 |> Maybe.andThen
                     (\s ->
                         case s of
@@ -223,23 +258,32 @@ view model =
                 |> column None [ padding 20 ]
 
         a =
-            model.value
-                |> decodeValue Schema.decoder
+            bookingSchema
+                |> Ok
                 |> Result.map (\schema -> documentation model 0 "#" schema model.schema)
                 |> Result.withDefault empty
 
-        b =
-            coreSchemaDraft6
-                --|> Result.withDefault Encode.null
-                --|> Decode.decodeValue Schema.decoder
-                --|> Result.withDefault blankSchema
-                |>
-                    Builder.encode 2
-                |> text
-                |> Element.node "pre"
+        {-
+           b =
+               coreSchemaDraft6
+                   --|> Result.withDefault Encode.null
+                   --|> Decode.decodeValue Schema.decoder
+                   --|> Result.withDefault blankSchema
+                   |>
+                       Builder.encode 2
+                   |> text
+                   |> Element.node "pre"
 
-        c =
-            form model model.value []
+           c =
+               form model.valueUpdateErrors model.editPath model.editValue model.jsonValue []
+        -}
+        sectionSelected =
+            model.activeSection
+                |> String.split "/"
+                |> List.drop 1
+                |> List.filter ((/=) "")
+                |> List.length
+                |> (<) 0
     in
         Element.viewport stylesheet <|
             row Main
@@ -261,13 +305,18 @@ view model =
                     , Attributes.id "content"
                       -- , on "scroll" (Json.Decode.succeed ContentScroll)
                     ]
-                    [ Element.textLayout None [] c ]
+                    [ if sectionSelected then
+                        a
+                      else
+                        empty
+                    ]
+                  --[ Element.textLayout None [] c ]
                 ]
 
 
 type JsonValue
-    = ObjectValue (List ( String, Value ))
-    | ArrayValue (List Value)
+    = ObjectValue (List ( String, JsonValue ))
+    | ArrayValue (List JsonValue)
     | OtherValue Value
 
 
@@ -275,114 +324,119 @@ jsonValueDecoder : Decoder JsonValue
 jsonValueDecoder =
     let
         objectValueDecoder =
-            Decode.keyValuePairs Decode.value
+            Decode.keyValuePairs (Decode.lazy (\_ -> jsonValueDecoder))
                 |> Decode.map ObjectValue
 
         arrayValueDecoder =
-            Decode.list Decode.value
+            Decode.list (Decode.lazy (\_ -> jsonValueDecoder))
                 |> Decode.map ArrayValue
     in
         Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
 
 
-form : Model -> Value -> List String -> List View
-form model val path =
+form : Dict String String -> String -> String -> JsonValue -> List String -> List View
+form valueUpdateErrors editPath editValue val path =
     let
-        offset n =
+        jsonPointer path =
+            path
+                |> String.join "/"
+                |> (++) "#/"
+
+        offset level n =
             el None
                 [ inlineStyle
                     [ ( "display", "inline-block" )
-                    , ( "margin-left", (path |> List.length |> (+) n |> (*) 4 |> toString) ++ "ch" )
+                    , ( "margin-left", (level + n |> (*) 2 |> toString) ++ "ch" )
                     , ( "padding-left", "1ch" )
                     ]
                 , Attributes.class "deletable"
                 ]
 
-        deleteMe path deletable =
-            deletable
-                |> Element.onLeft
-                    [ el None
-                        [ Attributes.class "delete-me"
-                        , Attributes.moveRight 5
-                        ]
-                      <|
-                        el None [ onClick <| DeleteMe (path |> String.join "/" |> (++) "#/") ] <|
-                            text "-"
+        deleteMe path =
+            Element.onLeft
+                [ el None
+                    [ Attributes.class "delete-me"
+                    , Attributes.moveRight 5
                     ]
+                  <|
+                    el None [ onClick <| DeleteMe <| jsonPointer path ] <|
+                        text "-"
+                ]
 
-        jsonPointer =
-            path
-                |> String.join "/"
-                |> (++) "#/"
+        itemRow level path ( key, prop ) =
+            let
+                pp =
+                    path ++ [ key ]
+            in
+                (toString key
+                    ++ ": "
+                    |> text
+                    |> offset level 1
+                    |> deleteMe pp
+                )
+                    :: text " "
+                    :: controls (level + 1) prop pp
 
-        controls =
-            case Decode.decodeValue (Decode.at path jsonValueDecoder) val of
-                Ok (ArrayValue list) ->
+        joinWithCommaAndWrapWith open close level path list =
+            list
+                |> List.map (itemRow level path)
+                |> List.intersperse [ text ",", Element.break ]
+                |> List.concat
+                |> (\x ->
+                        text open
+                            :: Element.break
+                            :: (x ++ [ Element.break, offset level 0 <| text close ])
+                   )
+
+        controls level val path =
+            case val of
+                ArrayValue list ->
                     list
-                        |> List.indexedMap
-                            (\index _ ->
-                                let
-                                    pp =
-                                        path ++ [ index |> toString ]
-                                in
-                                    (deleteMe pp <| offset 1 <| text <| toString index ++ ": ")
-                                        :: (text " ")
-                                        :: form model val pp
-                            )
-                        |> List.intersperse [ text ",", Element.break ]
-                        |> List.concat
-                        |> (\x ->
-                                (text "[")
-                                    :: Element.break
-                                    :: (x ++ [ Element.break, offset 0 <| text " ]" ])
-                           )
+                        |> List.indexedMap (\index item -> ( toString index, item ))
+                        |> joinWithCommaAndWrapWith "[" "]" level path
 
-                Ok (ObjectValue obj) ->
+                ObjectValue obj ->
                     obj
                         |> List.reverse
-                        |> List.map
-                            (\( name, _ ) ->
-                                let
-                                    pp =
-                                        path ++ [ name ]
-                                in
-                                    (deleteMe pp <| offset 1 <| text <| "\"" ++ name ++ "\": ")
-                                        :: (text " ")
-                                        :: (form model val pp)
-                            )
-                        |> List.intersperse [ text ",", Element.break ]
-                        |> List.concat
-                        |> (\x ->
-                                (text "{")
-                                    :: Element.break
-                                    :: (x ++ [ Element.break, offset 0 <| text "}" ])
-                           )
+                        |> joinWithCommaAndWrapWith "{" "}" level path
 
-                Ok (OtherValue val) ->
-                    [ Element.el JsonEditor
-                        [ onInput <| ValueChange jsonPointer
-                          -- , Attributes.contenteditable True
-                        , inlineStyle [ ( "display", "inline-block" ) ]
-                        ]
-                      <|
-                        text (toString val)
-                    ]
-
-                Err e ->
-                    [ text e ]
+                OtherValue val ->
+                    let
+                        jsp =
+                            jsonPointer path
+                    in
+                        if jsp == editPath then
+                            [ editValue
+                                |> Element.inputText JsonEditor
+                                    [ onInput <| ValueChange jsp
+                                      --, Attributes.contenteditable True
+                                    , Attributes.autofocus True
+                                    , Attributes.rows 1
+                                    , inlineStyle [ ( "display", "inline-block" ) ]
+                                    ]
+                                |> Element.el None
+                                    [ inlineStyle [ ( "display", "inline-block" ) ] ]
+                                |> Element.below
+                                    [ valueUpdateErrors
+                                        |> Dict.get jsp
+                                        |> Maybe.map (text >> (el InlineError []))
+                                        |> Maybe.withDefault empty
+                                    ]
+                            ]
+                        else
+                            [ text (toString val)
+                                |> Element.el None
+                                    [ inlineStyle [ ( "display", "inline-block" ) ]
+                                      --, Attributes.contenteditable False
+                                    , onClick <| SetEditPath jsp val
+                                    ]
+                            ]
     in
-        controls
+        controls 0 val path
 
 
 
-{-
-   |> Element.below
-       [ model.valueUpdateErrors
-           |> Dict.get jsonPointer
-           |> Maybe.map (text >> (el InlineError []))
-           |> Maybe.withDefault empty
-       ]
--}
+{- -}
 
 
 getFields : Value -> String -> List ( String, Value )
@@ -409,8 +463,9 @@ source : Model -> Schema -> String -> View
 source model s subpath =
     let
         isEditMode =
-            Set.member subpath model.editPaths
+            True
 
+        --Set.member subpath model.editPaths
         toggleEditingButton =
             column None
                 [ Attributes.alignRight
@@ -423,15 +478,21 @@ source model s subpath =
                   <|
                     text
                         (if isEditMode then
-                            "done editing"
+                            ""
+                            --"done editing"
                          else
                             "edit"
                         )
                 ]
 
-        schemaSource =
+        val =
             s
                 |> Schema.encode
+                |> decodeValue jsonValueDecoder
+                |> Result.withDefault (ObjectValue [])
+
+        schemaSource val =
+            val
                 |> Encode.encode 2
                 |> (\s -> "```json\n" ++ s ++ "```")
                 |> Markdown.toHtml [ Html.Attributes.class "hljs" ]
@@ -441,18 +502,14 @@ source model s subpath =
         editForm val =
             Element.textLayout None
                 []
-                (form model val (parseJsonPointer subpath)
+                (form model.valueUpdateErrors model.editPath model.editValue val (parseJsonPointer subpath)
                  --|> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
                 )
 
         displaySchemaNode =
-            if isEditMode then
-                model.value
-                    |> editForm
-            else
-                schemaSource
+            editForm
     in
-        displaySchemaNode
+        displaySchemaNode val
             |> Element.within [ toggleEditingButton ]
 
 
@@ -534,38 +591,43 @@ schemataDoc model level schema s metaSchema subpath =
                     subpath
                         ++ key
             in
-                case metaSchema |> for subpath of
-                    Just ms ->
-                        if level == 0 then
-                            [ key
-                                |> heading newSubpath
-                              --, displayNextToEachOther
-                            , documentation
-                                model
-                                (level + 1)
-                                newSubpath
-                                schema
-                                ms
-                            ]
-                        else
-                            [ key
-                                |> heading newSubpath
-                              --, displayOneUnderAnother
-                            , documentation
-                                model
-                                (level + 1)
-                                newSubpath
-                                schema
-                                ms
-                            ]
+                if String.startsWith model.activeSection newSubpath then
+                    case metaSchema |> for subpath of
+                        Just ms ->
+                            if level == 0 then
+                                [ key
+                                    |> heading newSubpath
+                                  --, displayNextToEachOther
+                                , documentation
+                                    model
+                                    (level + 1)
+                                    newSubpath
+                                    schema
+                                    ms
+                                ]
+                                    |> col10
+                            else
+                                [ key
+                                    |> heading newSubpath
+                                  --, displayOneUnderAnother
+                                , documentation
+                                    model
+                                    (level + 1)
+                                    newSubpath
+                                    schema
+                                    ms
+                                ]
+                                    |> col10
 
-                    Nothing ->
-                        []
+                        Nothing ->
+                            empty
+                else
+                    empty
 
         printSchemata (Schemata s) =
             col10
                 [ s
-                    |> List.map (printProperty >> col10)
+                    |> List.map printProperty
                     |> column None []
                 ]
     in

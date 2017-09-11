@@ -1,4 +1,4 @@
-module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
+module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType, getPropertyValue)
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
@@ -152,14 +152,11 @@ getPropertyValue path value =
         |> Result.withDefault Encode.null
 
 
-setPropertyValue : String -> Value -> List String -> Schema -> Value -> Result String Value
-setPropertyValue key value path schema object =
+setPropertyValue : String -> Value -> List String -> Value -> Result String Value
+setPropertyValue key value path object =
     let
         jsonPointer =
             "#/" ++ (String.join "/" path)
-
-        nodeType =
-            implyType object schema jsonPointer
 
         updateOrAppend list =
             if List.any (\( k, _ ) -> k == key) list then
@@ -174,49 +171,42 @@ setPropertyValue key value path schema object =
             else
                 list ++ [ ( key, value ) ]
     in
-        case nodeType.type_ of
-            SingleType ObjectType ->
-                object
-                    |> decodeValue (Decode.keyValuePairs Decode.value)
-                    |> Result.withDefault []
+        case object |> decodeValue (Decode.keyValuePairs Decode.value) of
+            Ok o ->
+                o
                     |> List.reverse
                     |> updateOrAppend
                     |> Encode.object
                     |> Ok
 
-            SingleType ArrayType ->
-                object
-                    |> decodeValue (Decode.list Decode.value)
-                    |> Result.withDefault []
-                    |> (\list ->
-                            let
-                                index =
-                                    key
-                                        |> decodeString Decode.int
-                                        |> Result.withDefault 0
-                            in
-                                if List.length list < index - 1 then
-                                    list
-                                        |> List.indexedMap
-                                            (\i v ->
-                                                if i == index then
-                                                    value
-                                                else
-                                                    v
-                                            )
-                                else
-                                    list ++ [ value ]
-                       )
-                    |> Encode.list
-                    |> Ok
+            Err _ ->
+                case object |> decodeValue (Decode.list Decode.value) of
+                    Ok list ->
+                        let
+                            index =
+                                key
+                                    |> decodeString Decode.int
+                                    |> Result.withDefault 0
+                        in
+                            if List.length list < index - 1 then
+                                list
+                                    |> List.indexedMap
+                                        (\i v ->
+                                            if i == index then
+                                                value
+                                            else
+                                                v
+                                        )
+                                    |> Encode.list
+                                    |> Ok
+                            else
+                                list
+                                    ++ [ value ]
+                                    |> Encode.list
+                                    |> Ok
 
-            x ->
-                case nodeType.error of
-                    Just e ->
-                        Err e
-
-                    Nothing ->
-                        Err <| "Unable to indentify type of this node, " ++ (toString x)
+                    Err e ->
+                        Err "I can't do that with this object, sorry"
 
 
 deleteIn : Value -> String -> Schema -> Result String Value
@@ -296,7 +286,7 @@ setValue hostValue jsonPath valueToSet schema =
                                                 (\vv ->
                                                     hostValue
                                                         |> getPropertyValue p
-                                                        |> setPropertyValue key vv p schema
+                                                        |> setPropertyValue key vv p
                                                 )
                                 in
                                     case path of
