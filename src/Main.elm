@@ -12,7 +12,20 @@ import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
 import Json.Decode as Decode exposing (Decoder, decodeString, decodeValue, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (implyType, typeToString, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, makeJsonPointer, resolve, calcSubSchemaType)
+import Json.Schema.Helpers
+    exposing
+        ( implyType
+        , typeToString
+        , setValue
+        , deleteIn
+        , for
+        , whenObjectSchema
+        , parseJsonPointer
+        , makeJsonPointer
+        , resolve
+        , calcSubSchemaType
+        , setPropertyName
+        )
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema exposing (Schema(BooleanSchema, ObjectSchema), SubSchema, Schemata(Schemata), Type(AnyType, SingleType, NullableType, UnionType), SingleType(IntegerType, NumberType, StringType, BooleanType))
 
@@ -31,6 +44,7 @@ type alias Model =
     , valueUpdateErrors : Dict String String
     , editPath : String
     , editValue : String
+    , editPropertyName : String
     }
 
 
@@ -45,6 +59,8 @@ type Msg
     | ActiveSection String
     | ToggleEditing String
     | SetEditPath String Value
+    | SetEditPropertyName String
+    | SetPropertyName String
 
 
 main : Program Never Model Msg
@@ -62,9 +78,9 @@ init location =
     Model
         coreSchemaDraft6
         -- value
-        (coreSchemaDraft6 |> Schema.encode)
+        (bookingSchema |> Schema.encode)
         -- jsonValue
-        (coreSchemaDraft6
+        (bookingSchema
             |> Schema.encode
             |> Decode.decodeValue jsonValueDecoder
             |> Result.withDefault (ObjectValue [])
@@ -81,6 +97,8 @@ init location =
         ""
         -- editValue
         "null"
+        -- editPropertyName
+        ""
         ! []
 
 
@@ -182,6 +200,34 @@ update msg model =
         DeleteMe pointer ->
             deletePath model pointer ! []
 
+        SetEditPropertyName pointer ->
+            { model | editPropertyName = pointer } ! []
+
+        SetPropertyName str ->
+            let
+                newJsonPointer =
+                    model.editPropertyName
+                        |> parseJsonPointer
+                        |> List.reverse
+                        |> List.drop 1
+                        |> (::) str
+                        |> List.reverse
+                        |> makeJsonPointer
+            in
+                { model
+                    | value =
+                        model.value
+                            |> setPropertyName model.editPropertyName str model.schema
+                            |> Result.withDefault model.value
+                    , editPropertyName = newJsonPointer
+                    , activeSection =
+                        if model.activeSection == model.editPropertyName then
+                            newJsonPointer
+                        else
+                            model.activeSection
+                }
+                    ! []
+
 
 port activeSection : (String -> msg) -> Sub msg
 
@@ -195,8 +241,9 @@ view : Model -> Html Msg
 view model =
     let
         propertiesListing section fn =
-            bookingSchema
-                |> Just
+            model.value
+                |> Decode.decodeValue Schema.decoder
+                |> Result.toMaybe
                 |> Maybe.andThen
                     (\s ->
                         case s of
@@ -232,8 +279,8 @@ view model =
                 |> column None [ padding 20 ]
 
         a =
-            bookingSchema
-                |> Ok
+            model.value
+                |> Decode.decodeValue Schema.decoder
                 |> Result.map (\schema -> documentation model 0 "#" schema model.schema)
                 |> Result.withDefault empty
 
@@ -482,21 +529,6 @@ source model s subpath =
             |> Element.within [ toggleEditingButton ]
 
 
-schemataKey : Int -> String -> String -> String -> View
-schemataKey level parent s impliedType =
-    let
-        nodeName =
-            if level == 0 then
-                "h1"
-            else
-                "h2"
-    in
-        s
-            |> text
-            |> el SchemaHeader []
-            |> Element.node nodeName
-
-
 takeHalfWidth : View -> View
 takeHalfWidth =
     el None [ width <| percent 50 ]
@@ -517,21 +549,40 @@ displayOneUnderAnother list =
 schemataDoc : Model -> Int -> Schema -> Maybe Schemata -> Schema -> String -> View
 schemataDoc model level schema s metaSchema subpath =
     let
+        schemataKey level parent s =
+            let
+                nodeName =
+                    if level == 0 then
+                        "h1"
+                    else
+                        "h2"
+            in
+                if model.editPropertyName == newSubpath s then
+                    s
+                        |> Element.inputText SchemaHeader
+                            [ onInput <| SetPropertyName
+                            , Attributes.autofocus True
+                            ]
+                else
+                    s
+                        |> text
+                        |> el SchemaHeader
+                            [ onDoubleClick <| SetEditPropertyName <| newSubpath s
+                            ]
+                        |> Element.node nodeName
+
         dropAnchor newSubpath =
             el NoOutline
                 [ Attributes.tabindex 1
                 , Attributes.id <| String.dropLeft 1 newSubpath
                 ]
 
-        heading newSubpath key =
-            newSubpath
-                |> implied
-                |> schemataKey level subpath key
-                |> dropAnchor newSubpath
+        newSubpath key =
+            subpath ++ key
 
-        implied : String -> String
-        implied jsonPointer =
-            ""
+        heading key =
+            schemataKey level subpath key
+                |> dropAnchor (newSubpath key)
 
         {-
            let
@@ -555,43 +606,36 @@ schemataDoc model level schema s metaSchema subpath =
                    |> Maybe.withDefault "any"
         -}
         printProperty ( key, schema ) =
-            let
-                newSubpath =
-                    subpath
-                        ++ key
-            in
-                if String.startsWith model.activeSection newSubpath then
-                    case metaSchema |> for subpath of
-                        Just ms ->
-                            if level == 0 then
-                                [ key
-                                    |> heading newSubpath
-                                  --, displayNextToEachOther
-                                , documentation
-                                    model
-                                    (level + 1)
-                                    newSubpath
-                                    schema
-                                    ms
-                                ]
-                                    |> col10
-                            else
-                                [ key
-                                    |> heading newSubpath
-                                  --, displayOneUnderAnother
-                                , documentation
-                                    model
-                                    (level + 1)
-                                    newSubpath
-                                    schema
-                                    ms
-                                ]
-                                    |> col10
+            if String.startsWith model.activeSection (newSubpath key) then
+                case metaSchema |> for subpath of
+                    Just ms ->
+                        if level == 0 then
+                            [ heading key
+                              --, displayNextToEachOther
+                            , documentation
+                                model
+                                (level + 1)
+                                (newSubpath key)
+                                schema
+                                ms
+                            ]
+                                |> col10
+                        else
+                            [ heading key
+                              --, displayOneUnderAnother
+                            , documentation
+                                model
+                                (level + 1)
+                                (newSubpath key)
+                                schema
+                                ms
+                            ]
+                                |> col10
 
-                        Nothing ->
-                            empty
-                else
-                    empty
+                    Nothing ->
+                        empty
+            else
+                empty
 
         printSchemata (Schemata s) =
             col10
