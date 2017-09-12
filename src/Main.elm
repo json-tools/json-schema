@@ -1,45 +1,20 @@
 port module Main exposing (main)
 
-import Navigation exposing (Location, program, newUrl)
+import Navigation exposing (Location, program)
 import Html exposing (Html)
 import Html.Attributes
 import Dict exposing (Dict)
 import Set exposing (Set)
-import StyleSheet
-    exposing
-        ( Styles
-            ( None
-            , Main
-            , Error
-            , InlineError
-            , SchemaHeader
-            , JsonEditor
-            , MenuItem
-            , NoOutline
-            , Bordered
-            , SourceCode
-            )
-        , Variations(Active)
-        , stylesheet
-        )
-import Element.Events exposing (on, onClick, onMouseDown, onMouseOver, onMouseOut, onInput, onCheck, onDoubleClick)
-import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
+import StyleSheet exposing (Styles(None, Main, InlineError, SchemaHeader, JsonEditor, MenuItem, NoOutline, SourceCode), Variations(Active), stylesheet)
+import Element.Events exposing (onClick, onMouseDown, onInput, onDoubleClick)
+import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, height, minWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
 import Json.Decode as Decode exposing (Decoder, decodeString, decodeValue, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, makeJsonPointer, resolve, calcSubSchemaType)
+import Json.Schema.Helpers exposing (implyType, typeToString, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, makeJsonPointer, resolve, calcSubSchemaType)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
-import Json.Schema.Definitions as Schema
-    exposing
-        ( Schema(BooleanSchema, ObjectSchema)
-        , SubSchema
-        , Schemata(Schemata)
-        , Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
-        , blankSubSchema
-        , blankSchema
-        )
+import Json.Schema.Definitions as Schema exposing (Schema(BooleanSchema, ObjectSchema), SubSchema, Schemata(Schemata), Type(AnyType, SingleType, NullableType, UnionType), SingleType(IntegerType, NumberType, StringType, BooleanType))
 
 
 type alias View =

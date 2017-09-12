@@ -410,6 +410,7 @@ validateAdditionalProperties v s =
                                             Ok True
                                         else
                                             Err <| "Additional properties are not allowed, but I see additional property \"" ++ key ++ "\""
+
                                     ObjectSchema _ ->
                                         validate value additionalProperties
                                             |> Result.mapError (\s -> "Invalid property '" ++ key ++ "': " ++ s)
@@ -491,6 +492,7 @@ validateConst =
             let
                 expected =
                     toString const
+
                 actual =
                     toString val
             in
@@ -523,7 +525,6 @@ validateType val s =
                 Ok True
             else
                 Err "Type mismatch"
-
 
 
 validateSingleType : SingleType -> Value -> Result String Bool
@@ -566,7 +567,6 @@ validateAllOf =
                 (\schema res ->
                     if res == (Ok True) then
                         validate val schema
-
                     else
                         res
                 )
@@ -602,15 +602,16 @@ validateOneOf =
             let
                 validSubschema schema =
                     validate val schema == (Ok True)
-
             in
                 case oneOf |> List.filter validSubschema |> List.length of
                     1 ->
                         Ok True
+
                     0 ->
                         Err "None of the schemas in anyOf allow this value"
+
                     len ->
-                        Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ (toString len) ++ " validations succeeded"
+                        Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ toString len ++ " validations succeeded"
         )
 
 
@@ -619,7 +620,7 @@ validateNot =
     whenSubschema .not
         Decode.value
         (\notSchema val ->
-            if validate val notSchema  == (Ok True) then
+            if validate val notSchema == (Ok True) then
                 Err "Successful validation for the negative schema ('not' keyword)"
             else
                 Ok True

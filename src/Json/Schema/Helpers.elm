@@ -223,14 +223,13 @@ deleteIn hostValue jsonPointer schema =
             jsonPointer
                 |> parseJsonPointer
                 |> List.reverse
-                |> (\x ->
-                        case x of
-                            k :: revPath ->
-                                ( k, List.reverse revPath )
+                |> \x ->
+                    case x of
+                        k :: revPath ->
+                            ( k, List.reverse revPath )
 
-                            [] ->
-                                ( "", [] )
-                   )
+                        [] ->
+                            ( "", [] )
 
         newJsonPointer =
             "#/" ++ String.join "/" path
@@ -279,7 +278,7 @@ setValue hostValue jsonPath valueToSet schema =
                 [] ->
                     Ok valueToSet
 
-                key :: subpath ->
+                _ :: subpath ->
                     path
                         |> List.foldl
                             (\key ( path, value ) ->
@@ -300,16 +299,16 @@ setValue hostValue jsonPath valueToSet schema =
                                         [] ->
                                             ( [], v )
 
-                                        head :: tail ->
+                                        _ :: tail ->
                                             ( tail, v )
                             )
                             ( subpath, Ok valueToSet )
-                        |> (\( _, v ) -> v)
+                        |> \( _, v ) -> v
     in
         case schema |> for jsonPath of
             Just subSchema ->
                 valueToSet
-                    |> (flip Validation.validate) subSchema
+                    |> flip Validation.validate subSchema
                     |> Result.andThen (\_ -> newValue)
 
             Nothing ->
@@ -369,7 +368,7 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
                                         setValue_
                                             rootSchema
                                             prop
-                                            ("#/" ++ (String.join "/" tail))
+                                            ("#/" ++ String.join "/" tail)
                                             finalValue
                                             value
                                 in
@@ -407,7 +406,7 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
                                         ItemDefinition prop ->
                                             case getListItem index nodeList of
                                                 Just oldItem ->
-                                                    case setValue_ rootSchema prop ("#/" ++ (String.join "/" tail)) finalValue oldItem of
+                                                    case setValue_ rootSchema prop ("#/" ++ String.join "/" tail) finalValue oldItem of
                                                         Ok newValue ->
                                                             setListItem index newValue nodeList
                                                                 |> Encode.list
@@ -418,12 +417,12 @@ setValue_ rootSchema subSchema subpath finalValue dataNode =
 
                                                 Nothing ->
                                                     nodeList
-                                                        ++ [ defaultFor prop |> setValue_ rootSchema prop ("#/" ++ (String.join "/" tail)) finalValue |> Result.withDefault (defaultFor prop) ]
+                                                        ++ [ defaultFor prop |> setValue_ rootSchema prop ("#/" ++ String.join "/" tail) finalValue |> Result.withDefault (defaultFor prop) ]
                                                         |> Encode.list
                                                         |> \v -> Ok v
 
                             x ->
-                                Err <| "Something is not right: " ++ (toString x)
+                                Err <| "Something is not right: " ++ toString x
 
 
 getListItem : Int -> List a -> Maybe a
@@ -477,21 +476,20 @@ calcSubSchemaType actualValue schema os =
                             |> List.map (Maybe.withDefault [])
                             |> List.concat
                             |> tryAllSchemas actualValue schema
-                            |> (\res ->
-                                    if res == Nothing then
-                                        if os.properties /= Nothing || os.additionalProperties /= Nothing then
-                                            Just ( SingleType ObjectType, os )
-                                        else if os.enum /= Nothing then
-                                            os.enum
-                                                |> deriveTypeFromEnum
-                                                |> (\t -> Just ( t, os ))
-                                        else if os == blankSubSchema then
-                                            Just ( AnyType, os )
-                                        else
-                                            Nothing
+                            |> \res ->
+                                if res == Nothing then
+                                    if os.properties /= Nothing || os.additionalProperties /= Nothing then
+                                        Just ( SingleType ObjectType, os )
+                                    else if os.enum /= Nothing then
+                                        os.enum
+                                            |> deriveTypeFromEnum
+                                            |> \t -> Just ( t, os )
+                                    else if os == blankSubSchema then
+                                        Just ( AnyType, os )
                                     else
-                                        res
-                               )
+                                        Nothing
+                                else
+                                    res
 
                     UnionType ut ->
                         if ut == [ BooleanType, ObjectType ] || ut == [ ObjectType, BooleanType ] then
@@ -603,27 +601,26 @@ findProperty name rootSchema schema =
                     else
                         r
                )
-            |> (\r ->
-                    if r == Nothing then
-                        os
-                            |> Maybe.andThen .anyOf
-                            |> Maybe.andThen
-                                (\anyOf ->
-                                    anyOf
-                                        |> List.foldl
-                                            (\s r ->
-                                                if r == Nothing then
-                                                    s
-                                                        |> resolve rootSchema
-                                                        |> findProperty name rootSchema
-                                                else
-                                                    r
-                                            )
-                                            Nothing
-                                )
-                    else
-                        r
-               )
+            |> \r ->
+                if r == Nothing then
+                    os
+                        |> Maybe.andThen .anyOf
+                        |> Maybe.andThen
+                            (\anyOf ->
+                                anyOf
+                                    |> List.foldl
+                                        (\s r ->
+                                            if r == Nothing then
+                                                s
+                                                    |> resolve rootSchema
+                                                    |> findProperty name rootSchema
+                                            else
+                                                r
+                                        )
+                                        Nothing
+                            )
+                else
+                    r
 
 
 findDefinition : String -> Schemata -> Maybe SubSchema
