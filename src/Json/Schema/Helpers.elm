@@ -1,4 +1,4 @@
-module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType, getPropertyValue)
+module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, makeJsonPointer, resolve, calcSubSchemaType, getPropertyValue)
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
@@ -55,7 +55,7 @@ typeToString t =
             "null"
 
         NullableType st ->
-            "nullable " ++ (singleTypeToString st)
+            "nullable " ++ singleTypeToString st
 
         SingleType s ->
             singleTypeToString s
@@ -76,7 +76,7 @@ typeToList t =
             [ "null" ]
 
         NullableType st ->
-            [ "nullable " ++ (singleTypeToString st) ]
+            [ "nullable " ++ singleTypeToString st ]
 
         SingleType s ->
             [ singleTypeToString s ]
@@ -107,6 +107,14 @@ parseJsonPointer subpath =
         |> List.filter ((/=) "")
 
 
+makeJsonPointer : List String -> String
+makeJsonPointer path =
+    path
+        |> List.filter ((/=) "")
+        |> String.join "/"
+        |> (++) "#/"
+
+
 for : String -> Schema -> Maybe Schema
 for jsonPointer schema =
     jsonPointer
@@ -129,20 +137,19 @@ implyType val schema subpath =
             |> List.foldl (weNeedToGoDeeper schema) (Just schema)
             |> Maybe.andThen whenObjectSchema
             |> Maybe.andThen (calcSubSchemaType actualValue schema)
-            |> (\x ->
-                    case x of
-                        Nothing ->
-                            { type_ = AnyType
-                            , schema = blankSubSchema
-                            , error = Just <| "Can't imply type: " ++ subpath
-                            }
+            |> \x ->
+                case x of
+                    Nothing ->
+                        { type_ = AnyType
+                        , schema = blankSubSchema
+                        , error = Just <| "Can't imply type: " ++ subpath
+                        }
 
-                        Just ( t, os ) ->
-                            { type_ = t
-                            , schema = os
-                            , error = Nothing
-                            }
-               )
+                    Just ( t, os ) ->
+                        { type_ = t
+                        , schema = os
+                        , error = Nothing
+                        }
 
 
 getPropertyValue : List String -> Value -> Value
@@ -156,7 +163,7 @@ setPropertyValue : String -> Value -> List String -> Value -> Result String Valu
 setPropertyValue key value path object =
     let
         jsonPointer =
-            "#/" ++ (String.join "/" path)
+            "#/" ++ String.join "/" path
 
         updateOrAppend list =
             if List.any (\( k, _ ) -> k == key) list then
@@ -205,7 +212,7 @@ setPropertyValue key value path object =
                                     |> Encode.list
                                     |> Ok
 
-                    Err e ->
+                    Err _ ->
                         Err "I can't do that with this object, sorry"
 
 
@@ -226,7 +233,7 @@ deleteIn hostValue jsonPointer schema =
                    )
 
         newJsonPointer =
-            "#/" ++ (String.join "/" path)
+            "#/" ++ String.join "/" path
 
         rejectKey key val =
             case Decode.decodeValue (Decode.keyValuePairs Decode.value) val of

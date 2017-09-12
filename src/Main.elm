@@ -22,17 +22,13 @@ import StyleSheet
         , Variations(Active)
         , stylesheet
         )
-
-
---import Json.Schema.Builder as Builder
-
 import Element.Events exposing (on, onClick, onMouseDown, onMouseOver, onMouseOut, onInput, onCheck, onDoubleClick)
 import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
 import Json.Decode as Decode exposing (Decoder, decodeString, decodeValue, Value)
 import Json.Encode as Encode
-import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, resolve, calcSubSchemaType)
+import Json.Schema.Helpers exposing (ImpliedType, implyType, typeToString, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, makeJsonPointer, resolve, calcSubSchemaType)
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
     exposing
@@ -340,11 +336,6 @@ jsonValueDecoder =
 form : Dict String String -> String -> String -> JsonValue -> List String -> List View
 form valueUpdateErrors editPath editValue val path =
     let
-        jsonPointer path =
-            path
-                |> String.join "/"
-                |> (++) "#/"
-
         offset level n =
             el None
                 [ inlineStyle
@@ -362,7 +353,7 @@ form valueUpdateErrors editPath editValue val path =
                     , Attributes.moveRight 5
                     ]
                   <|
-                    el None [ onClick <| DeleteMe <| jsonPointer path ] <|
+                    el None [ onClick <| DeleteMe <| makeJsonPointer path ] <|
                         text "-"
                 ]
 
@@ -406,7 +397,7 @@ form valueUpdateErrors editPath editValue val path =
                 OtherValue val ->
                     let
                         jsp =
-                            jsonPointer path
+                            makeJsonPointer path
                     in
                         if jsp == editPath then
                             [ editValue
