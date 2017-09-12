@@ -1,4 +1,19 @@
-module Json.Schema.Helpers exposing (ImpliedType, typeToString, typeToList, implyType, setValue, deleteIn, for, whenObjectSchema, parseJsonPointer, makeJsonPointer, resolve, calcSubSchemaType, getPropertyValue)
+module Json.Schema.Helpers
+    exposing
+        ( ImpliedType
+        , typeToString
+        , typeToList
+        , implyType
+        , setValue
+        , deleteIn
+        , for
+        , whenObjectSchema
+        , parseJsonPointer
+        , makeJsonPointer
+        , resolve
+        , calcSubSchemaType
+        , getPropertyValue
+        )
 
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
@@ -12,6 +27,7 @@ import Json.Schema.Definitions
         , Items(ArrayOfItems, ItemDefinition, NoItems)
         , SubSchema
         , Schemata(Schemata)
+        , blankSchema
         , blankSubSchema
         )
 
@@ -162,9 +178,6 @@ getPropertyValue path value =
 setPropertyValue : String -> Value -> List String -> Value -> Result String Value
 setPropertyValue key value path object =
     let
-        jsonPointer =
-            "#/" ++ String.join "/" path
-
         updateOrAppend list =
             if List.any (\( k, _ ) -> k == key) list then
                 list
@@ -212,8 +225,15 @@ setPropertyValue key value path object =
                                     |> Encode.list
                                     |> Ok
 
-                    Err _ ->
-                        Err "I can't do that with this object, sorry"
+                    Err s ->
+                        if key == "0" then
+                            [ value ]
+                                |> Encode.list
+                                |> Ok
+                        else
+                            [ ( key, value ) ]
+                                |> Encode.object
+                                |> Ok
 
 
 deleteIn : Value -> String -> Schema -> Result String Value
@@ -312,7 +332,7 @@ setValue hostValue jsonPath valueToSet schema =
                     |> Result.andThen (\_ -> newValue)
 
             Nothing ->
-                Err ("No schema for path" ++ jsonPath)
+                Err ("No schema for path " ++ jsonPath)
 
 
 setValue_ : Schema -> Schema -> String -> Value -> Value -> Result String Value
@@ -560,15 +580,17 @@ resolveReference schema ref =
                 else if ref |> String.startsWith "#/definitions/" then
                     os.definitions
                         |> Maybe.andThen (findDefinition ref)
-                        |> Maybe.andThen
-                            (\def ->
-                                case def.ref of
-                                    Just r ->
-                                        resolveReference schema r
+                        --|> debugSubSchema "find def?"
+                        |>
+                            Maybe.andThen
+                                (\def ->
+                                    case def.ref of
+                                        Just r ->
+                                            resolveReference schema r
 
-                                    Nothing ->
-                                        Just <| ObjectSchema def
-                            )
+                                        Nothing ->
+                                            Just <| ObjectSchema def
+                                )
                 else
                     Nothing
             )
@@ -601,24 +623,30 @@ findProperty name rootSchema schema =
                     else
                         r
                )
+            |> (\r ->
+                    if r == Nothing then
+                        os
+                            |> Maybe.andThen .anyOf
+                            |> Maybe.andThen
+                                (\anyOf ->
+                                    anyOf
+                                        |> List.foldl
+                                            (\s r ->
+                                                if r == Nothing then
+                                                    s
+                                                        |> resolve rootSchema
+                                                        |> findProperty name rootSchema
+                                                else
+                                                    r
+                                            )
+                                            Nothing
+                                )
+                    else
+                        r
+               )
             |> \r ->
                 if r == Nothing then
-                    os
-                        |> Maybe.andThen .anyOf
-                        |> Maybe.andThen
-                            (\anyOf ->
-                                anyOf
-                                    |> List.foldl
-                                        (\s r ->
-                                            if r == Nothing then
-                                                s
-                                                    |> resolve rootSchema
-                                                    |> findProperty name rootSchema
-                                            else
-                                                r
-                                        )
-                                        Nothing
-                            )
+                    Just blankSchema
                 else
                     r
 
@@ -762,3 +790,39 @@ getDefinition defs name =
                     Nothing
                     x
             )
+
+
+debugSchema : String -> Maybe Schema -> Maybe Schema
+debugSchema msg schema =
+    let
+        a =
+            case schema of
+                Just s ->
+                    s
+                        |> Json.Schema.Definitions.encode
+                        |> Encode.encode 4
+                        |> Debug.log
+                        |> (\f -> f msg)
+
+                Nothing ->
+                    Debug.log msg "Nothing"
+    in
+        schema
+
+
+debugSubSchema : String -> Maybe SubSchema -> Maybe SubSchema
+debugSubSchema msg schema =
+    let
+        a =
+            case schema of
+                Just s ->
+                    ObjectSchema s
+                        |> Json.Schema.Definitions.encode
+                        |> Encode.encode 4
+                        |> Debug.log
+                        |> (\f -> f msg)
+
+                Nothing ->
+                    Debug.log msg "Nothing"
+    in
+        schema

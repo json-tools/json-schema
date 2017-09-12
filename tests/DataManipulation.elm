@@ -10,7 +10,7 @@ import Json.Schema.Builder exposing (toSchema, buildSchema, withType, withProper
 
 all : Test
 all =
-    describe "data manipulation"
+    describe "Data Manipulation"
         [ describe "setValue"
             [ test "simple string value" <|
                 \() ->
@@ -81,16 +81,14 @@ all =
                             )
                         |> Result.map (Encode.encode 0)
                         |> Expect.equal (Ok """{"goo":"doo","foo":{"tar":"har","bar":{"zim":"zam","baz":"fiz"}}}""")
-
             , test "array should remain array" <|
                 \() ->
                     buildSchema
                         |> withType "array"
                         |> toSchema
-                        |> Result.andThen (setValue (Encode.list [Encode.string "hello"]) "#/1" (Encode.string "world"))
+                        |> Result.andThen (setValue (Encode.list [ Encode.string "hello" ]) "#/1" (Encode.string "world"))
                         |> Result.map (Encode.encode 0)
                         |> Expect.equal (Ok """["hello","world"]""")
-
             , test "should work with $ref" <|
                 \() ->
                     buildSchema
@@ -108,10 +106,12 @@ all =
                 \() ->
                     buildSchema
                         |> withDefinitions
-                            [ ( "foo", buildSchema |> withAnyOf
-                                [ buildSchema |> withType "array"
-                                , buildSchema |> withType "object"
-                                ]
+                            [ ( "foo"
+                              , buildSchema
+                                    |> withAnyOf
+                                        [ buildSchema |> withType "array"
+                                        , buildSchema |> withType "object"
+                                        ]
                               )
                             ]
                         |> withProperties
@@ -119,12 +119,13 @@ all =
                             ]
                         |> toSchema
                         -- |> debugSchema
-                        |> Result.andThen (setValue Encode.null "#/bar/0" (Encode.object [("hello", Encode.float 1.1)]))
+                        |>
+                            Result.andThen (setValue Encode.null "#/bar/0" (Encode.object [ ( "hello", Encode.float 1.1 ) ]))
                         |> Result.map (Encode.encode 0)
                         |> Expect.equal (Ok """{"bar":[{"hello":1.1}]}""")
-
             ]
         ]
+
 
 debugSchema : Result String Schema -> Result String Schema
 debugSchema s =
@@ -137,6 +138,7 @@ debugSchema s =
                         |> Encode.encode 4
                         |> Debug.log
                         |> (\f -> f "schema")
+
                 Err s ->
                     Debug.log "error" s
     in
