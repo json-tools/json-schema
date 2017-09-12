@@ -2,7 +2,7 @@ module Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 
 import Json.Schema.Builder exposing (..)
 import Json.Encode as Encode
-import Json.Decode as Decode
+import Json.Decode
 import Json.Schema.Definitions exposing (blankSchema, Schema)
 
 

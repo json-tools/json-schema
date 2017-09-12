@@ -22,7 +22,10 @@ import StyleSheet
         , Variations(Active)
         , stylesheet
         )
-import Json.Schema.Builder as Builder
+
+
+--import Json.Schema.Builder as Builder
+
 import Element.Events exposing (on, onClick, onMouseDown, onMouseOver, onMouseOut, onInput, onCheck, onDoubleClick)
 import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, alignLeft, height, minWidth, maxWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)

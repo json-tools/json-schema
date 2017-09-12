@@ -17,24 +17,7 @@ module Json.Schema.Definitions
 import Util exposing (resultToDecoder, foldResults, isInt)
 import Json.Decode.Pipeline exposing (decode, optional)
 import Json.Encode as Encode
-import Json.Decode as Decode
-    exposing
-        ( Value
-        , Decoder
-        , succeed
-        , fail
-        , lazy
-        , maybe
-        , nullable
-        , field
-        , andThen
-        , string
-        , float
-        , int
-        , bool
-        , list
-        , value
-        )
+import Json.Decode as Decode exposing (Value, Decoder, succeed, fail, lazy, nullable, andThen, string, float, int, bool, list, value)
 
 
 type Schema
@@ -45,25 +28,29 @@ type Schema
 type alias SubSchema =
     { type_ : Type
     , id : Maybe String
-    , ref : Maybe String
-    -- meta
+    , ref :
+        Maybe String
+        -- meta
     , title : Maybe String
     , description : Maybe String
     , default : Maybe Value
     , examples : Maybe (List Value)
-    , definitions : Maybe Schemata
-    -- numeric validations
+    , definitions :
+        Maybe Schemata
+        -- numeric validations
     , multipleOf : Maybe Float
     , maximum : Maybe Float
     , exclusiveMaximum : Maybe Float
     , minimum : Maybe Float
-    , exclusiveMinimum : Maybe Float
-    -- string validations
+    , exclusiveMinimum :
+        Maybe Float
+        -- string validations
     , maxLength : Maybe Int
     , minLength : Maybe Int
     , pattern : Maybe String
-    , format : Maybe String
-    -- array validations
+    , format :
+        Maybe String
+        -- array validations
     , items : Items
     , additionalItems : Maybe Schema
     , maxItems : Maybe Int
@@ -76,7 +63,7 @@ type alias SubSchema =
     , properties : Maybe Schemata
     , patternProperties : Maybe Schemata
     , additionalProperties : Maybe Schema
-    , dependencies : List (String, Dependency)
+    , dependencies : List ( String, Dependency )
     , propertyNames : Maybe Schema
     , enum : Maybe (List Value)
     , const : Maybe Value
@@ -88,7 +75,9 @@ type alias SubSchema =
 
 
 blankSchema : Schema
-blankSchema = ObjectSchema blankSubSchema
+blankSchema =
+    ObjectSchema blankSubSchema
+
 
 blankSubSchema : SubSchema
 blankSubSchema =
@@ -141,6 +130,7 @@ type Items
     | ItemDefinition Schema
     | ArrayOfItems (List Schema)
 
+
 type Dependency
     = ArrayPropNames (List String)
     | PropSchema Schema
@@ -153,23 +143,23 @@ type RowEncoder a
 encode : Schema -> Value
 encode s =
     let
-        optionally : (a -> Value) -> Maybe a -> String -> List (String, Value) -> List (String, Value)
+        optionally : (a -> Value) -> Maybe a -> String -> List ( String, Value ) -> List ( String, Value )
         optionally fn val key res =
             case val of
                 Just s ->
-                    (key, fn s) :: res
+                    ( key, fn s ) :: res
 
                 Nothing ->
                     res
 
-        encodeItems : Items -> List (String, Value) -> List (String, Value)
+        encodeItems : Items -> List ( String, Value ) -> List ( String, Value )
         encodeItems items res =
             case items of
                 ItemDefinition id ->
-                    ("items", encode id) :: res
+                    ( "items", encode id ) :: res
 
                 ArrayOfItems aoi ->
-                    ("items", aoi |> List.map encode |> Encode.list) :: res
+                    ( "items", aoi |> List.map encode |> Encode.list ) :: res
 
                 NoItems ->
                     res
@@ -183,12 +173,12 @@ encode s =
                 ArrayPropNames apn ->
                     apn |> List.map Encode.string |> Encode.list
 
-        encodeDependencies : List (String, Dependency) -> List (String, Value) -> List (String, Value)
+        encodeDependencies : List ( String, Dependency ) -> List ( String, Value ) -> List ( String, Value )
         encodeDependencies deps res =
             if List.isEmpty deps then
                 res
             else
-                ("dependencies", deps |> List.map (\(key, dep) -> (key, encodeDependency dep)) |> Encode.object) :: res
+                ( "dependencies", deps |> List.map (\( key, dep ) -> ( key, encodeDependency dep )) |> Encode.object ) :: res
 
         singleTypeToString : SingleType -> String
         singleTypeToString st =
@@ -214,17 +204,17 @@ encode s =
                 NullType ->
                     "null"
 
-        encodeType : Type -> List (String, Value) -> List (String, Value)
+        encodeType : Type -> List ( String, Value ) -> List ( String, Value )
         encodeType t res =
             case t of
                 SingleType st ->
-                    ("type", st |> singleTypeToString |> Encode.string ) :: res
+                    ( "type", st |> singleTypeToString |> Encode.string ) :: res
 
                 NullableType st ->
-                    ("type", st |> singleTypeToString |> Encode.string ) :: res
+                    ( "type", st |> singleTypeToString |> Encode.string ) :: res
 
                 UnionType ut ->
-                    ("type", ut |> List.map (singleTypeToString >> Encode.string) |> Encode.list ) :: res
+                    ( "type", ut |> List.map (singleTypeToString >> Encode.string) |> Encode.list ) :: res
 
                 AnyType ->
                     res
@@ -238,7 +228,7 @@ encode s =
         encodeSchemata : Schemata -> Value
         encodeSchemata (Schemata l) =
             l
-                |> List.map (\(s, x) -> (s, encode x))
+                |> List.map (\( s, x ) -> ( s, encode x ))
                 |> Encode.object
     in
         case s of
@@ -253,7 +243,7 @@ encode s =
                 , optionally Encode.string os.description "description"
                 , optionally identity os.default "default"
                 , optionally Encode.list os.examples "examples"
-                , optionally encodeSchemata  os.definitions "definitions"
+                , optionally encodeSchemata os.definitions "definitions"
                 , optionally Encode.float os.multipleOf "multipleOf"
                 , optionally Encode.float os.maximum "maximum"
                 , optionally Encode.float os.exclusiveMaximum "exclusiveMaximum"
@@ -303,12 +293,13 @@ decoder =
 
         booleanSchemaDecoder =
             Decode.bool
-                |> Decode.andThen (\b ->
-                    if b then
-                        succeed (BooleanSchema True)
-                    else
-                        succeed (BooleanSchema False)
-                )
+                |> Decode.andThen
+                    (\b ->
+                        if b then
+                            succeed (BooleanSchema True)
+                        else
+                            succeed (BooleanSchema False)
+                    )
 
         objectSchemaDecoder =
             decode SubSchema
@@ -318,24 +309,28 @@ decoder =
                 |> optional "id" (nullable string) Nothing
                 |> optional "$ref" (nullable string) Nothing
                 -- meta
-                |> optional "title" (nullable string) Nothing
+                |>
+                    optional "title" (nullable string) Nothing
                 |> optional "description" (nullable string) Nothing
                 |> optional "default" (nullable value) Nothing
                 |> optional "examples" (nullable <| list value) Nothing
                 |> optional "definitions" (nullable <| lazy <| \_ -> schemataDecoder) Nothing
                 -- number
-                |> optional "multipleOf" (nullable float) Nothing
+                |>
+                    optional "multipleOf" (nullable float) Nothing
                 |> optional "maximum" (nullable float) Nothing
                 |> optional "exclusiveMaximum" (nullable float) Nothing
                 |> optional "minimum" (nullable float) Nothing
                 |> optional "exclusiveMinimum" (nullable float) Nothing
                 -- string
-                |> optional "maxLength" (nullable nonNegativeInt) Nothing
+                |>
+                    optional "maxLength" (nullable nonNegativeInt) Nothing
                 |> optional "minLength" (nullable nonNegativeInt) Nothing
                 |> optional "pattern" (nullable string) Nothing
                 |> optional "format" (nullable string) Nothing
                 -- array
-                |> optional "items" (lazy (\_ -> itemsDecoder)) NoItems
+                |>
+                    optional "items" (lazy (\_ -> itemsDecoder)) NoItems
                 |> optional "additionalItems" (nullable <| lazy (\_ -> decoder)) Nothing
                 |> optional "maxItems" (nullable nonNegativeInt) Nothing
                 |> optional "minItems" (nullable nonNegativeInt) Nothing
@@ -359,11 +354,11 @@ decoder =
         Decode.oneOf
             [ booleanSchemaDecoder
             , objectSchemaDecoder
-                |> Decode.andThen (\b ->
-                    succeed (ObjectSchema b)
-                )
+                |> Decode.andThen
+                    (\b ->
+                        succeed (ObjectSchema b)
+                    )
             ]
-
 
 
 nonEmptyListOfSchemas : Decoder (List Schema)
@@ -400,19 +395,25 @@ itemsDecoder =
         ]
 
 
-dependenciesDecoder : Decoder (List (String, Dependency))
+dependenciesDecoder : Decoder (List ( String, Dependency ))
 dependenciesDecoder =
     Decode.oneOf
         [ Decode.map ArrayPropNames (list string)
         , Decode.map PropSchema decoder
         ]
-            |> Decode.keyValuePairs
+        |> Decode.keyValuePairs
 
 
 nonNegativeInt : Decoder Int
 nonNegativeInt =
     int
-        |> andThen (\x -> if x >= 0 && isInt x then succeed x else fail "Expected non-negative int")
+        |> andThen
+            (\x ->
+                if x >= 0 && isInt x then
+                    succeed x
+                else
+                    fail "Expected non-negative int"
+            )
 
 
 type Type
@@ -451,7 +452,6 @@ multipleTypesDecoder lst =
                 |> foldResults
                 |> Result.andThen (Ok << UnionType)
                 |> resultToDecoder
-
 
 
 stringToType : String -> Result String SingleType

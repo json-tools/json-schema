@@ -645,7 +645,7 @@ encode level s =
     let
         indent : String
         indent =
-            "\n" ++ (String.repeat level "    ")
+            "\n" ++ String.repeat level "    "
 
         pipe : String
         pipe =
@@ -667,7 +667,7 @@ encode level s =
         optionally fn val key res =
             case val of
                 Just s ->
-                    res ++ pipe ++ key ++ " " ++ (fn s)
+                    res ++ pipe ++ key ++ " " ++ fn s
 
                 Nothing ->
                     res
@@ -688,7 +688,7 @@ encode level s =
         encodeDependency key dep =
             case dep of
                 PropSchema ps ->
-                    pipe ++ "withSchemaDependency \"" ++ key ++ "\" " ++ (encode (level + 1) ps)
+                    pipe ++ "withSchemaDependency \"" ++ key ++ "\" " ++ encode (level + 1) ps
 
                 ArrayPropNames apn ->
                     pipe
@@ -742,10 +742,10 @@ encode level s =
         encodeType t res =
             case t of
                 SingleType st ->
-                    res ++ pipe ++ "withType \"" ++ (singleTypeToString st) ++ "\""
+                    res ++ pipe ++ "withType \"" ++ singleTypeToString st ++ "\""
 
                 NullableType st ->
-                    res ++ pipe ++ "withNullableType \"" ++ (singleTypeToString st) ++ "\""
+                    res ++ pipe ++ "withNullableType \"" ++ singleTypeToString st ++ "\""
 
                 UnionType ut ->
                     res ++ pipe ++ "withUnionType [" ++ (ut |> List.map (singleTypeToString >> toString) |> String.join ", ") ++ "]"
@@ -758,14 +758,14 @@ encode level s =
             l
                 |> List.map (encode (level + 1))
                 |> String.join comma2
-                |> (\s -> indent ++ "  [ " ++ s ++ indent ++ "  ]")
+                |> \s -> indent ++ "  [ " ++ s ++ indent ++ "  ]"
 
         encodeSchemata : Schemata -> String
         encodeSchemata (Schemata l) =
             l
-                |> List.map (\( s, x ) -> "( \"" ++ s ++ "\"" ++ comma4 ++ (encode (level + 2) x) ++ indent ++ "    )")
+                |> List.map (\( s, x ) -> "( \"" ++ s ++ "\"" ++ comma4 ++ encode (level + 2) x ++ indent ++ "    )")
                 |> String.join comma2
-                |> (\s -> indent ++ "  [ " ++ s ++ indent ++ "  ]")
+                |> \s -> indent ++ "  [ " ++ s ++ indent ++ "  ]"
 
         addParens s =
             "( "
@@ -785,8 +785,8 @@ encode level s =
                 , optionally toString os.ref "withRef"
                 , optionally toString os.title "withTitle"
                 , optionally toString os.description "withDescription"
-                , optionally (\x -> x |> Encode.encode 0 |> toString |> (\x -> "(" ++ x ++ " |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)")) os.default "withDefault"
-                , optionally (\examples -> examples |> Encode.list |> (Encode.encode 0)) os.examples "withExamples"
+                , optionally (\x -> x |> Encode.encode 0 |> toString |> \x -> "(" ++ x ++ " |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)") os.default "withDefault"
+                , optionally (\examples -> examples |> Encode.list |> Encode.encode 0) os.examples "withExamples"
                 , optionally encodeSchemata os.definitions "withDefinitions"
                 , optionally toString os.multipleOf "withMultipleOf"
                 , optionally toString os.maximum "withMaximum"
@@ -811,7 +811,7 @@ encode level s =
                 , optionally (encode (level + 1) >> addParens) os.additionalProperties "withAdditionalProperties"
                 , encodeDependencies os.dependencies
                 , optionally (encode (level + 1) >> addParens) os.propertyNames "withPropertyNames"
-                , optionally (\examples -> examples |> Encode.list |> (Encode.encode 0) |> (\x -> "( " ++ x ++ " |> List.map Encode.string )")) os.enum "withEnum"
+                , optionally (\examples -> examples |> Encode.list |> Encode.encode 0 |> \x -> "( " ++ x ++ " |> List.map Encode.string )") os.enum "withEnum"
                 , optionally (Encode.encode 0 >> addParens) os.const "withConst"
                 , optionally encodeListSchemas os.allOf "withAllOf"
                 , optionally encodeListSchemas os.anyOf "withAnyOf"

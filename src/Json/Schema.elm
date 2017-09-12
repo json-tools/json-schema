@@ -40,20 +40,10 @@ schemas defined in json-schema format
 
 -}
 
-import Json.Decode.Extra as DecodeExtra exposing ((|:), withDefault)
-import Json.Decode as Decode exposing (Decoder, maybe, string, bool, succeed, field, lazy)
+import Json.Decode.Extra exposing ((|:))
+import Json.Decode as Decode exposing (Decoder, string, succeed, lazy)
 import Json.Encode as Encode exposing (Value)
-import Json.Schema.Definitions
-    exposing
-        ( Items(ItemDefinition, ArrayOfItems, NoItems)
-        , SubSchema
-        , Schema(BooleanSchema, ObjectSchema)
-        , Schemata(Schemata)
-        , Dependency(ArrayPropNames, PropSchema)
-        , Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
-        , blankSchema
-        )
+import Json.Schema.Definitions exposing (Items(ItemDefinition, ArrayOfItems, NoItems), SubSchema, Schema(BooleanSchema, ObjectSchema), Schemata(Schemata), Type(AnyType, SingleType), SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType))
 import Dict exposing (Dict)
 import String
 
@@ -466,8 +456,9 @@ defaultFor : Schema -> Value
 defaultFor schema =
     case schema of
         BooleanSchema _ ->
-            Encode.null -- TODO: should be Err
+            Encode.null
 
+        -- TODO: should be Err
         ObjectSchema schema ->
             let
                 defaultChildProp propName =
@@ -562,8 +553,9 @@ getValue : Schema -> List String -> Value -> Value
 getValue schema path inputData =
     case schema of
         BooleanSchema _ ->
-            inputData -- TODO: make it Err
+            inputData
 
+        -- TODO: make it Err
         ObjectSchema schema ->
             case path of
                 [] ->
