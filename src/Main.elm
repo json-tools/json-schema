@@ -366,9 +366,9 @@ view model =
                                 , column None
                                     [ padding 20 ]
                                     [ el MenuItem [ onClick <| DownloadSchema ] <| text "download"
-                                    , el MenuItem [] <| text "diff"
-                                    , el MenuItem [] <| text "reset"
-                                    , el MenuItem [] <| text "erase"
+                                    , el MenuItem [] <| text "diff (WIP)"
+                                    , el MenuItem [] <| text "reset (WIP)"
+                                    , el MenuItem [] <| text "erase (WIP)"
                                     ]
                                 ]
                             , column SourceCode
