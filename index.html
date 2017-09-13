@@ -20,41 +20,97 @@
 
 <body>
     <script src="elm.js"></script>
-    <script>const elm = Elm.Main.fullscreen();
+    <script>
+let initValue = null;
+
+try {
+    initValue = localStorage.editMe ? JSON.parse(localStorage.editMe) : {}
+} catch(e) {
+    initValue = {};
+}
+
+const elm = Elm.Main.fullscreen(initValue);
 
 // this is hack to update url and highlight menu
 // TODO: discover the right way of doing this
 setTimeout(() => {
-    const content = document.querySelector('#content');
-    const headers = content.querySelectorAll('div[tabindex] > h1');
-    // TODO: recalc on window resize
-    const checkpoints = Array.from(headers).map(el => ({
-        hash: '#' + el.parentNode.id,
-        offsetTop: offsetTop(el, content) - 100,
-    })).reverse();
-    let timeout = null;
-    let hash = location.hash;
 
-    if (hash && hash.length > 1) {
-        const el = document.querySelector('#' + CSS.escape(hash.substr(1)));
-        if (el) {
-            el.focus();
-        }
+    document.body.addEventListener('dragstart', () => {
+        console.log('drag started');
+    });
+    document.body.addEventListener('dragover', e => {
+        const b = e.dataTransfer.effectAllowed;
+        e.dataTransfer.dropEffect = ('move' === b || 'linkMove' === b ||
+                'copyMove' === b) ? 'move' : 'copy';
+        // console.log('drag over');
+        return cancel(e);
+    });
+    document.body.addEventListener('dragenter', e => {
+        elm.ports.dragOver.send(true);
+        return cancel(e);
+    });
+    document.body.addEventListener('dragleave', e => {
+        elm.ports.dragOver.send(false);
+        return cancel(e);
+    });
+    document.body.addEventListener('drop', drop);
+    document.body.addEventListener('dragdrop', drop);
+
+    function drop(e) {
+        cancel(e);
+        const files = e.dataTransfer.files;
+        elm.ports.dragOver.send(false);
+        [].forEach.call(files, file => readContents(file));
     }
 
-    content.addEventListener('scroll', ({ target }) => {
-        clearTimeout(timeout);
-        timeout = setTimeout(() => {
-            const found = checkpoints.filter(x => x.offsetTop < target.scrollTop )[0];
-            if (found) {
-                if (hash !== found.hash) {
-                    hash = found.hash
-                    // elm.ports.activeSection.send(found.hash);
-                    // history.replaceState({}, "", found.hash);
-                }
+
+    function readContents(file) {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.addEventListener('loadend', () => {
+            try {
+                const data = JSON.parse(reader.result);
+                localStorage.editMe = reader.result;
+                elm.ports.editSchema.send(data);
+            } catch(e) {
+                console.error(e);
             }
-        }, 200);
-    });
+        });
+    }
+
+
+    const content = document.querySelector('#content');
+    if (content) {
+        const headers = content.querySelectorAll('div[tabindex] > h1');
+        // TODO: recalc on window resize
+        const checkpoints = Array.from(headers).map(el => ({
+            hash: '#' + el.parentNode.id,
+            offsetTop: offsetTop(el, content) - 100,
+        })).reverse();
+        let timeout = null;
+        let hash = location.hash;
+
+        if (hash && hash.length > 1) {
+            const el = document.querySelector('#' + CSS.escape(hash.substr(1)));
+            if (el) {
+                el.focus();
+            }
+        }
+
+        content.addEventListener('scroll', ({ target }) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const found = checkpoints.filter(x => x.offsetTop < target.scrollTop )[0];
+                if (found) {
+                    if (hash !== found.hash) {
+                        hash = found.hash
+                        // elm.ports.activeSection.send(found.hash);
+                        // history.replaceState({}, "", found.hash);
+                    }
+                }
+            }, 200);
+        });
+    }
 
     function offsetTop(el, limit) {
         if (el === limit) {
@@ -64,5 +120,12 @@ setTimeout(() => {
         }
     }
 }, 100);
+
+    function cancel(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        return false;
+    }
     </script>
 </body>

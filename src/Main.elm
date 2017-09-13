@@ -1,13 +1,13 @@
 port module Main exposing (main)
 
-import Navigation exposing (Location, program)
+import Navigation exposing (Location, programWithFlags)
 import Html exposing (Html)
 import Html.Attributes
 import Dict exposing (Dict)
 import Set exposing (Set)
 import StyleSheet exposing (Styles(None, Main, InlineError, SchemaHeader, JsonEditor, MenuItem, NoOutline, SourceCode), Variations(Active), stylesheet)
 import Element.Events exposing (onClick, onMouseDown, onInput, onDoubleClick)
-import Element.Attributes as Attributes exposing (vary, inlineStyle, spacing, padding, height, minWidth, width, yScrollbar, fill, px, percent)
+import Element.Attributes as Attributes exposing (center, vary, inlineStyle, spacing, padding, height, minWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
 import Json.Decode as Decode exposing (Decoder, decodeString, decodeValue, Value)
@@ -45,6 +45,7 @@ type alias Model =
     , editPath : String
     , editValue : String
     , editPropertyName : String
+    , dragOver : Bool
     }
 
 
@@ -57,15 +58,17 @@ type Msg
     | ValueChange String String
     | DeleteMe String
     | ActiveSection String
+    | EditSchema Value
+    | DragOver Bool
     | ToggleEditing String
     | SetEditPath String Value
     | SetEditPropertyName String
     | SetPropertyName String
 
 
-main : Program Never Model Msg
+main : Program Value Model Msg
 main =
-    program UrlChange
+    programWithFlags UrlChange
         { init = init
         , view = view
         , update = update
@@ -73,15 +76,14 @@ main =
         }
 
 
-init : Location -> ( Model, Cmd Msg )
-init location =
+init : Value -> Location -> ( Model, Cmd Msg )
+init val location =
     Model
         coreSchemaDraft6
         -- value
-        (bookingSchema |> Schema.encode)
+        val
         -- jsonValue
-        (bookingSchema
-            |> Schema.encode
+        (val
             |> Decode.decodeValue jsonValueDecoder
             |> Result.withDefault (ObjectValue [])
         )
@@ -99,6 +101,8 @@ init location =
         "null"
         -- editPropertyName
         ""
+        -- dragOver
+        False
         ! []
 
 
@@ -187,6 +191,19 @@ update msg model =
         ActiveSection s ->
             { model | activeSection = s } ! []
 
+        EditSchema s ->
+            { model
+                | value = s
+                , jsonValue =
+                    s
+                        |> Decode.decodeValue jsonValueDecoder
+                        |> Result.withDefault (ObjectValue [])
+            }
+                ! []
+
+        DragOver isOver ->
+            { model | dragOver = isOver } ! []
+
         ToggleEditing p ->
             { model
                 | editPaths =
@@ -232,9 +249,19 @@ update msg model =
 port activeSection : (String -> msg) -> Sub msg
 
 
+port editSchema : (Value -> msg) -> Sub msg
+
+
+port dragOver : (Bool -> msg) -> Sub msg
+
+
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    activeSection ActiveSection
+    Sub.batch
+        [ activeSection ActiveSection
+        , editSchema EditSchema
+        , dragOver DragOver
+        ]
 
 
 view : Model -> Html Msg
@@ -311,28 +338,39 @@ view model =
                 [ height <| fill 1
                 , width <| fill 1
                 ]
-                [ column None
-                    [ height <| fill 1, minWidth <| px 200, yScrollbar, spacing 10, padding 0 ]
-                    [ Element.bold "definitions"
-                    , propertiesListing "definitions" .definitions
-                    , Element.bold "properties"
-                    , propertiesListing "properties" .properties
+            <|
+                if model.dragOver then
+                    [ row None [ center, Attributes.verticalCenter, width <| fill 1, height <| fill 1 ] [ text "Drop it!" ]
                     ]
-                , column SourceCode
-                    [ height <| fill 1
-                    , width <| fill 1
-                    , yScrollbar
-                    , padding 10
-                    , Attributes.id "content"
-                      -- , on "scroll" (Json.Decode.succeed ContentScroll)
-                    ]
-                    [ if sectionSelected then
-                        a
-                      else
-                        empty
-                    ]
-                  --[ Element.textLayout None [] c ]
-                ]
+                else
+                    case model.jsonValue of
+                        ObjectValue [] ->
+                            [ row None [ center, Attributes.verticalCenter, width <| fill 1, height <| fill 1 ] [ text "Drop schema file here." ]
+                            ]
+
+                        _ ->
+                            [ column None
+                                [ height <| fill 1, minWidth <| px 200, yScrollbar, spacing 10, padding 0 ]
+                                [ Element.bold "definitions"
+                                , propertiesListing "definitions" .definitions
+                                , Element.bold "properties"
+                                , propertiesListing "properties" .properties
+                                ]
+                            , column SourceCode
+                                [ height <| fill 1
+                                , width <| fill 1
+                                , yScrollbar
+                                , padding 10
+                                , Attributes.id "content"
+                                  -- , on "scroll" (Json.Decode.succeed ContentScroll)
+                                ]
+                                [ if sectionSelected then
+                                    a
+                                  else
+                                    empty
+                                ]
+                              --[ Element.textLayout None [] c ]
+                            ]
 
 
 type JsonValue
