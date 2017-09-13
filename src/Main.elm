@@ -408,8 +408,8 @@ jsonValueDecoder =
         Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
 
 
-form : Dict String String -> String -> String -> JsonValue -> List String -> List View
-form valueUpdateErrors editPath editValue val path =
+form : Dict String String -> String -> String -> String -> JsonValue -> List String -> List View
+form valueUpdateErrors editPropertyName editPath editValue val path =
     let
         offset level n =
             el None
@@ -432,23 +432,39 @@ form valueUpdateErrors editPath editValue val path =
                         text "-"
                 ]
 
-        itemRow level path ( key, prop ) =
+        itemRow isEditableProp level path ( key, prop ) =
             let
                 pp =
                     path ++ [ key ]
+
+                newPointer =
+                    makeJsonPointer pp
+
+                propName =
+                    if isEditableProp then
+                        if newPointer == editPropertyName then
+                            [ Element.inputText JsonEditor [ onInput <| SetPropertyName ] key
+                            , text ":"
+                            ]
+                                |> row None []
+                        else
+                            toString key
+                                ++ ": "
+                                |> text
+                                |> el None [ onClick <| SetEditPropertyName <| newPointer ]
+                    else
+                        text ""
             in
-                (toString key
-                    ++ ": "
-                    |> text
+                (propName
                     |> offset level 1
                     |> deleteMe pp
                 )
                     :: text " "
                     :: controls (level + 1) prop pp
 
-        joinWithCommaAndWrapWith open close level path list =
+        joinWithCommaAndWrapWith open close isEditableProp level path list =
             list
-                |> List.map (itemRow level path)
+                |> List.map (itemRow isEditableProp level path)
                 |> List.intersperse [ text ",", Element.break ]
                 |> List.concat
                 |> (\x ->
@@ -462,12 +478,12 @@ form valueUpdateErrors editPath editValue val path =
                 ArrayValue list ->
                     list
                         |> List.indexedMap (\index item -> ( toString index, item ))
-                        |> joinWithCommaAndWrapWith "[" "]" level path
+                        |> joinWithCommaAndWrapWith "[" "]" False level path
 
                 ObjectValue obj ->
                     obj
                         |> List.reverse
-                        |> joinWithCommaAndWrapWith "{" "}" level path
+                        |> joinWithCommaAndWrapWith "{" "}" True level path
 
                 OtherValue val ->
                     let
@@ -571,7 +587,7 @@ source model s subpath =
         editForm val =
             Element.textLayout None
                 []
-                (form model.valueUpdateErrors model.editPath model.editValue val (parseJsonPointer subpath)
+                (form model.valueUpdateErrors model.editPropertyName model.editPath model.editValue val (parseJsonPointer subpath)
                  --|> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
                 )
 
