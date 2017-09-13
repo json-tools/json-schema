@@ -64,6 +64,7 @@ type Msg
     | SetEditPath String Value
     | SetEditPropertyName String
     | SetPropertyName String
+    | DownloadSchema
 
 
 main : Program Value Model Msg
@@ -245,6 +246,9 @@ update msg model =
                 }
                     ! []
 
+        DownloadSchema ->
+            model ! [ download model.value ]
+
 
 port activeSection : (String -> msg) -> Sub msg
 
@@ -253,6 +257,9 @@ port editSchema : (Value -> msg) -> Sub msg
 
 
 port dragOver : (Bool -> msg) -> Sub msg
+
+
+port download : Value -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -355,6 +362,14 @@ view model =
                                 , propertiesListing "definitions" .definitions
                                 , Element.bold "properties"
                                 , propertiesListing "properties" .properties
+                                , Element.bold "misc"
+                                , column None
+                                    [ padding 20 ]
+                                    [ el MenuItem [ onClick <| DownloadSchema ] <| text "download"
+                                    , el MenuItem [] <| text "diff"
+                                    , el MenuItem [] <| text "reset"
+                                    , el MenuItem [] <| text "erase"
+                                    ]
                                 ]
                             , column SourceCode
                                 [ height <| fill 1

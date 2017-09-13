@@ -31,6 +31,15 @@ try {
 
 const elm = Elm.Main.fullscreen(initValue);
 
+elm.ports.download.subscribe(x => {
+    const a = document.createElement('a');
+    const blob = new Blob([JSON.stringify(x, null, '    ')], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    a.setAttribute('href', url);
+    a.download = 'JSON Schema';
+    a.click();
+});
+
 // this is hack to update url and highlight menu
 // TODO: discover the right way of doing this
 setTimeout(() => {
