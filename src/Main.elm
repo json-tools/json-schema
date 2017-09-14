@@ -25,7 +25,7 @@ import Json.Schema.Helpers
         , makeJsonPointer
         , resolve
         , calcSubSchemaType
-        , setPropertyName
+        , setPropertyNameInJsonValue
         )
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
@@ -130,7 +130,7 @@ updateValue model path newStuff =
         newStuff
             |> Result.andThen
                 (\val ->
-                    setJsonValue model.jsonValue (Debug.log "updpath" path) val
+                    setJsonValue model.jsonValue path val
                 )
             |> \res ->
                 case res of
@@ -231,10 +231,10 @@ update msg model =
                         |> makeJsonPointer
             in
                 { model
-                    | value =
-                        model.value
-                            |> setPropertyName model.editPropertyName str model.schema
-                            |> Result.withDefault model.value
+                    | jsonValue =
+                        model.jsonValue
+                            |> setPropertyNameInJsonValue model.editPropertyName str
+                            |> Result.withDefault model.jsonValue
                     , editPropertyName = newJsonPointer
                     , activeSection =
                         if model.activeSection == model.editPropertyName then

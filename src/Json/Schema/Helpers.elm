@@ -15,7 +15,7 @@ module Json.Schema.Helpers
         , resolve
         , calcSubSchemaType
         , getPropertyValue
-        , setPropertyName
+        , setPropertyNameInJsonValue
         )
 
 import Dict exposing (Dict)
@@ -170,6 +170,56 @@ implyType val schema subpath =
                         , schema = os
                         , error = Nothing
                         }
+
+
+setPropertyNameInJsonValue : String -> String -> JsonValue -> Result String JsonValue
+setPropertyNameInJsonValue jsonPointer newName hostValue =
+    let
+        ( key, path ) =
+            jsonPointer
+                |> parseJsonPointer
+                |> List.reverse
+                |> \x ->
+                    case x of
+                        k :: revPath ->
+                            ( k, List.reverse revPath )
+
+                        [] ->
+                            ( "", [] )
+
+        newJsonPointer =
+            "#/"
+                ++ String.join "/" path
+
+        renameKey key val =
+            case val of
+                ObjectValue v ->
+                    v
+                        |> List.map
+                            (\( k, v ) ->
+                                ( if k == key then
+                                    newName
+                                  else
+                                    k
+                                , v
+                                )
+                            )
+                        |> ObjectValue
+                        >> Ok
+
+                _ ->
+                    Err "Can not rename property of this json value"
+
+        targetValue =
+            if key /= "" then
+                hostValue
+                    |> getJsonValue path
+                    |> Result.andThen (renameKey key)
+                    |> Result.withDefault hostValue
+            else
+                hostValue
+    in
+        setJsonValue hostValue newJsonPointer targetValue
 
 
 setPropertyName : String -> String -> Schema -> Value -> Result String Value
