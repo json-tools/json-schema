@@ -146,9 +146,9 @@ updateValue model path newStuff =
 
 deletePath : Model -> String -> Model
 deletePath model pointer =
-    case deleteIn model.value pointer model.schema of
+    case deleteIn model.jsonValue pointer of
         Ok val ->
-            { model | value = val }
+            { model | jsonValue = val }
 
         Err s ->
             let

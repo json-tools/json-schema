@@ -436,8 +436,8 @@ setPropertyValue key value object =
                                 |> Ok
 
 
-deleteIn : Value -> String -> Schema -> Result String Value
-deleteIn hostValue jsonPointer schema =
+deleteIn : JsonValue -> String -> Result String JsonValue
+deleteIn hostValue jsonPointer =
     let
         ( key, path ) =
             jsonPointer
@@ -455,34 +455,32 @@ deleteIn hostValue jsonPointer schema =
             "#/" ++ String.join "/" path
 
         rejectKey key val =
-            case Decode.decodeValue (Decode.keyValuePairs Decode.value) val of
-                Ok res ->
+            case val of
+                ObjectValue res ->
                     res
                         |> List.filter (\( k, _ ) -> k /= key)
-                        |> List.reverse
-                        |> Encode.object
+                        |> (ObjectValue >> Ok)
 
-                Err _ ->
-                    case Decode.decodeValue (Decode.list Decode.value) val of
-                        Ok res ->
-                            res
-                                |> List.indexedMap (\ind v -> ( toString ind, v ))
-                                |> List.filter (\( k, _ ) -> k /= key)
-                                |> List.map (\( _, v ) -> v)
-                                |> Encode.list
+                ArrayValue res ->
+                    res
+                        |> List.indexedMap (\ind v -> ( toString ind, v ))
+                        |> List.filter (\( k, _ ) -> k /= key)
+                        |> List.map (\( _, v ) -> v)
+                        |> (ArrayValue >> Ok)
 
-                        Err _ ->
-                            val
+                OtherValue _ ->
+                    Err "It is not possible to delete key when host value is not object or array"
 
         targetValue =
             if key /= "" then
                 hostValue
-                    |> getPropertyValue path
-                    |> rejectKey key
+                    |> getJsonValue path
+                    |> Result.andThen (rejectKey key)
+                    |> Result.withDefault hostValue
             else
                 hostValue
     in
-        setValue hostValue newJsonPointer targetValue schema
+        setJsonValue hostValue newJsonPointer targetValue
 
 
 setJsonValue : JsonValue -> String -> JsonValue -> Result String JsonValue
