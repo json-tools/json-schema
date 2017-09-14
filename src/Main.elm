@@ -3,6 +3,8 @@ port module Main exposing (main)
 import Navigation exposing (Location, programWithFlags)
 import Html exposing (Html)
 import Html.Attributes
+import Dom
+import Task
 import Dict exposing (Dict)
 import Set exposing (Set)
 import StyleSheet exposing (Styles(None, Main, InlineError, SchemaHeader, JsonEditor, MenuItem, NoOutline, SourceCode), Variations(Active), stylesheet)
@@ -72,8 +74,8 @@ type Msg
     | EditSchema Value
     | DragOver Bool
     | ToggleEditing String
-    | SetEditPath String Value
-    | SetEditPropertyName String
+    | SetEditPath String String Value
+    | SetEditPropertyName String String
     | SetPropertyName String
     | DownloadSchema
 
@@ -118,8 +120,14 @@ init val location =
         ! []
 
 
-
--- [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
+focus : String -> Cmd Msg
+focus id =
+    if id /= "" then
+        id
+            |> Dom.focus
+            |> Task.attempt (\_ -> NoOp)
+    else
+        Cmd.none
 
 
 updateValue : Model -> String -> Result String JsonValue -> Model
@@ -165,13 +173,13 @@ update msg model =
         NoOp ->
             model ! []
 
-        SetEditPath jsonPointer value ->
+        SetEditPath id jsonPointer value ->
             { model
                 | editPath = jsonPointer
                 , editPropertyName = ""
                 , editValue = value |> Encode.encode 2
             }
-                ! []
+                ! [ select id ]
 
         StringChange path str ->
             updateValue model path (str |> Encode.string |> OtherValue |> Ok) ! []
@@ -238,8 +246,8 @@ update msg model =
         DeleteMe pointer ->
             deletePath model pointer ! []
 
-        SetEditPropertyName pointer ->
-            { model | editPropertyName = pointer, editPath = "" } ! []
+        SetEditPropertyName id pointer ->
+            { model | editPropertyName = pointer, editPath = "" } ! [ select id ]
 
         SetPropertyName str ->
             let
@@ -280,6 +288,9 @@ port dragOver : (Bool -> msg) -> Sub msg
 
 
 port download : Value -> Cmd msg
+
+
+port select : String -> Cmd msg
 
 
 subscriptions : Model -> Sub Msg
@@ -408,8 +419,8 @@ view model =
                             ]
 
 
-form : Dict String String -> String -> String -> String -> JsonValue -> List String -> List View
-form valueUpdateErrors editPropertyName editPath editValue val path =
+form : String -> Dict String String -> String -> String -> String -> JsonValue -> List String -> List View
+form id valueUpdateErrors editPropertyName editPath editValue val path =
     let
         offset level n =
             el None
@@ -440,23 +451,32 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                 newPointer =
                     makeJsonPointer pp
 
+                propId =
+                    id ++ "/prop/" ++ newPointer
+
                 propName =
                     if isEditableProp then
                         if newPointer == editPropertyName then
-                            Element.inputText JsonEditor
-                                [ onInput <| SetPropertyName
-                                , Attributes.size <| String.length key + 1
-                                , onBlur <| SetEditPropertyName ""
-                                , Attributes.tabindex 0
-                                ]
-                                key
+                            key
+                                |> Element.inputText JsonEditor
+                                    [ onInput <| SetPropertyName
+                                    , Attributes.size <| String.length key + 1
+                                    , onBlur <| SetEditPropertyName "" ""
+                                    , Attributes.tabindex 0
+                                    , Attributes.id propId
+                                    ]
                                 |> el None []
                                 |> offset level 1
                                 |> deleteMe pp
                         else
-                            toString key
+                            key
+                                |> toString
                                 |> text
-                                |> el None [ Attributes.tabindex 0, onFocus <| SetEditPropertyName <| newPointer ]
+                                |> el None
+                                    [ Attributes.tabindex 0
+                                    , onFocus <| SetEditPropertyName propId <| newPointer
+                                    , Attributes.id propId
+                                    ]
                                 |> offset level 1
                                 |> deleteMe pp
                     else
@@ -525,15 +545,19 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                     let
                         jsp =
                             makeJsonPointer path
+
+                        valId =
+                            id ++ "/value/" ++ jsp
                     in
                         if jsp == editPath then
                             [ editValue
                                 |> Element.inputText JsonEditor
                                     [ onInput <| ValueChange jsp
-                                    , onBlur <| SetEditPath "" Encode.null
+                                    , onBlur <| SetEditPath "" "" Encode.null
                                     , Attributes.size <| String.length editValue + 1
                                     , inlineStyle [ ( "display", "inline-block" ) ]
                                     , Attributes.tabindex 0
+                                    , Attributes.id valId
                                     ]
                                 |> Element.el None
                                     [ inlineStyle [ ( "display", "inline-block" ) ] ]
@@ -549,7 +573,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                                 |> Element.el None
                                     [ inlineStyle [ ( "display", "inline-block" ) ]
                                       --, Attributes.contenteditable False
-                                    , onFocus <| SetEditPath jsp val
+                                    , onFocus <| SetEditPath valId jsp val
                                     , Attributes.tabindex 0
                                     ]
                             ]
@@ -581,8 +605,8 @@ col10 =
     column None [ spacing 10, padding 10 ]
 
 
-source : Model -> Schema -> String -> View
-source model s subpath =
+source : String -> Model -> Schema -> String -> View
+source id model s subpath =
     let
         isEditMode =
             True
@@ -626,6 +650,7 @@ source model s subpath =
                 (subpath
                     |> parseJsonPointer
                     |> form
+                        id
                         model.valueUpdateErrors
                         model.editPropertyName
                         model.editPath
@@ -679,7 +704,7 @@ schemataDoc model level schema s metaSchema subpath =
                     s
                         |> text
                         |> el SchemaHeader
-                            [ onDoubleClick <| SetEditPropertyName <| newSubpath s
+                            [ onDoubleClick <| SetEditPropertyName "" <| newSubpath s
                             ]
                         |> Element.node nodeName
 
@@ -812,8 +837,8 @@ documentation model level jsonPointer schema metaSchema =
                 , schemataDoc model level schema s.properties metaSchema <| jsonPointer ++ "/properties/"
                 ]
 
-        schemaSource =
-            source model schema jsonPointer
+        schemaSource id =
+            source id model schema jsonPointer
     in
         case schema of
             ObjectSchema s ->
@@ -822,12 +847,12 @@ documentation model level jsonPointer schema metaSchema =
                 else if level == 1 then
                     displayNextToEachOther
                         [ generatedDocs s
-                        , schemaSource
+                        , schemaSource "root"
                         ]
                 else if level > 1 then
                     displayOneUnderAnother
                         [ generatedDocs s
-                        , schemaSource
+                        , schemaSource "deep"
                         ]
                 else
                     empty

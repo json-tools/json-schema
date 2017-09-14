@@ -31,6 +31,15 @@ try {
 
 const elm = Elm.Main.fullscreen(initValue);
 
+elm.ports.select.subscribe(id => {
+    setTimeout(() => {
+        const x = document.getElementById(id);
+        if (x) {
+            x.select();
+        }
+    }, 10);
+});
+
 elm.ports.download.subscribe(x => {
     const a = document.createElement('a');
     const blob = new Blob([JSON.stringify(x, null, '    ')], { type: 'application/json' });
