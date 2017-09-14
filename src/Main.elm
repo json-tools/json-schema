@@ -421,15 +421,17 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                 propName =
                     if isEditableProp then
                         if newPointer == editPropertyName then
-                            [ Element.inputText JsonEditor [ onInput <| SetPropertyName ] key
-                            , text ":"
-                            ]
-                                |> row None []
+                            Element.inputText JsonEditor
+                                [ onInput <| SetPropertyName
+                                , Attributes.size <| String.length key + 1
+                                , onBlur <| SetEditPropertyName ""
+                                ]
+                                key
+                                |> el None []
                                 |> offset level 1
                                 |> deleteMe pp
                         else
                             toString key
-                                ++ ": "
                                 |> text
                                 |> el None [ onClick <| SetEditPropertyName <| newPointer ]
                                 |> offset level 1
@@ -439,7 +441,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
             in
                 if isEditableProp then
                     propName
-                        :: text " "
+                        :: text ": "
                         :: controls (level + 1) prop pp
                 else
                     controls (level + 1) prop pp
@@ -592,7 +594,14 @@ source model s subpath =
         editForm val =
             Element.textLayout None
                 []
-                (form model.valueUpdateErrors model.editPropertyName model.editPath model.editValue val (parseJsonPointer subpath)
+                (subpath
+                    |> parseJsonPointer
+                    |> form
+                        model.valueUpdateErrors
+                        model.editPropertyName
+                        model.editPath
+                        model.editValue
+                        val
                  --|> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
                 )
 
