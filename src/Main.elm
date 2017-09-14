@@ -66,6 +66,7 @@ type Msg
     | NumberChange String String
     | BooleanChange String Bool
     | ValueChange String String
+    | InsertValue (List String)
     | DeleteMe String
     | ActiveSection String
     | EditSchema Value
@@ -183,6 +184,21 @@ update msg model =
 
         ValueChange path str ->
             updateValue { model | editValue = str, editPath = path } path (decodeString jsonValueDecoder str) ! []
+
+        InsertValue path ->
+            let
+                newJsonPointer =
+                    makeJsonPointer path ++ "/"
+            in
+                updateValue
+                    { model
+                        | editPath = ""
+                        , editPropertyName = newJsonPointer
+                        , editValue = ""
+                    }
+                    newJsonPointer
+                    (Ok <| OtherValue <| Encode.string "")
+                    ! []
 
         UrlChange l ->
             { model | activeSection = l.hash } ! []
@@ -478,7 +494,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                                     ++ [ Element.break
                                        , offset level 0 <|
                                             el None
-                                                [ onFocus <| ValueChange (path ++ [ "" ] |> makeJsonPointer) ("" |> toString)
+                                                [ onFocus <| InsertValue path
                                                 , Attributes.tabindex 0
                                                 ]
                                             <|
