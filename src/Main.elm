@@ -27,7 +27,16 @@ import Json.Schema.Helpers
         , setPropertyName
         )
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
-import Json.Schema.Definitions as Schema exposing (Schema(BooleanSchema, ObjectSchema), SubSchema, Schemata(Schemata), Type(AnyType, SingleType, NullableType, UnionType), SingleType(IntegerType, NumberType, StringType, BooleanType))
+import Json.Schema.Definitions as Schema
+    exposing
+        ( Schema(BooleanSchema, ObjectSchema)
+        , SubSchema
+        , Schemata(Schemata)
+        , Type(AnyType, SingleType, NullableType, UnionType)
+        , SingleType(IntegerType, NumberType, StringType, BooleanType)
+        , JsonValue(ObjectValue, ArrayValue, OtherValue)
+        , jsonValueDecoder
+        )
 
 
 type alias View =
@@ -387,26 +396,6 @@ view model =
                                 ]
                               --[ Element.textLayout None [] c ]
                             ]
-
-
-type JsonValue
-    = ObjectValue (List ( String, JsonValue ))
-    | ArrayValue (List JsonValue)
-    | OtherValue Value
-
-
-jsonValueDecoder : Decoder JsonValue
-jsonValueDecoder =
-    let
-        objectValueDecoder =
-            Decode.keyValuePairs (Decode.lazy (\_ -> jsonValueDecoder))
-                |> Decode.map ObjectValue
-
-        arrayValueDecoder =
-            Decode.list (Decode.lazy (\_ -> jsonValueDecoder))
-                |> Decode.map ArrayValue
-    in
-        Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
 
 
 form : Dict String String -> String -> String -> String -> JsonValue -> List String -> List View

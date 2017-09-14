@@ -12,6 +12,8 @@ module Json.Schema.Definitions
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
+        , JsonValue(ObjectValue, ArrayValue, OtherValue)
+        , jsonValueDecoder
         )
 
 import Util exposing (resultToDecoder, foldResults, isInt)
@@ -72,6 +74,26 @@ type alias SubSchema =
     , oneOf : Maybe (List Schema)
     , not : Maybe Schema
     }
+
+
+type JsonValue
+    = ObjectValue (List ( String, JsonValue ))
+    | ArrayValue (List JsonValue)
+    | OtherValue Value
+
+
+jsonValueDecoder : Decoder JsonValue
+jsonValueDecoder =
+    let
+        objectValueDecoder =
+            Decode.keyValuePairs (Decode.lazy (\_ -> jsonValueDecoder))
+                |> Decode.map ObjectValue
+
+        arrayValueDecoder =
+            Decode.list (Decode.lazy (\_ -> jsonValueDecoder))
+                |> Decode.map ArrayValue
+    in
+        Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
 
 
 blankSchema : Schema
