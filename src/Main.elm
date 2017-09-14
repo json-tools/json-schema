@@ -156,6 +156,7 @@ update msg model =
         SetEditPath jsonPointer value ->
             { model
                 | editPath = jsonPointer
+                , editPropertyName = ""
                 , editValue = value |> Encode.encode 2
             }
                 ! []
@@ -219,7 +220,7 @@ update msg model =
             deletePath model pointer ! []
 
         SetEditPropertyName pointer ->
-            { model | editPropertyName = pointer } ! []
+            { model | editPropertyName = pointer, editPath = "" } ! []
 
         SetPropertyName str ->
             let
@@ -447,20 +448,30 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                             , text ":"
                             ]
                                 |> row None []
+                                |> offset level 1
+                                |> deleteMe pp
                         else
                             toString key
                                 ++ ": "
                                 |> text
                                 |> el None [ onClick <| SetEditPropertyName <| newPointer ]
+                                |> offset level 1
+                                |> deleteMe pp
                     else
-                        text ""
+                        el None [] <| text " "
             in
-                (propName
-                    |> offset level 1
-                    |> deleteMe pp
-                )
-                    :: text " "
-                    :: controls (level + 1) prop pp
+                if isEditableProp then
+                    propName
+                        :: text " "
+                        :: controls (level + 1) prop pp
+                else
+                    controls (level + 1) prop pp
+                        |> List.map
+                            (\el ->
+                                el
+                                    |> offset level 1
+                                    |> deleteMe pp
+                            )
 
         joinWithCommaAndWrapWith open close isEditableProp level path list =
             list
