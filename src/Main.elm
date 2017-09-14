@@ -468,7 +468,20 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                 |> List.intersperse [ text ",", Element.break ]
                 |> List.concat
                 |> (\x ->
-                        text open
+                        (el None
+                            [ inlineStyle
+                                [ ( "padding-left"
+                                  , if level == 0 then
+                                        "1ch"
+                                    else
+                                        "0"
+                                  )
+                                , ( "display", "inline-block" )
+                                ]
+                            ]
+                         <|
+                            text open
+                        )
                             :: Element.break
                             :: (x ++ [ Element.break, offset level 0 <| text close ])
                    )
