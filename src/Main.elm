@@ -6,7 +6,7 @@ import Html.Attributes
 import Dict exposing (Dict)
 import Set exposing (Set)
 import StyleSheet exposing (Styles(None, Main, InlineError, SchemaHeader, JsonEditor, MenuItem, NoOutline, SourceCode), Variations(Active), stylesheet)
-import Element.Events exposing (onClick, onMouseDown, onInput, onDoubleClick)
+import Element.Events exposing (onClick, onMouseDown, onInput, onBlur, onDoubleClick)
 import Element.Attributes as Attributes exposing (center, vary, inlineStyle, spacing, padding, height, minWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
@@ -499,6 +499,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                             [ editValue
                                 |> Element.inputText JsonEditor
                                     [ onInput <| ValueChange jsp
+                                    , onBlur <| SetEditPath "" Encode.null
                                       --, Attributes.contenteditable True
                                     , Attributes.autofocus True
                                     , Attributes.rows 1
