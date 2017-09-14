@@ -476,7 +476,13 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                             :: Element.break
                             :: (x
                                     ++ [ Element.break
-                                       , offset level 0 <| el None [ onClick <| ValueChange (path ++ [ "" ] |> makeJsonPointer) ("" |> toString) ] <| text close
+                                       , offset level 0 <|
+                                            el None
+                                                [ onFocus <| ValueChange (path ++ [ "" ] |> makeJsonPointer) ("" |> toString)
+                                                , Attributes.tabindex 0
+                                                ]
+                                            <|
+                                                text close
                                        ]
                                )
                    )
