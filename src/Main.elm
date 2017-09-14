@@ -502,7 +502,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                                 |> Element.inputText JsonEditor
                                     [ onInput <| ValueChange jsp
                                     , onBlur <| SetEditPath "" Encode.null
-                                      --, Attributes.contenteditable True
+                                    , Attributes.size <| String.length editValue + 1
                                     , Attributes.autofocus True
                                     , Attributes.rows 1
                                     , inlineStyle [ ( "display", "inline-block" ) ]
