@@ -144,7 +144,7 @@ updateValue model path newStuff =
 
 deletePath : Model -> String -> Model
 deletePath model pointer =
-    case deleteIn model.value (Debug.log "deleteMe" pointer) model.schema of
+    case deleteIn model.value pointer model.schema of
         Ok val ->
             { model | value = val }
 
