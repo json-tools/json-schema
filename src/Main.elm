@@ -182,7 +182,7 @@ update msg model =
             updateValue model path (bool |> Encode.bool |> OtherValue |> Ok) ! []
 
         ValueChange path str ->
-            updateValue { model | editValue = str } path (decodeString jsonValueDecoder str) ! []
+            updateValue { model | editValue = str, editPath = path } path (decodeString jsonValueDecoder str) ! []
 
         UrlChange l ->
             { model | activeSection = l.hash } ! []
@@ -471,7 +471,11 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                             text open
                         )
                             :: Element.break
-                            :: (x ++ [ Element.break, offset level 0 <| text close ])
+                            :: (x
+                                    ++ [ Element.break
+                                       , offset level 0 <| el None [ onClick <| ValueChange (path ++ [ "" ] |> makeJsonPointer) ("" |> toString) ] <| text close
+                                       ]
+                               )
                    )
 
         controls level val path =

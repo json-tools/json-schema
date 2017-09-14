@@ -124,13 +124,11 @@ parseJsonPointer subpath =
     subpath
         |> String.split "/"
         |> List.drop 1
-        |> List.filter ((/=) "")
 
 
 makeJsonPointer : List String -> String
 makeJsonPointer path =
     path
-        |> List.filter ((/=) "")
         |> String.join "/"
         |> (++) "#/"
 
@@ -182,14 +180,13 @@ setPropertyNameInJsonValue jsonPointer newName hostValue =
                 |> \x ->
                     case x of
                         k :: revPath ->
-                            ( k, List.reverse revPath )
+                            ( Just k, List.reverse revPath )
 
                         [] ->
-                            ( "", [] )
+                            ( Nothing, [] )
 
         newJsonPointer =
-            "#/"
-                ++ String.join "/" path
+            makeJsonPointer path
 
         renameKey key val =
             case val of
@@ -211,13 +208,15 @@ setPropertyNameInJsonValue jsonPointer newName hostValue =
                     Err "Can not rename property of this json value"
 
         targetValue =
-            if key /= "" then
-                hostValue
-                    |> getJsonValue path
-                    |> Result.andThen (renameKey key)
-                    |> Result.withDefault hostValue
-            else
-                hostValue
+            case key of
+                Just k ->
+                    hostValue
+                        |> getJsonValue path
+                        |> Result.andThen (renameKey k)
+                        |> Result.withDefault hostValue
+
+                Nothing ->
+                    hostValue
     in
         setJsonValue hostValue newJsonPointer targetValue
 
@@ -232,14 +231,13 @@ setPropertyName jsonPointer newName schema hostValue =
                 |> \x ->
                     case x of
                         k :: revPath ->
-                            ( k, List.reverse revPath )
+                            ( Just k, List.reverse revPath )
 
                         [] ->
-                            ( "", [] )
+                            ( Nothing, [] )
 
         newJsonPointer =
-            "#/"
-                ++ String.join "/" path
+            makeJsonPointer path
 
         renameKey key val =
             case Decode.decodeValue (Decode.keyValuePairs Decode.value) val of
@@ -261,12 +259,14 @@ setPropertyName jsonPointer newName schema hostValue =
                     val
 
         targetValue =
-            if key /= "" then
-                hostValue
-                    |> getPropertyValue path
-                    |> renameKey key
-            else
-                hostValue
+            case key of
+                Just k ->
+                    hostValue
+                        |> getPropertyValue path
+                        |> renameKey k
+
+                Nothing ->
+                    hostValue
     in
         setValue hostValue newJsonPointer targetValue schema
 
@@ -331,7 +331,7 @@ setPropertyInJsonValue key value object =
                                 ( k, v )
                         )
             else
-                list ++ [ ( key, value ) ]
+                ( key, value ) :: list
     in
         case object of
             ObjectValue o ->
@@ -345,7 +345,7 @@ setPropertyInJsonValue key value object =
                     index =
                         key
                             |> decodeString Decode.int
-                            |> Result.withDefault 0
+                            |> Result.withDefault (List.length list)
                 in
                     if List.length list > index then
                         list
@@ -446,13 +446,13 @@ deleteIn hostValue jsonPointer =
                 |> \x ->
                     case x of
                         k :: revPath ->
-                            ( k, List.reverse revPath )
+                            ( Just k, List.reverse revPath )
 
                         [] ->
-                            ( "", [] )
+                            ( Nothing, [] )
 
         newJsonPointer =
-            "#/" ++ String.join "/" path
+            makeJsonPointer path
 
         rejectKey key val =
             case val of
@@ -472,13 +472,15 @@ deleteIn hostValue jsonPointer =
                     Err "It is not possible to delete key when host value is not object or array"
 
         targetValue =
-            if key /= "" then
-                hostValue
-                    |> getJsonValue path
-                    |> Result.andThen (rejectKey key)
-                    |> Result.withDefault hostValue
-            else
-                hostValue
+            case key of
+                Just k ->
+                    hostValue
+                        |> getJsonValue path
+                        |> Result.andThen (rejectKey k)
+                        |> Result.withDefault hostValue
+
+                Nothing ->
+                    hostValue
     in
         setJsonValue hostValue newJsonPointer targetValue
 
