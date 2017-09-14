@@ -16,7 +16,8 @@ import Json.Schema.Helpers
     exposing
         ( implyType
         , typeToString
-        , setValue
+        , setJsonValue
+        , getJsonValue
         , deleteIn
         , for
         , whenObjectSchema
@@ -120,26 +121,27 @@ init val location =
 -- [ location.hash |> String.dropLeft 1 |> Dom.focus |> Task.attempt (\_ -> NoOp) ]
 
 
-updateValue : Model -> String -> Result String Value -> Model
+updateValue : Model -> String -> Result String JsonValue -> Model
 updateValue model path newStuff =
     let
         addError message =
             { model | valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path message }
-
-        update val =
-            setValue model.value path val model.schema
     in
-        case newStuff of
-            Ok val ->
-                case update val of
-                    Err validationErrorMessage ->
-                        addError validationErrorMessage
-
+        newStuff
+            |> Result.andThen
+                (\val ->
+                    setJsonValue model.jsonValue (Debug.log "updpath" path) val
+                )
+            |> \res ->
+                case res of
                     Ok v ->
-                        { model | value = v, valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path }
+                        { model
+                            | jsonValue = v
+                            , valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path
+                        }
 
-            Err s ->
-                addError s
+                    Err s ->
+                        addError s
 
 
 deletePath : Model -> String -> Model
@@ -171,31 +173,17 @@ update msg model =
                 ! []
 
         StringChange path str ->
-            updateValue model path (str |> Encode.string |> Ok) ! []
+            updateValue model path (str |> Encode.string |> OtherValue |> Ok) ! []
 
         NumberChange path str ->
-            updateValue model path (str |> String.toFloat |> Result.map Encode.float) ! []
+            updateValue model path (str |> String.toFloat |> Result.map (Encode.float >> OtherValue)) ! []
 
         BooleanChange path bool ->
-            updateValue model path (bool |> Encode.bool |> Ok) ! []
+            updateValue model path (bool |> Encode.bool |> OtherValue |> Ok) ! []
 
         ValueChange path str ->
-            case decodeString Decode.value str of
-                Ok _ ->
-                    { model
-                        | editValue = str
-                        , valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path
-                    }
-                        ! []
+            updateValue { model | editValue = str } path (decodeString jsonValueDecoder str) ! []
 
-                Err s ->
-                    let
-                        a =
-                            Debug.log "Oh no" s
-                    in
-                        { model | editValue = str, valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path s } ! []
-
-        --updateValue model path (str |> decodeString Decode.value) ! []
         UrlChange l ->
             { model | activeSection = l.hash } ! []
 
@@ -584,9 +572,8 @@ source model s subpath =
                 ]
 
         val =
-            s
-                |> Schema.encode
-                |> decodeValue jsonValueDecoder
+            model.jsonValue
+                |> getJsonValue (parseJsonPointer subpath)
                 |> Result.withDefault (ObjectValue [])
 
         schemaSource val =

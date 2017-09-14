@@ -5,6 +5,8 @@ module Json.Schema.Helpers
         , typeToList
         , implyType
         , setValue
+        , setJsonValue
+        , getJsonValue
         , deleteIn
         , for
         , whenObjectSchema
@@ -28,6 +30,7 @@ import Json.Schema.Definitions
         , Items(ArrayOfItems, ItemDefinition, NoItems)
         , SubSchema
         , Schemata(Schemata)
+        , JsonValue(ObjectValue, ArrayValue, OtherValue)
         , blankSchema
         , blankSubSchema
         )
@@ -225,8 +228,105 @@ getPropertyValue path value =
         |> Result.withDefault Encode.null
 
 
-setPropertyValue : String -> Value -> List String -> Value -> Result String Value
-setPropertyValue key value path object =
+getJsonValue : List String -> JsonValue -> Result String JsonValue
+getJsonValue path value =
+    case path of
+        [] ->
+            Ok value
+
+        head :: tail ->
+            case value of
+                ObjectValue v ->
+                    v
+                        |> List.foldl
+                            (\( key, v ) res ->
+                                if res /= Nothing then
+                                    res
+                                else if key == head then
+                                    Just v
+                                else
+                                    Nothing
+                            )
+                            Nothing
+                        |> Result.fromMaybe "Key not found"
+                        |> Result.andThen (getJsonValue tail)
+
+                ArrayValue v ->
+                    head
+                        |> String.toInt
+                        |> Result.andThen
+                            (\index ->
+                                v
+                                    |> List.drop index
+                                    |> List.head
+                                    |> Result.fromMaybe "Index is too big"
+                            )
+                        |> Result.andThen (getJsonValue tail)
+
+                OtherValue _ ->
+                    Err "You are trying to access property of something that is not object or array"
+
+
+setPropertyInJsonValue : String -> JsonValue -> JsonValue -> Result String JsonValue
+setPropertyInJsonValue key value object =
+    let
+        updateOrAppend list =
+            if List.any (\( k, _ ) -> k == key) list then
+                list
+                    |> List.map
+                        (\( k, v ) ->
+                            if k == key then
+                                ( key, value )
+                            else
+                                ( k, v )
+                        )
+            else
+                list ++ [ ( key, value ) ]
+    in
+        case object of
+            ObjectValue o ->
+                o
+                    |> updateOrAppend
+                    |> ObjectValue
+                    |> Ok
+
+            ArrayValue list ->
+                let
+                    index =
+                        key
+                            |> decodeString Decode.int
+                            |> Result.withDefault 0
+                in
+                    if List.length list > index then
+                        list
+                            |> List.indexedMap
+                                (\i v ->
+                                    if i == index then
+                                        value
+                                    else
+                                        v
+                                )
+                            |> ArrayValue
+                            |> Ok
+                    else
+                        list
+                            ++ [ value ]
+                            |> ArrayValue
+                            |> Ok
+
+            OtherValue _ ->
+                if key == "0" then
+                    [ value ]
+                        |> ArrayValue
+                        |> Ok
+                else
+                    [ ( key, value ) ]
+                        |> ObjectValue
+                        |> Ok
+
+
+setPropertyValue : String -> Value -> Value -> Result String Value
+setPropertyValue key value object =
     let
         updateOrAppend list =
             if List.any (\( k, _ ) -> k == key) list then
@@ -335,6 +435,49 @@ deleteIn hostValue jsonPointer schema =
         setValue hostValue newJsonPointer targetValue schema
 
 
+setJsonValue : JsonValue -> String -> JsonValue -> Result String JsonValue
+setJsonValue hostValue jsonPath valueToSet =
+    let
+        path =
+            jsonPath
+                |> parseJsonPointer
+                |> List.reverse
+
+        newValue =
+            case path of
+                [] ->
+                    Ok valueToSet
+
+                _ :: subpath ->
+                    path
+                        |> List.foldl
+                            (\key ( path, value ) ->
+                                let
+                                    p =
+                                        List.reverse path
+
+                                    v =
+                                        value
+                                            |> Result.andThen
+                                                (\vv ->
+                                                    hostValue
+                                                        |> getJsonValue p
+                                                        |> Result.andThen (setPropertyInJsonValue key vv)
+                                                )
+                                in
+                                    case path of
+                                        [] ->
+                                            ( [], v )
+
+                                        _ :: tail ->
+                                            ( tail, v )
+                            )
+                            ( subpath, Ok valueToSet )
+                        |> \( _, v ) -> v
+    in
+        newValue
+
+
 setValue : Value -> String -> Value -> Schema -> Result String Value
 setValue hostValue jsonPath valueToSet schema =
     let
@@ -362,7 +505,7 @@ setValue hostValue jsonPath valueToSet schema =
                                                 (\vv ->
                                                     hostValue
                                                         |> getPropertyValue p
-                                                        |> setPropertyValue key vv p
+                                                        |> setPropertyValue key vv
                                                 )
                                 in
                                     case path of
