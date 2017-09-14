@@ -6,7 +6,7 @@ import Html.Attributes
 import Dict exposing (Dict)
 import Set exposing (Set)
 import StyleSheet exposing (Styles(None, Main, InlineError, SchemaHeader, JsonEditor, MenuItem, NoOutline, SourceCode), Variations(Active), stylesheet)
-import Element.Events exposing (onClick, onMouseDown, onInput, onBlur, onDoubleClick)
+import Element.Events exposing (onClick, onMouseDown, onInput, onBlur, onFocus, onDoubleClick)
 import Element.Attributes as Attributes exposing (center, vary, inlineStyle, spacing, padding, height, minWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
 import Markdown
@@ -425,6 +425,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                                 [ onInput <| SetPropertyName
                                 , Attributes.size <| String.length key + 1
                                 , onBlur <| SetEditPropertyName ""
+                                , Attributes.tabindex 0
                                 ]
                                 key
                                 |> el None []
@@ -433,7 +434,7 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                         else
                             toString key
                                 |> text
-                                |> el None [ onClick <| SetEditPropertyName <| newPointer ]
+                                |> el None [ Attributes.tabindex 0, onFocus <| SetEditPropertyName <| newPointer ]
                                 |> offset level 1
                                 |> deleteMe pp
                     else
@@ -503,9 +504,8 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                                     [ onInput <| ValueChange jsp
                                     , onBlur <| SetEditPath "" Encode.null
                                     , Attributes.size <| String.length editValue + 1
-                                    , Attributes.autofocus True
-                                    , Attributes.rows 1
                                     , inlineStyle [ ( "display", "inline-block" ) ]
+                                    , Attributes.tabindex 0
                                     ]
                                 |> Element.el None
                                     [ inlineStyle [ ( "display", "inline-block" ) ] ]
@@ -521,7 +521,8 @@ form valueUpdateErrors editPropertyName editPath editValue val path =
                                 |> Element.el None
                                     [ inlineStyle [ ( "display", "inline-block" ) ]
                                       --, Attributes.contenteditable False
-                                    , onClick <| SetEditPath jsp val
+                                    , onFocus <| SetEditPath jsp val
+                                    , Attributes.tabindex 0
                                     ]
                             ]
     in
