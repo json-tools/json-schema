@@ -401,7 +401,7 @@ view model =
                 else
                     case model.jsonValue of
                         ObjectValue [] ->
-                            [ row None [ center, Attributes.verticalCenter, width <| fill 1, height <| fill 1 ] [ text "Drop schema file here." ]
+                            [ row None [ center, Attributes.verticalCenter, width <| fill 1, height <| fill 1 ] [ text "Drop schema file (or link to a schema) here." ]
                             ]
 
                         _ ->
