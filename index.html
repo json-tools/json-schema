@@ -76,9 +76,16 @@ setTimeout(() => {
 
     function drop(e) {
         cancel(e);
-        const files = e.dataTransfer.files;
-        elm.ports.dragOver.send(false);
-        [].forEach.call(files, file => readContents(file));
+        if (e.dataTransfer.types.includes('Files')) {
+            const files = e.dataTransfer.files;
+            elm.ports.dragOver.send(false);
+            [].forEach.call(files, file => readContents(file));
+        } else if (e.dataTransfer.types.includes('text/uri-list')) {
+            elm.ports.dragOver.send(false);
+            fetch(e.dataTransfer.getData('text/uri-list'))
+                .then(x => x.text())
+                .then(load);
+        }
     }
 
 
@@ -87,15 +94,18 @@ setTimeout(() => {
         reader.readAsText(file);
         reader.addEventListener('loadend', () => {
             try {
-                const data = JSON.parse(reader.result);
-                localStorage.editMe = reader.result;
-                elm.ports.editSchema.send(data);
+                load(reader.result);
             } catch(e) {
                 console.error(e);
             }
         });
     }
 
+    function load(text) {
+        const data = JSON.parse(text);
+        localStorage.editMe = text;
+        elm.ports.editSchema.send(data);
+    }
 
     const content = document.querySelector('#content');
     if (content) {
