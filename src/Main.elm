@@ -19,6 +19,7 @@ import StyleSheet
             , NoOutline
             , SourceCode
             , PropertyName
+            , ItemIndex
             , PropertyValue
             , PropertySeparator
             )
@@ -483,34 +484,25 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                     , Attributes.id propId
                                     ]
                                 |> el None []
-                                |> offset level 1
-                                |> deleteMe pp
                         else
                             key
-                                |> toString
                                 |> text
                                 |> el PropertyName
                                     [ Attributes.tabindex 0
                                     , onFocus <| SetEditPropertyName propId <| newPointer
                                     , Attributes.id propId
                                     ]
-                                |> offset level 1
-                                |> deleteMe pp
                     else
-                        el None [] <| text " "
+                        key
+                            |> text
+                            |> el ItemIndex []
             in
-                if isEditableProp then
-                    propName
-                        :: text ": "
-                        :: controls (level + 1) prop pp
-                else
-                    controls (level + 1) prop pp
-                        |> List.map
-                            (\el ->
-                                el
-                                    |> offset level 1
-                                    |> deleteMe pp
-                            )
+                (propName
+                    |> offset level 1
+                    |> deleteMe pp
+                )
+                    :: text ": "
+                    :: controls (level + 1) prop pp
 
         joinWithCommaAndWrapWith open close isEditableProp level path list =
             list

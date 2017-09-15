@@ -17,6 +17,7 @@ type Styles
     | MenuItem
     | HtmlAttribute
     | PropertyName
+    | ItemIndex
     | PropertySeparator
     | PropertyValue
     | HtmlElement
@@ -73,9 +74,13 @@ stylesheet =
             [ Color.text Color.darkGreen
             , Style.prop "outline" "none"
             ]
+        , style ItemIndex
+            [ Color.text Color.darkBlue
+            , Style.prop "outline" "none"
+            ]
         , style PropertySeparator
             [ Color.text Color.black
-            , Style.paddingRightHint 5
+              --, Style.paddingRightHint 5
             , Style.prop "outline" "none"
             ]
         , style PropertyValue
