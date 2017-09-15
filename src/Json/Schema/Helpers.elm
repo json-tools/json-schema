@@ -13,6 +13,7 @@ module Json.Schema.Helpers
         , parseJsonPointer
         , makeJsonPointer
         , resolve
+        , resolveReference
         , calcSubSchemaType
         , getPropertyValue
         , setPropertyNameInJsonValue

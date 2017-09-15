@@ -14,6 +14,7 @@ module Json.Schema.Definitions
         , Dependency(ArrayPropNames, PropSchema)
         , JsonValue(ObjectValue, ArrayValue, OtherValue)
         , jsonValueDecoder
+        , encodeJsonValue
         )
 
 import Util exposing (resultToDecoder, foldResults, isInt)
@@ -94,6 +95,24 @@ jsonValueDecoder =
                 |> Decode.map ArrayValue
     in
         Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
+
+
+encodeJsonValue : JsonValue -> Value
+encodeJsonValue v =
+    case v of
+        ObjectValue ov ->
+            ov
+                |> List.map (\( key, jv ) -> ( key, encodeJsonValue jv ))
+                |> List.reverse
+                |> Encode.object
+
+        ArrayValue av ->
+            av
+                |> List.map encodeJsonValue
+                |> Encode.list
+
+        OtherValue v ->
+            v
 
 
 blankSchema : Schema

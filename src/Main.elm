@@ -47,6 +47,7 @@ import Json.Schema.Helpers
         , calcSubSchemaType
         , setPropertyNameInJsonValue
         )
+import Validation
 import Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
 import Json.Schema.Definitions as Schema
     exposing
@@ -57,6 +58,7 @@ import Json.Schema.Definitions as Schema
         , SingleType(IntegerType, NumberType, StringType, BooleanType)
         , JsonValue(ObjectValue, ArrayValue, OtherValue)
         , jsonValueDecoder
+        , encodeJsonValue
         , blankSchema
         )
 
@@ -152,6 +154,20 @@ focus id =
         Cmd.none
 
 
+makeValidSchema : JsonValue -> Schema -> Result String Schema
+makeValidSchema jsonValue schema =
+    let
+        val =
+            jsonValue
+                |> encodeJsonValue
+    in
+        schema
+            |> Validation.validate val
+            |> Debug.log "validation result"
+            |> Result.map (\_ -> val)
+            |> Result.andThen (Decode.decodeValue Schema.decoder)
+
+
 updateValue : Model -> String -> Result String JsonValue -> Model
 updateValue model path newStuff =
     let
@@ -166,10 +182,19 @@ updateValue model path newStuff =
             |> \res ->
                 case res of
                     Ok v ->
-                        { model
-                            | jsonValue = v
-                            , valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path
-                        }
+                        case makeValidSchema v model.schema of
+                            Ok x ->
+                                { model
+                                    | jsonValue = v
+                                    , value = x
+                                    , valueUpdateErrors = model.valueUpdateErrors |> Dict.remove path
+                                }
+
+                            Err message ->
+                                { model
+                                    | jsonValue = v
+                                    , valueUpdateErrors = model.valueUpdateErrors |> Dict.insert path message
+                                }
 
                     Err s ->
                         addError s
