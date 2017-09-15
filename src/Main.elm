@@ -7,7 +7,24 @@ import Dom
 import Task
 import Dict exposing (Dict)
 import Set exposing (Set)
-import StyleSheet exposing (Styles(None, Main, InlineError, SchemaHeader, JsonEditor, MenuItem, NoOutline, SourceCode), Variations(Active), stylesheet)
+import StyleSheet
+    exposing
+        ( Styles
+            ( None
+            , Main
+            , InlineError
+            , SchemaHeader
+            , JsonEditor
+            , MenuItem
+            , NoOutline
+            , SourceCode
+            , PropertyName
+            , PropertyValue
+            , PropertySeparator
+            )
+        , Variations(Active)
+        , stylesheet
+        )
 import Element.Events exposing (onClick, onMouseDown, onInput, onBlur, onFocus, onDoubleClick)
 import Element.Attributes as Attributes exposing (center, vary, inlineStyle, spacing, padding, height, minWidth, width, yScrollbar, fill, px, percent)
 import Element exposing (Element, el, row, text, column, paragraph, empty)
@@ -472,7 +489,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                             key
                                 |> toString
                                 |> text
-                                |> el None
+                                |> el PropertyName
                                     [ Attributes.tabindex 0
                                     , onFocus <| SetEditPropertyName propId <| newPointer
                                     , Attributes.id propId
@@ -519,7 +536,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                             :: (x
                                     ++ [ Element.break
                                        , offset level 0 <|
-                                            el None
+                                            el PropertySeparator
                                                 [ onFocus <| InsertValue isEditableProp path
                                                 , Attributes.tabindex 0
                                                 ]
@@ -570,7 +587,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                             ]
                         else
                             [ text (toString val)
-                                |> Element.el None
+                                |> Element.el PropertyValue
                                     [ inlineStyle [ ( "display", "inline-block" ) ]
                                       --, Attributes.contenteditable False
                                     , onFocus <| SetEditPath valId jsp val

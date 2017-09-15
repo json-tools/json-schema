@@ -71,13 +71,16 @@ stylesheet =
             ]
         , style PropertyName
             [ Color.text Color.darkGreen
+            , Style.prop "outline" "none"
             ]
         , style PropertySeparator
             [ Color.text Color.black
             , Style.paddingRightHint 5
+            , Style.prop "outline" "none"
             ]
         , style PropertyValue
             [ Color.text Color.darkOrange
+            , Style.prop "outline" "none"
             ]
         , style HtmlElement
             [ Font.typeface [ "menlo", "monospace" ]
