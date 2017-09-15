@@ -576,7 +576,7 @@ validate value schema =
                         if isValid then
                             Ok True
                         else
-                            Err "None of the schemas in anyOf accept this value"
+                            Err ": None of the schemas in anyOf accept this value"
                 )
 
         validateOneOf : Value -> SubSchema -> Result String Bool
@@ -593,10 +593,10 @@ validate value schema =
                                 Ok True
 
                             0 ->
-                                Err "None of the schemas in anyOf allow this value"
+                                Err ": None of the schemas in anyOf allow this value"
 
                             len ->
-                                Err <| "oneOf expects value to succeed validation against exactly one schema but " ++ toString len ++ " validations succeeded"
+                                Err <| ": oneOf expects value to succeed validation against exactly one schema but " ++ toString len ++ " validations succeeded"
                 )
 
         validateNot : Value -> SubSchema -> Result String Bool
@@ -605,7 +605,7 @@ validate value schema =
                 Decode.value
                 (\notSchema val ->
                     if validateSchema val notSchema == (Ok True) then
-                        Err "Successful validation for the negative schema ('not' keyword)"
+                        Err ": Successful validation for the negative schema ('not' keyword)"
                     else
                         Ok True
                 )
