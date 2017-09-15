@@ -57,6 +57,7 @@ import Json.Schema.Definitions as Schema
         , SingleType(IntegerType, NumberType, StringType, BooleanType)
         , JsonValue(ObjectValue, ArrayValue, OtherValue)
         , jsonValueDecoder
+        , blankSchema
         )
 
 
@@ -66,7 +67,7 @@ type alias View =
 
 type alias Model =
     { schema : Schema
-    , value : Value
+    , value : Schema
     , jsonValue : JsonValue
     , activeSection : String
     , editPaths : Set String
@@ -82,9 +83,9 @@ type alias Model =
 type Msg
     = NoOp
     | UrlChange Location
-    | StringChange String String
-    | NumberChange String String
-    | BooleanChange String Bool
+      --| StringChange String String
+      --| NumberChange String String
+      --| BooleanChange String Bool
     | ValueChange String String
     | InsertValue Bool (List String)
     | DeleteMe String
@@ -113,7 +114,10 @@ init val location =
     Model
         coreSchemaDraft6
         -- value
-        val
+        (val
+            |> Decode.decodeValue Schema.decoder
+            |> Result.withDefault blankSchema
+        )
         -- jsonValue
         (val
             |> Decode.decodeValue jsonValueDecoder
@@ -199,15 +203,16 @@ update msg model =
             }
                 ! [ select id ]
 
-        StringChange path str ->
-            updateValue model path (str |> Encode.string |> OtherValue |> Ok) ! []
+        {-
+           StringChange path str ->
+               updateValue model path (str |> Encode.string |> OtherValue |> Ok) ! []
 
-        NumberChange path str ->
-            updateValue model path (str |> String.toFloat |> Result.map (Encode.float >> OtherValue)) ! []
+           NumberChange path str ->
+               updateValue model path (str |> String.toFloat |> Result.map (Encode.float >> OtherValue)) ! []
 
-        BooleanChange path bool ->
-            updateValue model path (bool |> Encode.bool |> OtherValue |> Ok) ! []
-
+           BooleanChange path bool ->
+               updateValue model path (bool |> Encode.bool |> OtherValue |> Ok) ! []
+        -}
         ValueChange path str ->
             updateValue { model | editValue = str, editPath = path } path (decodeString jsonValueDecoder str) ! []
 
@@ -240,7 +245,10 @@ update msg model =
 
         EditSchema s ->
             { model
-                | value = s
+                | value =
+                    s
+                        |> Decode.decodeValue Schema.decoder
+                        |> Result.withDefault model.value
                 , jsonValue =
                     s
                         |> Decode.decodeValue jsonValueDecoder
@@ -293,7 +301,7 @@ update msg model =
                     ! []
 
         DownloadSchema ->
-            model ! [ download model.value ]
+            model ! [ model.value |> Schema.encode |> download ]
 
 
 port activeSection : (String -> msg) -> Sub msg
@@ -324,9 +332,7 @@ view : Model -> Html Msg
 view model =
     let
         propertiesListing section fn =
-            model.value
-                |> Decode.decodeValue Schema.decoder
-                |> Result.toMaybe
+            Just model.value
                 |> Maybe.andThen
                     (\s ->
                         case s of
@@ -362,10 +368,7 @@ view model =
                 |> column None [ padding 20 ]
 
         a =
-            model.value
-                |> Decode.decodeValue Schema.decoder
-                |> Result.map (\schema -> documentation model 0 "#" schema model.schema)
-                |> Result.withDefault empty
+            documentation model 0 "#" model.value model.schema
 
         {-
            b =

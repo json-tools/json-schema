@@ -31,6 +31,11 @@ type Variations
     = Active
 
 
+fancyBlue : Color.Color
+fancyBlue =
+    Color.rgb 17 123 206
+
+
 stylesheet : StyleSheet Styles Variations
 stylesheet =
     Style.styleSheetWith [ Style.unguarded ]
@@ -71,11 +76,11 @@ stylesheet =
               --, Style.paddingLeftHint 5
             ]
         , style PropertyName
-            [ Color.text Color.darkGreen
+            [ Style.prop "color" "#c80000"
             , Style.prop "outline" "none"
             ]
         , style ItemIndex
-            [ Color.text Color.darkBlue
+            [ Color.text fancyBlue
             , Style.prop "outline" "none"
             ]
         , style PropertySeparator
@@ -84,17 +89,18 @@ stylesheet =
             , Style.prop "outline" "none"
             ]
         , style PropertyValue
-            [ Color.text Color.darkOrange
+            [ Color.text Color.darkCharcoal
             , Style.prop "outline" "none"
             ]
         , style HtmlElement
-            [ Font.typeface [ "menlo", "monospace" ]
-            , Font.size 10
+            [ Font.typeface [ "Menlo", "monospace" ]
+            , Font.size 11
             , Color.text Color.blue
             ]
         , style Button
             [ Font.bold
-            , Font.typeface [ "menlo", "monospace" ]
+            , Font.typeface [ "Menlo", "monospace" ]
+            , Font.size 11
             , Color.text Color.darkCharcoal
             , Color.background Color.white
             , Border.all 3
@@ -123,12 +129,13 @@ stylesheet =
             ]
         , style SchemaHeader
             [ Style.prop "outline" "none"
-            , Style.prop "font-family" "monospace"
-            , Color.text <| Color.rgb 17 123 206
+            , Style.prop "font-family" "Menlo, monospace"
+            , Font.size 11
+            , Color.text fancyBlue
             ]
         , style JsonEditor
-            [ Style.prop "font-family" "monospace"
-            , Font.size 10
+            [ Style.prop "font-family" "Menlo, monospace"
+            , Font.size 11
             , Border.all 1
             , Color.border Color.lightGrey
             , Style.prop "resize" "none"
@@ -138,8 +145,8 @@ stylesheet =
               --, Style.paddingHint 10
             ]
         , style SourceCode
-            [ Style.prop "font-family" "monospace"
-            , Font.size 10
+            [ Style.prop "font-family" "Menlo, monospace"
+            , Font.size 11
             , Style.paddingHint 10
             ]
         ]
