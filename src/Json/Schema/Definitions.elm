@@ -88,6 +88,7 @@ jsonValueDecoder =
     let
         objectValueDecoder =
             Decode.keyValuePairs (Decode.lazy (\_ -> jsonValueDecoder))
+                |> Decode.andThen (List.reverse >> succeed)
                 |> Decode.map ObjectValue
 
         arrayValueDecoder =
@@ -103,7 +104,6 @@ encodeJsonValue v =
         ObjectValue ov ->
             ov
                 |> List.map (\( key, jv ) -> ( key, encodeJsonValue jv ))
-                |> List.reverse
                 |> Encode.object
 
         ArrayValue av ->
