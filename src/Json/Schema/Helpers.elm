@@ -294,7 +294,7 @@ getJsonValue path value =
                             )
                         |> Result.andThen (getJsonValue tail)
 
-                OtherValue _ ->
+                _ ->
                     Err "You are trying to access property of something that is not object or array"
 
 
@@ -345,7 +345,7 @@ setPropertyInJsonValue key value object =
                             |> ArrayValue
                             |> Ok
 
-            OtherValue _ ->
+            _ ->
                 if key == "0" then
                     [ value ]
                         |> ArrayValue
@@ -449,7 +449,7 @@ deleteIn hostValue jsonPointer =
                         |> List.map (\( _, v ) -> v)
                         |> (ArrayValue >> Ok)
 
-                OtherValue _ ->
+                _ ->
                     Err "It is not possible to delete key when host value is not object or array"
 
         targetValue =

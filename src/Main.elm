@@ -56,7 +56,7 @@ import Json.Schema.Definitions as Schema
         , Schemata(Schemata)
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType)
-        , JsonValue(ObjectValue, ArrayValue, OtherValue)
+        , JsonValue(ObjectValue, ArrayValue, OtherValue, EmptyValue)
         , jsonValueDecoder
         , encodeJsonValue
         , blankSchema
@@ -95,8 +95,9 @@ type Msg
     | EditSchema Value
     | DragOver Bool
     | ToggleEditing String
-    | SetEditPath String String Value
+    | SetEditPath String String String
     | SetEditPropertyName String (List String) Int
+    | StopEditing
     | SetPropertyName String
     | DownloadSchema
 
@@ -224,7 +225,7 @@ update msg model =
             { model
                 | editPath = jsonPointer
                 , editPropertyName = ( "", 0 )
-                , editValue = value |> Encode.encode 2
+                , editValue = value
             }
                 ! [ select id ]
 
@@ -240,6 +241,19 @@ update msg model =
         -}
         ValueChange path str ->
             updateValue { model | editValue = str, editPath = path } path (decodeString jsonValueDecoder str) ! []
+
+        StopEditing ->
+            { model
+                | editPath = ""
+                , editPropertyName = ( "", 0 )
+                , jsonValue =
+                    if model.editValue == "" && model.editPath /= "" then
+                        deleteIn model.jsonValue model.editPath
+                            |> Result.withDefault model.jsonValue
+                    else
+                        model.jsonValue
+            }
+                ! []
 
         InsertValue hasKey path index formId ->
             let
@@ -259,7 +273,7 @@ update msg model =
                         , editValue = ""
                     }
                     (newJsonPointer ++ "/")
-                    (Ok <| OtherValue <| Encode.string "")
+                    (Ok <| EmptyValue)
                     ! [ select id ]
 
         UrlChange l ->
@@ -570,9 +584,13 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                     ++ [ Element.break
                                        , offset level 0 <|
                                             el PropertySeparator
-                                                [ onFocus <| InsertValue isEditableProp path (List.length list) id
-                                                , Attributes.tabindex 0
-                                                ]
+                                                (if editPath == "" || editValue /= "" then
+                                                    [ onFocus <| InsertValue isEditableProp path (List.length list) id
+                                                    , Attributes.tabindex 0
+                                                    ]
+                                                 else
+                                                    []
+                                                )
                                             <|
                                                 text close
                                        ]
@@ -580,18 +598,8 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                    )
 
         controls level val path =
-            case val of
-                ArrayValue list ->
-                    list
-                        |> List.indexedMap (\index item -> ( index, "", item ))
-                        |> joinWithCommaAndWrapWith "[" "]" False level path
-
-                ObjectValue obj ->
-                    obj
-                        |> List.indexedMap (\index ( key, val ) -> ( index, key, val ))
-                        |> joinWithCommaAndWrapWith "{" "}" True level path
-
-                OtherValue val ->
+            let
+                edit val =
                     let
                         jsp =
                             makeJsonPointer path
@@ -603,7 +611,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                             [ editValue
                                 |> Element.inputText JsonEditor
                                     [ onInput <| ValueChange jsp
-                                      -- , onBlur <| SetEditPath "" "" Encode.null
+                                    , onBlur StopEditing
                                     , Attributes.size <| String.length editValue + 1
                                     , inlineStyle [ ( "display", "inline-block" ) ]
                                     , Attributes.tabindex 0
@@ -619,7 +627,14 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                     ]
                             ]
                         else
-                            [ text (toString val)
+                            [ val
+                                |> (\v ->
+                                        if v == "" then
+                                            "Ø"
+                                        else
+                                            v
+                                   )
+                                |> text
                                 |> Element.el PropertyValue
                                     [ inlineStyle [ ( "display", "inline-block" ) ]
                                       --, Attributes.contenteditable False
@@ -627,6 +642,23 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                     , Attributes.tabindex 0
                                     ]
                             ]
+            in
+                case val of
+                    ArrayValue list ->
+                        list
+                            |> List.indexedMap (\index item -> ( index, "", item ))
+                            |> joinWithCommaAndWrapWith "[" "]" False level path
+
+                    ObjectValue obj ->
+                        obj
+                            |> List.indexedMap (\index ( key, val ) -> ( index, key, val ))
+                            |> joinWithCommaAndWrapWith "{" "}" True level path
+
+                    EmptyValue ->
+                        edit ""
+
+                    OtherValue val ->
+                        val |> Encode.encode 2 |> edit
     in
         controls 0 val path
 
@@ -795,7 +827,7 @@ schemataDoc model level schema s metaSchema subpath =
                    |> Maybe.withDefault "any"
         -}
         printProperty ( key, schema ) =
-            if String.startsWith model.activeSection (newSubpath key) then
+            if model.activeSection == (newSubpath key) then
                 case metaSchema |> for subpath of
                     Just ms ->
                         if level == 0 then
