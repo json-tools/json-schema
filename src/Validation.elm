@@ -464,14 +464,10 @@ validate value schema =
             when .enum
                 Decode.value
                 (\enum val ->
-                    let
-                        a =
-                            Debug.log "haha" enum
-                    in
-                        if List.any (\item -> toString item == (toString val)) enum then
-                            Ok True
-                        else
-                            Err ": Value is not present in enum"
+                    if List.any (\item -> toString item == (toString val)) enum then
+                        Ok True
+                    else
+                        Err ": Value is not present in enum"
                 )
 
         validateConst : Value -> SubSchema -> Result String Bool
