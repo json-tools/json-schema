@@ -531,7 +531,6 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                 |> el PropertyName
                                     [ Attributes.tabindex 0
                                     , onFocus <| SetEditPropertyName propId path index
-                                    , Attributes.id propId
                                     ]
                     else
                         index
