@@ -1,33 +1,161 @@
-<!DOCTYPE html>
-<html>
-  <head>
+<!doctype html>
+<head>
     <meta charset="utf-8" />
-    <title>Test Client | Automation Cloud</title>
-    <link rel="icon" type="image/png" href="/assets/favicon-32x32.png">
-    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/gruvbox-dark.min.css">
-    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/normalize/5.0.0/normalize.min.css">
+    <title>JSON Schema Builder</title>
+    <link rel="stylesheet" href="style.css" />
+    <!--link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/gruvbox-dark.min.css"-->
+    <!--link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/styles/gruvbox-light.min.css"-->
+    <!--link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/solarized-light.min.css"-->
+    <!--script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.8.0/highlight.min.js"></script-->
+<style>
+.deletable .delete-me {
+    visibility: hidden;
+}
+.deletable:hover .delete-me {
+    visibility: visible;
+    cursor: pointer;
+}
+</style>
+</head>
 
-    <style>
-body {
-    font-family: Helvetica, Sans-serif;
-    line-height: 1.36em;
-    font-size: 14px;
+<body>
+    <script src="elm.js"></script>
+    <script>
+let initValue = null;
+
+try {
+    initValue = localStorage.editMe ? JSON.parse(localStorage.editMe) : {}
+} catch(e) {
+    initValue = {};
 }
 
-.markdown-doc > p:nth-child(1) {
-    -webkit-margin-before: 0;
-}
+const elm = Elm.Main.fullscreen(initValue);
 
-.markdown-doc code {
-    color: darkred
-}
+elm.ports.select.subscribe(id => {
+    setTimeout(() => {
+        console.log('attempt to select', id);
+        const x = document.getElementById(id);
+        console.log(x);
+        if (x) {
+            x.select();
+        }
+    }, 100);
+});
 
-a:visited  {
-    color: royalblue
-}
-    </style>
-  </head>
-  <body>
-  <script type="text/javascript" src="index.js"></script></body>
-</html>
+elm.ports.download.subscribe(x => {
+    const a = document.createElement('a');
+    const blob = new Blob([JSON.stringify(x, null, '    ')], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    a.setAttribute('href', url);
+    a.download = 'JSON Schema';
+    a.click();
+});
+
+// this is hack to update url and highlight menu
+// TODO: discover the right way of doing this
+setTimeout(() => {
+
+    document.body.addEventListener('dragstart', () => {
+        console.log('drag started');
+    });
+    document.body.addEventListener('dragover', e => {
+        const b = e.dataTransfer.effectAllowed;
+        e.dataTransfer.dropEffect = ('move' === b || 'linkMove' === b ||
+                'copyMove' === b) ? 'move' : 'copy';
+        // console.log('drag over');
+        return cancel(e);
+    });
+    document.body.addEventListener('dragenter', e => {
+        elm.ports.dragOver.send(true);
+        return cancel(e);
+    });
+    document.body.addEventListener('dragleave', e => {
+        elm.ports.dragOver.send(false);
+        return cancel(e);
+    });
+    document.body.addEventListener('drop', drop);
+    document.body.addEventListener('dragdrop', drop);
+
+    function drop(e) {
+        cancel(e);
+        if (e.dataTransfer.types.includes('Files')) {
+            const files = e.dataTransfer.files;
+            elm.ports.dragOver.send(false);
+            [].forEach.call(files, file => readContents(file));
+        } else if (e.dataTransfer.types.includes('text/uri-list')) {
+            elm.ports.dragOver.send(false);
+            fetch(e.dataTransfer.getData('text/uri-list'))
+                .then(x => x.text())
+                .then(load);
+        }
+    }
+
+
+    function readContents(file) {
+        const reader = new FileReader();
+        reader.readAsText(file);
+        reader.addEventListener('loadend', () => {
+            try {
+                load(reader.result);
+            } catch(e) {
+                console.error(e);
+            }
+        });
+    }
+
+    function load(text) {
+        const data = JSON.parse(text);
+        localStorage.editMe = text;
+        elm.ports.editSchema.send(data);
+    }
+
+    const content = document.querySelector('#content');
+    if (content) {
+        const headers = content.querySelectorAll('div[tabindex] > h1');
+        // TODO: recalc on window resize
+        const checkpoints = Array.from(headers).map(el => ({
+            hash: '#' + el.parentNode.id,
+            offsetTop: offsetTop(el, content) - 100,
+        })).reverse();
+        let timeout = null;
+        let hash = location.hash;
+
+        if (hash && hash.length > 1) {
+            const el = document.querySelector('#' + CSS.escape(hash.substr(1)));
+            if (el) {
+                el.focus();
+            }
+        }
+
+        content.addEventListener('scroll', ({ target }) => {
+            clearTimeout(timeout);
+            timeout = setTimeout(() => {
+                const found = checkpoints.filter(x => x.offsetTop < target.scrollTop )[0];
+                if (found) {
+                    if (hash !== found.hash) {
+                        hash = found.hash
+                        // elm.ports.activeSection.send(found.hash);
+                        // history.replaceState({}, "", found.hash);
+                    }
+                }
+            }, 200);
+        });
+    }
+
+    function offsetTop(el, limit) {
+        if (el === limit) {
+            return 0;
+        } else {
+            return el.offsetTop + offsetTop(el.parentNode, limit);
+        }
+    }
+}, 100);
+
+    function cancel(e) {
+        if (e.preventDefault) {
+            e.preventDefault();
+        }
+        return false;
+    }
+    </script>
+</body>
