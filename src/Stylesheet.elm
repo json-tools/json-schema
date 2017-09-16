@@ -136,10 +136,10 @@ stylesheet =
         , style JsonEditor
             [ Style.prop "font-family" "Menlo, monospace"
             , Font.size 11
-            , Border.all 1
+            , Border.all 0
             , Color.border Color.lightGrey
             , Style.prop "resize" "none"
-            , Style.prop "box-shadow" "1px 1px 3px 0px rgba(0, 0, 0, 0.1)"
+            , Style.prop "box-shadow" "0 2px 2px 0 rgba(0,0,0,.14), 0 3px 1px -2px rgba(0,0,0,.2), 0 1px 5px 0 rgba(0,0,0,.12)"
             , Style.prop "outline" "none"
             , Style.prop "display" "inline-block"
               --, Style.paddingHint 10
