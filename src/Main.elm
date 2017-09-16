@@ -542,7 +542,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                     |> offset level 1
                     |> deleteMe pp
                 )
-                    :: text ": "
+                    :: (el PropertySeparator [ inlineStyle [ ( "display", "inline-block" ), ( "padding-right", "1ch" ) ] ] <| text ":")
                     :: controls (level + 1) prop pp
 
         joinWithCommaAndWrapWith open close isEditableProp level path list =
@@ -551,7 +551,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                 |> List.intersperse [ text ",", Element.break ]
                 |> List.concat
                 |> (\x ->
-                        (el None
+                        (el PropertySeparator
                             [ inlineStyle
                                 [ ( "padding-left"
                                   , if level == 0 then
@@ -603,7 +603,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                             [ editValue
                                 |> Element.inputText JsonEditor
                                     [ onInput <| ValueChange jsp
-                                    , onBlur <| SetEditPath "" "" Encode.null
+                                      -- , onBlur <| SetEditPath "" "" Encode.null
                                     , Attributes.size <| String.length editValue + 1
                                     , inlineStyle [ ( "display", "inline-block" ) ]
                                     , Attributes.tabindex 0

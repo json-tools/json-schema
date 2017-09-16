@@ -66,10 +66,11 @@ stylesheet =
             , Style.prop "margin" "10px"
             ]
         , style InlineError
-            [ Style.prop "border" "1px solid red"
+            [ Style.prop "border" "1px solid rgba(255,0,0,.5)"
             , Style.prop "z-index" "1"
             , Style.prop "background" "white"
             , Style.paddingHint 10
+            , Style.prop "box-shadow" "0 4px 5px 0 rgba(0,0,0,.14), 0 1px 10px 0 rgba(0,0,0,.12), 0 2px 4px -1px rgba(0,0,0,.2)"
             ]
         , style HtmlAttribute
             [ Color.text Color.darkBlue
@@ -80,11 +81,11 @@ stylesheet =
             , Style.prop "outline" "none"
             ]
         , style ItemIndex
-            [ Color.text fancyBlue
+            [ Color.text <| Color.rgb 160 160 160
             , Style.prop "outline" "none"
             ]
         , style PropertySeparator
-            [ Color.text Color.black
+            [ Color.text <| Color.rgb 120 120 120
               --, Style.paddingRightHint 5
             , Style.prop "outline" "none"
             ]
