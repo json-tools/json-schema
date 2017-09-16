@@ -77,7 +77,7 @@ type alias Model =
     , valueUpdateErrors : Dict String String
     , editPath : String
     , editValue : String
-    , editPropertyName : String
+    , editPropertyName : ( String, Int )
     , dragOver : Bool
     }
 
@@ -89,14 +89,14 @@ type Msg
       --| NumberChange String String
       --| BooleanChange String Bool
     | ValueChange String String
-    | InsertValue Bool (List String)
+    | InsertValue Bool (List String) Int String
     | DeleteMe String
     | ActiveSection String
     | EditSchema Value
     | DragOver Bool
     | ToggleEditing String
     | SetEditPath String String Value
-    | SetEditPropertyName String String
+    | SetEditPropertyName String (List String) Int
     | SetPropertyName String
     | DownloadSchema
 
@@ -138,7 +138,7 @@ init val location =
         -- editValue
         "null"
         -- editPropertyName
-        ""
+        ( "", 0 )
         -- dragOver
         False
         ! []
@@ -223,7 +223,7 @@ update msg model =
         SetEditPath id jsonPointer value ->
             { model
                 | editPath = jsonPointer
-                , editPropertyName = ""
+                , editPropertyName = ( "", 0 )
                 , editValue = value |> Encode.encode 2
             }
                 ! [ select id ]
@@ -241,26 +241,26 @@ update msg model =
         ValueChange path str ->
             updateValue { model | editValue = str, editPath = path } path (decodeString jsonValueDecoder str) ! []
 
-        InsertValue hasKey path ->
+        InsertValue hasKey path index formId ->
             let
                 newJsonPointer =
-                    makeJsonPointer path ++ "/"
+                    makeJsonPointer path
 
-                ( editProp, editPath ) =
+                ( editProp, editPath, id ) =
                     if hasKey then
-                        ( newJsonPointer, "" )
+                        ( newJsonPointer, "", formId ++ "/prop/" ++ newJsonPointer ++ "/" )
                     else
-                        ( "", newJsonPointer )
+                        ( "", newJsonPointer ++ "/" ++ (toString index), formId ++ "/value/" ++ newJsonPointer ++ "/" ++ (toString index) )
             in
                 updateValue
                     { model
                         | editPath = editPath
-                        , editPropertyName = editProp
+                        , editPropertyName = ( editProp, index )
                         , editValue = ""
                     }
-                    newJsonPointer
+                    (newJsonPointer ++ "/")
                     (Ok <| OtherValue <| Encode.string "")
-                    ! []
+                    ! [ select id ]
 
         UrlChange l ->
             { model | activeSection = l.hash } ! []
@@ -297,33 +297,35 @@ update msg model =
         DeleteMe pointer ->
             deletePath model pointer ! []
 
-        SetEditPropertyName id pointer ->
-            { model | editPropertyName = pointer, editPath = "" } ! [ select id ]
+        SetEditPropertyName id path index ->
+            { model | editPropertyName = ( makeJsonPointer path, index ), editPath = "" } ! [ select id ]
 
         SetPropertyName str ->
-            let
-                newJsonPointer =
-                    model.editPropertyName
-                        |> parseJsonPointer
-                        |> List.reverse
-                        |> List.drop 1
-                        |> (::) str
-                        |> List.reverse
-                        |> makeJsonPointer
-            in
-                { model
-                    | jsonValue =
-                        model.jsonValue
-                            |> setPropertyNameInJsonValue model.editPropertyName str
-                            |> Result.withDefault model.jsonValue
-                    , editPropertyName = newJsonPointer
-                    , activeSection =
-                        if model.activeSection == model.editPropertyName then
-                            newJsonPointer
-                        else
-                            model.activeSection
-                }
-                    ! []
+            --let
+            {-
+               newJsonPointer =
+                   model.editPropertyName
+                       |> parseJsonPointer
+                       |> List.reverse
+                       |> (::) str
+                       |> List.reverse
+                       |> makeJsonPointer
+            -}
+            --in
+            { model
+                | jsonValue =
+                    model.jsonValue
+                        |> setPropertyNameInJsonValue model.editPropertyName str
+                        |> Result.withDefault model.jsonValue
+                    {-
+                       , activeSection =
+                           if model.activeSection == model.editPropertyName then
+                               newJsonPointer
+                           else
+                               model.activeSection
+                    -}
+            }
+                ! []
 
         DownloadSchema ->
             model ! [ model.value |> Schema.encode |> download ]
@@ -465,7 +467,7 @@ view model =
                             ]
 
 
-form : String -> Dict String String -> String -> String -> String -> JsonValue -> List String -> List View
+form : String -> Dict String String -> ( String, Int ) -> String -> String -> JsonValue -> List String -> List View
 form id valueUpdateErrors editPropertyName editPath editValue val path =
     let
         offset level n =
@@ -489,10 +491,21 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                         text "-"
                 ]
 
-        itemRow isEditableProp level path ( key, prop ) =
+        itemRow isEditableProp level path ( index, key, prop ) =
             let
                 pp =
-                    path ++ [ key ]
+                    path
+                        ++ [ if isEditableProp then
+                                key
+                             else
+                                index |> toString
+                           ]
+
+                hostPointer =
+                    makeJsonPointer path
+
+                ( editPropPath, editIndex ) =
+                    editPropertyName
 
                 newPointer =
                     makeJsonPointer pp
@@ -502,12 +515,12 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
 
                 propName =
                     if isEditableProp then
-                        if newPointer == editPropertyName then
+                        if hostPointer == editPropPath && index == editIndex then
                             key
                                 |> Element.inputText JsonEditor
                                     [ onInput <| SetPropertyName
                                     , Attributes.size <| String.length key + 1
-                                    , onBlur <| SetEditPropertyName "" ""
+                                    , onBlur <| SetEditPropertyName "" [] 0
                                     , Attributes.tabindex 0
                                     , Attributes.id propId
                                     ]
@@ -517,11 +530,12 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                 |> text
                                 |> el PropertyName
                                     [ Attributes.tabindex 0
-                                    , onFocus <| SetEditPropertyName propId <| newPointer
+                                    , onFocus <| SetEditPropertyName propId path index
                                     , Attributes.id propId
                                     ]
                     else
-                        key
+                        index
+                            |> toString
                             |> text
                             |> el ItemIndex []
             in
@@ -557,7 +571,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                                     ++ [ Element.break
                                        , offset level 0 <|
                                             el PropertySeparator
-                                                [ onFocus <| InsertValue isEditableProp path
+                                                [ onFocus <| InsertValue isEditableProp path (List.length list) id
                                                 , Attributes.tabindex 0
                                                 ]
                                             <|
@@ -570,12 +584,12 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
             case val of
                 ArrayValue list ->
                     list
-                        |> List.indexedMap (\index item -> ( toString index, item ))
+                        |> List.indexedMap (\index item -> ( index, "", item ))
                         |> joinWithCommaAndWrapWith "[" "]" False level path
 
                 ObjectValue obj ->
                     obj
-                        |> List.reverse
+                        |> List.indexedMap (\index ( key, val ) -> ( index, key, val ))
                         |> joinWithCommaAndWrapWith "{" "}" True level path
 
                 OtherValue val ->
@@ -731,19 +745,21 @@ schemataDoc model level schema s metaSchema subpath =
                     else
                         "h2"
             in
-                if model.editPropertyName == newSubpath s then
-                    s
-                        |> Element.inputText SchemaHeader
-                            [ onInput <| SetPropertyName
-                            , Attributes.autofocus True
-                            ]
-                else
-                    s
-                        |> text
-                        |> el SchemaHeader
-                            [ onDoubleClick <| SetEditPropertyName "" <| newSubpath s
-                            ]
-                        |> Element.node nodeName
+                {-
+                   if model.editPropertyName == newSubpath s then
+                       s
+                           |> Element.inputText SchemaHeader
+                               [ onInput <| SetPropertyName
+                               , Attributes.autofocus True
+                               ]
+                   else
+                -}
+                s
+                    |> text
+                    |> el SchemaHeader
+                        [ onDoubleClick <| SetEditPropertyName "" [] 0
+                        ]
+                    |> Element.node nodeName
 
         dropAnchor newSubpath =
             el NoOutline

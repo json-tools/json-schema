@@ -33,7 +33,9 @@ const elm = Elm.Main.fullscreen(initValue);
 
 elm.ports.select.subscribe(id => {
     setTimeout(() => {
+        // console.log('attempt to select', id);
         const x = document.getElementById(id);
+        // console.log(x);
         if (x) {
             x.select();
         }

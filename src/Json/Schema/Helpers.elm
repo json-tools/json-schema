@@ -171,31 +171,16 @@ implyType val schema subpath =
                         }
 
 
-setPropertyNameInJsonValue : String -> String -> JsonValue -> Result String JsonValue
-setPropertyNameInJsonValue jsonPointer newName hostValue =
+setPropertyNameInJsonValue : ( String, Int ) -> String -> JsonValue -> Result String JsonValue
+setPropertyNameInJsonValue ( jsonPointer, index ) newName hostValue =
     let
-        ( key, path ) =
-            jsonPointer
-                |> parseJsonPointer
-                |> List.reverse
-                |> \x ->
-                    case x of
-                        k :: revPath ->
-                            ( Just k, List.reverse revPath )
-
-                        [] ->
-                            ( Nothing, [] )
-
-        newJsonPointer =
-            makeJsonPointer path
-
-        renameKey key val =
+        renameKey val =
             case val of
                 ObjectValue v ->
                     v
-                        |> List.map
-                            (\( k, v ) ->
-                                ( if k == key then
+                        |> List.indexedMap
+                            (\i ( k, v ) ->
+                                ( if index == i then
                                     newName
                                   else
                                     k
@@ -209,17 +194,12 @@ setPropertyNameInJsonValue jsonPointer newName hostValue =
                     Err "Can not rename property of this json value"
 
         targetValue =
-            case key of
-                Just k ->
-                    hostValue
-                        |> getJsonValue path
-                        |> Result.andThen (renameKey k)
-                        |> Result.withDefault hostValue
-
-                Nothing ->
-                    hostValue
+            hostValue
+                |> getJsonValue (parseJsonPointer jsonPointer)
+                |> Result.andThen renameKey
+                |> Result.withDefault hostValue
     in
-        setJsonValue hostValue newJsonPointer targetValue
+        setJsonValue hostValue jsonPointer targetValue
 
 
 setPropertyName : String -> String -> Schema -> Value -> Result String Value
@@ -332,7 +312,7 @@ setPropertyInJsonValue key value object =
                                 ( k, v )
                         )
             else
-                ( key, value ) :: list
+                list ++ [ ( key, value ) ]
     in
         case object of
             ObjectValue o ->
