@@ -630,7 +630,7 @@ form id valueUpdateErrors editPropertyName editPath editValue val path =
                             [ val
                                 |> (\v ->
                                         if v == "" then
-                                            "Ø"
+                                            "∅"
                                         else
                                             v
                                    )
