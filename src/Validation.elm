@@ -94,7 +94,7 @@ validate value schema =
                     if isInt (x / multipleOf) then
                         Ok True
                     else
-                        Err <| "Value is not the multiple of " ++ (toString multipleOf)
+                        Err <| ": Value is not the multiple of " ++ (toString multipleOf)
                 )
 
         validateMaximum : Value -> SubSchema -> Result String Bool
@@ -105,7 +105,7 @@ validate value schema =
                     if x <= max then
                         Ok True
                     else
-                        Err <| "Value is above the maximum of " ++ (toString max)
+                        Err <| ": Value is above the maximum of " ++ (toString max)
                 )
 
         validateMinimum : Value -> SubSchema -> Result String Bool
@@ -116,7 +116,7 @@ validate value schema =
                     if x >= min then
                         Ok True
                     else
-                        Err <| "Value is below the minimum of " ++ (toString min)
+                        Err <| ": Value is below the minimum of " ++ (toString min)
                 )
 
         validateExclusiveMaximum : Value -> SubSchema -> Result String Bool
@@ -127,7 +127,7 @@ validate value schema =
                     if x < max then
                         Ok True
                     else
-                        Err <| "Value is not below the exclusive maximum of " ++ (toString max)
+                        Err <| ": Value is not below the exclusive maximum of " ++ (toString max)
                 )
 
         validateExclusiveMinimum : Value -> SubSchema -> Result String Bool
@@ -138,7 +138,7 @@ validate value schema =
                     if x > min then
                         Ok True
                     else
-                        Err <| "Value is not above the exclusive minimum of " ++ (toString min)
+                        Err <| ": Value is not above the exclusive minimum of " ++ (toString min)
                 )
 
         validateMaxLength : Value -> SubSchema -> Result String Bool
@@ -179,7 +179,7 @@ validate value schema =
             let
                 validateItem item schema index =
                     validateSchema item schema
-                        |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ ": " ++ err)
+                        |> Result.mapError (\err -> "Item at index " ++ (toString index) ++ err)
                         |> Result.map (\_ -> index + 1)
             in
                 case schema.items of
@@ -471,7 +471,7 @@ validate value schema =
                         if List.any (\item -> toString item == (toString val)) enum then
                             Ok True
                         else
-                            Err "Value is not present in enum"
+                            Err ": Value is not present in enum"
                 )
 
         validateConst : Value -> SubSchema -> Result String Bool

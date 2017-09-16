@@ -17,7 +17,7 @@ all =
                     buildSchema
                         |> withType "string"
                         |> toSchema
-                        |> Result.andThen (setValue Encode.null "#/" (Encode.string "test"))
+                        |> Result.andThen (setValue Encode.null "#" (Encode.string "test"))
                         |> Expect.equal (Ok <| Encode.string "test")
             , test "string property in object" <|
                 \() ->
