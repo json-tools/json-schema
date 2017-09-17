@@ -5,7 +5,6 @@ import Html exposing (Html)
 import Dom
 import Task
 import Dict exposing (Dict)
-import Set exposing (Set)
 import StyleSheet
     exposing
         ( Styles
@@ -71,7 +70,6 @@ type alias Model =
     , value : Schema
     , jsonValue : JsonValue
     , activeSection : String
-    , editPaths : Set String
     , error : Maybe String
     , valueUpdateErrors : Dict String String
     , editPath : String
@@ -93,7 +91,6 @@ type Msg
     | ActiveSection String
     | EditSchema Value
     | DragOver Bool
-    | ToggleEditing String
     | SetEditPath String String String
     | SetEditPropertyName String (List String) Int
     | StopEditing
@@ -127,8 +124,6 @@ init val location =
         )
         -- activeSection
         location.hash
-        -- editPaths
-        Set.empty
         -- error
         Nothing
         -- valueUpdateErrors
@@ -295,16 +290,6 @@ update msg model =
 
         DragOver isOver ->
             { model | dragOver = isOver } ! []
-
-        ToggleEditing p ->
-            { model
-                | editPaths =
-                    if Set.member p model.editPaths then
-                        Set.remove p model.editPaths
-                    else
-                        Set.insert p model.editPaths
-            }
-                ! []
 
         DeleteMe pointer ->
             deletePath model pointer ! []
@@ -691,26 +676,6 @@ source id model s subpath =
         isEditMode =
             True
 
-        --Set.member subpath model.editPaths
-        toggleEditingButton =
-            column None
-                [ Attributes.alignRight
-                ]
-                [ el None
-                    [ onMouseDown <| ToggleEditing subpath
-                    , inlineStyle [ ( "cursor", "pointer" ), ( "background", "rgba(255,255,255,0.5)" ), ( "color", "royalblue" ) ]
-                    , padding 10
-                    ]
-                  <|
-                    text
-                        (if isEditMode then
-                            ""
-                            --"done editing"
-                         else
-                            "edit"
-                        )
-                ]
-
         val =
             model.jsonValue
                 |> getJsonValue (parseJsonPointer subpath)
@@ -728,14 +693,12 @@ source id model s subpath =
                         model.editPath
                         model.editValue
                         val
-                 --|> el SourceCode [ inlineStyle [ ( "margin", "5px" ) ] ]
                 )
 
         displaySchemaNode =
             editForm
     in
         displaySchemaNode val
-            |> Element.within [ toggleEditingButton ]
 
 
 takeHalfWidth : View -> View
@@ -877,28 +840,6 @@ metaDoc s =
         [ when s.title (\title -> row None [ inlineStyle [ ( "font-size", "18px" ) ] ] [ title |> Element.bold ])
         , when s.description (\description -> paragraph None [ inlineStyle [ ( "font-size", "16px" ) ] ] [ description |> Markdown.toHtml [] |> Element.html ])
         ]
-
-
-
-{-
-   , if s.properties == Nothing && s.definitions == Nothing && Set.member jsonPointer model.editPaths then
-       form model (schema |> Schema.encode) metaSchema jsonPointer ""
-     else
-       empty
--}
-{-
-   if Set.member jsonPointer model.editPaths then
-       case schema of
-           ObjectSchema s ->
-               col10
-                   [ metaDoc s
-                   , form model (schema |> Schema.encode) metaSchema jsonPointer ""
-                   ]
-
-           _ ->
-               empty
-   else
--}
 
 
 documentation : Model -> Int -> String -> Schema -> Schema -> View
