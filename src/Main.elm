@@ -2,7 +2,6 @@ port module Main exposing (main)
 
 import Navigation exposing (Location, programWithFlags)
 import Html exposing (Html)
-import Html.Attributes
 import Dom
 import Task
 import Dict exposing (Dict)
@@ -164,7 +163,6 @@ makeValidSchema jsonValue schema =
     in
         schema
             |> Validation.validate val
-            |> Debug.log "validation result"
             |> Result.map (\_ -> val)
             |> Result.andThen (Decode.decodeValue Schema.decoder)
 
@@ -717,14 +715,6 @@ source id model s subpath =
             model.jsonValue
                 |> getJsonValue (parseJsonPointer subpath)
                 |> Result.withDefault (ObjectValue [])
-
-        schemaSource val =
-            val
-                |> Encode.encode 2
-                |> (\s -> "```json\n" ++ s ++ "```")
-                |> Markdown.toHtml [ Html.Attributes.class "hljs" ]
-                |> Element.html
-                |> el SourceCode [ onDoubleClick <| ToggleEditing subpath ]
 
         editForm val =
             Element.textLayout None
