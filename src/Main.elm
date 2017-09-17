@@ -313,6 +313,7 @@ update msg model =
                 | jsonValue =
                     model.jsonValue
                         |> setPropertyNameInJsonValue model.editPropertyName str
+                        |> Debug.log "here"
                         |> Result.withDefault model.jsonValue
                     {-
                        , activeSection =
@@ -721,29 +722,42 @@ displayOneUnderAnother list =
 schemataDoc : Model -> Int -> Schema -> Maybe Schemata -> Schema -> String -> View
 schemataDoc model level schema s metaSchema subpath =
     let
-        schemataKey level parent s =
+        schemataKey level parent key index =
             let
                 nodeName =
                     if level == 0 then
                         "h1"
                     else
                         "h2"
+
+                ( editPropPath, editIndex ) =
+                    model.editPropertyName
+
+                newPointer =
+                    parent ++ "/" ++ key
+
+                propId =
+                    "docs" ++ "/prop/" ++ newPointer
             in
-                {-
-                   if model.editPropertyName == newSubpath s then
-                       s
-                           |> Element.inputText SchemaHeader
-                               [ onInput <| SetPropertyName
-                               , Attributes.autofocus True
-                               ]
-                   else
-                -}
-                s
-                    |> text
-                    |> el SchemaHeader
-                        [ onDoubleClick <| SetEditPropertyName "" [] 0
-                        ]
-                    |> Element.node nodeName
+                if parent == editPropPath && index == editIndex then
+                    key
+                        |> Element.inputText JsonEditor
+                            [ onInput <| SetPropertyName
+                            , Attributes.size <| String.length key + 1
+                            , onBlur <| SetEditPropertyName "" [] 0
+                            , Attributes.tabindex 0
+                            , Attributes.id propId
+                            ]
+                        |> el None
+                            []
+                else
+                    key
+                        |> text
+                        |> el SchemaHeader
+                            [ onFocus <| SetEditPropertyName propId (parseJsonPointer parent) index
+                            , Attributes.tabindex 0
+                            ]
+                        |> Element.node nodeName
 
         dropAnchor newSubpath =
             el NoOutline
@@ -754,8 +768,8 @@ schemataDoc model level schema s metaSchema subpath =
         newSubpath key =
             subpath ++ key
 
-        heading key =
-            schemataKey level subpath key
+        heading key index =
+            schemataKey level subpath key index
                 |> dropAnchor (newSubpath key)
 
         {-
@@ -779,12 +793,12 @@ schemataDoc model level schema s metaSchema subpath =
                    |> Maybe.map (\( t, _ ) -> typeToString t)
                    |> Maybe.withDefault "any"
         -}
-        printProperty ( key, schema ) =
+        printProperty index ( key, schema ) =
             if model.activeSection == (newSubpath key) then
                 case metaSchema |> for subpath of
                     Just ms ->
                         if level == 0 then
-                            [ heading key
+                            [ heading key index
                               --, displayNextToEachOther
                             , documentation
                                 model
@@ -795,7 +809,7 @@ schemataDoc model level schema s metaSchema subpath =
                             ]
                                 |> col10
                         else
-                            [ heading key
+                            [ heading key index
                               --, displayOneUnderAnother
                             , documentation
                                 model
@@ -814,7 +828,7 @@ schemataDoc model level schema s metaSchema subpath =
         printSchemata (Schemata s) =
             col10
                 [ s
-                    |> List.map printProperty
+                    |> List.indexedMap printProperty
                     |> column None []
                 ]
     in
