@@ -313,7 +313,6 @@ update msg model =
                 | jsonValue =
                     model.jsonValue
                         |> setPropertyNameInJsonValue model.editPropertyName str
-                        |> Debug.log "here"
                         |> Result.withDefault model.jsonValue
                     {-
                        , activeSection =
