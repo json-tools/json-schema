@@ -31,7 +31,7 @@ import Json.Schema.Definitions
         , Items(ArrayOfItems, ItemDefinition, NoItems)
         , SubSchema
         , Schemata(Schemata)
-        , JsonValue(ObjectValue, ArrayValue, OtherValue)
+        , JsonValue(ObjectValue, ArrayValue)
         , blankSchema
         , blankSubSchema
         )

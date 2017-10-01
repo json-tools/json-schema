@@ -12,7 +12,7 @@ module Json.Schema.Definitions
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
-        , JsonValue(ObjectValue, ArrayValue, OtherValue, EmptyValue)
+        , JsonValue(ObjectValue, ArrayValue, BooleanValue, StringValue, NumericValue, NullValue, EmptyValue)
         , jsonValueDecoder
         , encodeJsonValue
         )
@@ -80,7 +80,10 @@ type alias SubSchema =
 type JsonValue
     = ObjectValue (List ( String, JsonValue ))
     | ArrayValue (List JsonValue)
-    | OtherValue Value
+    | BooleanValue Bool
+    | NullValue
+    | NumericValue Float
+    | StringValue String
     | EmptyValue
 
 
@@ -96,7 +99,14 @@ jsonValueDecoder =
             Decode.list (Decode.lazy (\_ -> jsonValueDecoder))
                 |> Decode.map ArrayValue
     in
-        Decode.oneOf [ objectValueDecoder, arrayValueDecoder, Decode.map OtherValue Decode.value ]
+        Decode.oneOf
+            [ objectValueDecoder
+            , arrayValueDecoder
+            , Decode.null NullValue
+            , Decode.string |> Decode.map StringValue
+            , Decode.float |> Decode.map NumericValue
+            , Decode.bool |> Decode.map BooleanValue
+            ]
 
 
 encodeJsonValue : JsonValue -> Value
@@ -114,8 +124,17 @@ encodeJsonValue v =
                 |> List.map encodeJsonValue
                 |> Encode.list
 
-        OtherValue v ->
-            v
+        StringValue s ->
+            Encode.string s
+
+        BooleanValue b ->
+            Encode.bool b
+
+        NullValue ->
+            Encode.null
+
+        NumericValue n ->
+            Encode.float n
 
         EmptyValue ->
             Encode.null
