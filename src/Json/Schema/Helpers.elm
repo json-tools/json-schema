@@ -129,9 +129,8 @@ parseJsonPointer subpath =
 
 makeJsonPointer : List String -> String
 makeJsonPointer path =
-    path
+    ("#" :: path)
         |> String.join "/"
-        |> (++) "#/"
 
 
 for : String -> Schema -> Maybe Schema
