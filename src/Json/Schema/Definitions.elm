@@ -12,7 +12,7 @@ module Json.Schema.Definitions
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
-        , JsonValue(ObjectValue, ArrayValue, BooleanValue, StringValue, NumericValue, NullValue, EmptyValue)
+        , JsonValue(ObjectValue, ArrayValue, BooleanValue, StringValue, NumericValue, NullValue)
         , jsonValueDecoder
         , encodeJsonValue
         )
@@ -84,7 +84,6 @@ type JsonValue
     | NullValue
     | NumericValue Float
     | StringValue String
-    | EmptyValue
 
 
 jsonValueDecoder : Decoder JsonValue
@@ -114,13 +113,11 @@ encodeJsonValue v =
     case v of
         ObjectValue ov ->
             ov
-                |> List.filter (\( _, jv ) -> jv /= EmptyValue)
                 |> List.map (\( key, jv ) -> ( key, encodeJsonValue jv ))
                 |> Encode.object
 
         ArrayValue av ->
             av
-                |> List.filter ((/=) EmptyValue)
                 |> List.map encodeJsonValue
                 |> Encode.list
 
@@ -135,9 +132,6 @@ encodeJsonValue v =
 
         NumericValue n ->
             Encode.float n
-
-        EmptyValue ->
-            Encode.null
 
 
 blankSchema : Schema
