@@ -36,11 +36,50 @@ defaultSettings =
         100
 
 
-randomString : Int -> Int -> Generator String
-randomString minLength maxLength =
-    Random.int minLength maxLength
-        |> Random.andThen (flip Random.list lowercaseLetter)
-        |> Random.map (String.fromList)
+randomString : Int -> Int -> Maybe String -> Generator String
+randomString minLength maxLength format =
+    case format of
+        Just "uri" ->
+            Random.bool
+                |> Random.map
+                    (\x ->
+                        if x then
+                            "http://example.com/"
+                        else
+                            "https://github.com"
+                    )
+
+        Just "email" ->
+            Random.int 1000 9999
+                |> Random.map
+                    (\x -> "rcp" ++ (toString x) ++ "@receipt.to")
+
+        Just "host-name" ->
+            Random.bool
+                |> Random.map
+                    (\x ->
+                        if x then
+                            "example.com"
+                        else
+                            "github.com"
+                    )
+
+        Just "date-time" ->
+            Random.bool
+                |> Random.map (\_ -> "2018-01-01T09:00:00Z")
+
+        Just "time" ->
+            Random.bool
+                |> Random.map (\_ -> "09:00:00")
+
+        Just "date" ->
+            Random.bool
+                |> Random.map (\_ -> "2018-01-01")
+
+        _ ->
+            Random.int minLength maxLength
+                |> Random.andThen (flip Random.list lowercaseLetter)
+                |> Random.map (String.fromList)
 
 
 lowercaseLetter : Generator Char
@@ -96,7 +135,7 @@ randomObject settings rootSchema props required =
                             )
             )
             (Random.bool |> Random.map (\_ -> []))
-        |> Random.map (Encode.object)
+        |> Random.map (List.reverse >> Encode.object)
 
 
 randomList : GeneratorSettings -> Schema -> Int -> Int -> Schema -> Generator Value
@@ -149,6 +188,7 @@ valueGenerator settings rootSchema schema =
                     randomString
                         (os.minLength |> Maybe.withDefault 0)
                         (os.maxLength |> Maybe.withDefault settings.defaultStringLengthLimit)
+                        os.format
                         |> Random.map Encode.string
                         |> Just
 
