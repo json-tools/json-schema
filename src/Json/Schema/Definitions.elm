@@ -12,9 +12,6 @@ module Json.Schema.Definitions
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
-        , JsonValue(ObjectValue, ArrayValue, BooleanValue, StringValue, NumericValue, NullValue)
-        , jsonValueDecoder
-        , encodeJsonValue
         )
 
 import Util exposing (resultToDecoder, foldResults, isInt)
@@ -75,63 +72,6 @@ type alias SubSchema =
     , oneOf : Maybe (List Schema)
     , not : Maybe Schema
     }
-
-
-type JsonValue
-    = ObjectValue (List ( String, JsonValue ))
-    | ArrayValue (List JsonValue)
-    | BooleanValue Bool
-    | NullValue
-    | NumericValue Float
-    | StringValue String
-
-
-jsonValueDecoder : Decoder JsonValue
-jsonValueDecoder =
-    let
-        objectValueDecoder =
-            Decode.keyValuePairs (Decode.lazy (\_ -> jsonValueDecoder))
-                |> Decode.andThen (List.reverse >> succeed)
-                |> Decode.map ObjectValue
-
-        arrayValueDecoder =
-            Decode.list (Decode.lazy (\_ -> jsonValueDecoder))
-                |> Decode.map ArrayValue
-    in
-        Decode.oneOf
-            [ objectValueDecoder
-            , arrayValueDecoder
-            , Decode.null NullValue
-            , Decode.string |> Decode.map StringValue
-            , Decode.float |> Decode.map NumericValue
-            , Decode.bool |> Decode.map BooleanValue
-            ]
-
-
-encodeJsonValue : JsonValue -> Value
-encodeJsonValue v =
-    case v of
-        ObjectValue ov ->
-            ov
-                |> List.map (\( key, jv ) -> ( key, encodeJsonValue jv ))
-                |> Encode.object
-
-        ArrayValue av ->
-            av
-                |> List.map encodeJsonValue
-                |> Encode.list
-
-        StringValue s ->
-            Encode.string s
-
-        BooleanValue b ->
-            Encode.bool b
-
-        NullValue ->
-            Encode.null
-
-        NumericValue n ->
-            Encode.float n
 
 
 blankSchema : Schema
