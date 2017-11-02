@@ -14,17 +14,41 @@ module Json.Schema.Definitions
         , Dependency(ArrayPropNames, PropSchema)
         )
 
+{-|
+
+This module contains low-level structures of json schema. Normally you wouldn't need to use any of those. Limiting usage of this module only to decoder and encoder. If you're constructing schema in elm code, just use Json.Schema.Builder instead.
+
+# Definitions
+
+@docs Schema, SubSchema, Schemata, Items, Dependency, Type, SingleType, blankSchema, blankSubSchema
+
+# Transforms
+
+@docs decoder, encode
+
+# Misc
+
+@docs stringToType
+
+-}
+
 import Util exposing (resultToDecoder, foldResults, isInt)
 import Json.Decode.Pipeline exposing (decode, optional)
 import Json.Encode as Encode
 import Json.Decode as Decode exposing (Value, Decoder, succeed, fail, lazy, nullable, andThen, string, float, int, bool, list, value)
 
 
+{-|
+Schema can be either boolean or actual object containing validation and meta properties
+-}
 type Schema
     = BooleanSchema Bool
     | ObjectSchema SubSchema
 
 
+{-|
+This object holds all draft-6 schema properties
+-}
 type alias SubSchema =
     { type_ : Type
     , id : Maybe String
@@ -74,11 +98,38 @@ type alias SubSchema =
     }
 
 
+{-|
+List of schema-properties used in properties, definitions and patternProperties
+-}
+type Schemata
+    = Schemata (List ( String, Schema ))
+
+
+{-|
+Items definition
+-}
+type Items
+    = NoItems
+    | ItemDefinition Schema
+    | ArrayOfItems (List Schema)
+
+
+{-|
+-}
+type Dependency
+    = ArrayPropNames (List String)
+    | PropSchema Schema
+
+
+{-|
+-}
 blankSchema : Schema
 blankSchema =
     ObjectSchema blankSubSchema
 
 
+{-|
+-}
 blankSubSchema : SubSchema
 blankSubSchema =
     { type_ = AnyType
@@ -121,25 +172,12 @@ blankSubSchema =
     }
 
 
-type Schemata
-    = Schemata (List ( String, Schema ))
-
-
-type Items
-    = NoItems
-    | ItemDefinition Schema
-    | ArrayOfItems (List Schema)
-
-
-type Dependency
-    = ArrayPropNames (List String)
-    | PropSchema Schema
-
-
 type RowEncoder a
     = RowEncoder (Maybe a) String (a -> Value)
 
 
+{-|
+-}
 encode : Schema -> Value
 encode s =
     let
@@ -279,6 +317,8 @@ encode s =
                     |> Encode.object
 
 
+{-|
+-}
 decoder : Decoder Schema
 decoder =
     let
@@ -416,6 +456,9 @@ nonNegativeInt =
             )
 
 
+{-|
+Type property in json schema can be a single type or array of them, this type definition wraps up this complexity, also it introduces concept of nullable type, which is array of "null" type and a single type speaking JSON schema language, but also a useful concept to treat it separately from list of types.
+-}
 type Type
     = AnyType
     | SingleType SingleType
@@ -423,6 +466,8 @@ type Type
     | UnionType (List SingleType)
 
 
+{-|
+-}
 type SingleType
     = IntegerType
     | NumberType
@@ -454,6 +499,16 @@ multipleTypesDecoder lst =
                 |> resultToDecoder
 
 
+{-|
+Attempt to parse string into a single type, it recognises the following list of types:
+- integer
+- number
+- string
+- boolean
+- array
+- object
+- null
+-}
 stringToType : String -> Result String SingleType
 stringToType s =
     case s of
