@@ -7,7 +7,7 @@
         "./src"
     ],
     "exposed-modules": [
-        "Json.Schema",
+        "Json.Schema.Definitions",
         "Json.Schema.Builder"
     ],
     "dependencies": {
