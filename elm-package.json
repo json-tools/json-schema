@@ -1,7 +1,7 @@
 {
     "version": "1.0.0",
     "summary": "JSON Schema for elm",
-    "repository": "https://github.com/1602/elm-json-schema.git",
+    "repository": "https://github.com/1602/json-schema.git",
     "license": "BSD3",
     "source-directories": [
         "./src"
