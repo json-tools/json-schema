@@ -4,8 +4,7 @@ import Json.Decode as Decode exposing (Value, Decoder)
 import Json.Encode as Encode exposing (int, float, string)
 import Dict
 import Regex
-import List.Extra
-import Util exposing (isInt)
+import Util exposing (isInt, isUnique)
 import Ref exposing (resolveReference)
 import Json.Schema.Definitions
     exposing
@@ -628,17 +627,9 @@ validate value schema =
                 |> List.filter (\( k, _ ) -> Regex.contains (Regex.regex pattern) k)
 
         isUniqueItems list =
-            let
-                strings =
-                    List.map toString list
-
-                originalLength =
-                    List.length list
-            in
-                strings
-                    |> List.Extra.unique
-                    |> List.length
-                    |> (==) originalLength
+            list
+                |> List.map toString
+                |> isUnique
 
         when propOf decoder fn value schema =
             case propOf schema of

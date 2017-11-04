@@ -12,7 +12,7 @@ import Json.Schema.Definitions
 import Json.Encode as Encode exposing (Value)
 import Random exposing (Generator, Seed)
 import Char
-import List.Extra exposing (uncons)
+import Util exposing (getAt, uncons)
 
 
 type alias GeneratorSettings =
@@ -97,7 +97,7 @@ randomItemFromList ( head, tail ) =
             |> List.length
             |> (+) -1
             |> Random.int 0
-            |> Random.map (flip List.Extra.getAt list >> (Maybe.withDefault head))
+            |> Random.map (flip getAt list >> (Maybe.withDefault head))
 
 
 nullGenerator : Generator Value
