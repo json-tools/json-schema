@@ -8,6 +8,7 @@
     ],
     "exposed-modules": [
         "Json.Schema",
+        "Json.Schema.Random",
         "Json.Schema.Builder",
         "Json.Schema.Definitions"
     ],

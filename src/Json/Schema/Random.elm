@@ -1,5 +1,20 @@
 module Json.Schema.Random exposing (value, GeneratorSettings, defaultSettings)
 
+{-|
+Generate random values based on JSON Schema.
+
+Experimental module.
+
+# Generator
+
+@docs value
+
+# Settings
+
+@docs GeneratorSettings, defaultSettings
+
+-}
+
 import Json.Schema.Helpers exposing (resolve)
 import Json.Schema.Definitions
     exposing
@@ -15,6 +30,13 @@ import Char
 import Util exposing (getAt, uncons)
 
 
+{-|
+Customize generator behaviour using following parameters:
+- optionalPropertyProbability : float from 0 to 1, which affects used while generating object with optional property, default 0.5
+- degradationMultiplier : used in nested objects to affect probability of optional property appearance (must have for recursive objects), default 0.2
+- defaultListLengthLimit : how many items in array to generate when limit is not set by a schema, default 100
+- defaultStringLengthLimit : how many characters in random string to generate when limit is not set by a schema, default 100
+-}
 type alias GeneratorSettings =
     { optionalPropertyProbability : Float
     , degradationMultiplier : Float
@@ -23,6 +45,9 @@ type alias GeneratorSettings =
     }
 
 
+{-|
+Defaults for GeneratorSettings
+-}
 defaultSettings : GeneratorSettings
 defaultSettings =
     GeneratorSettings
@@ -145,6 +170,21 @@ randomList settings rootSchema minItems maxItems schema =
         |> Random.map (Encode.list)
 
 
+{-|
+Default value generator.
+
+    buildSchema
+        |> withProperties
+            [ ( "foo", buildSchema |> withType "integer" ) ]
+        |> toSchema
+        |> Result.withDefault (blankSchema)
+        |> value defaultSettings
+        |> flip Random.step (Random.initialSeed 2)
+        |> \( v, _ ) ->
+            Expect.equal v (Encode.object [ ( "foo", Encode.int 688281600 ) ])
+
+See tests for more examples.
+-}
 value : GeneratorSettings -> Schema -> Generator Value
 value settings s =
     valueGenerator settings s s
