@@ -16,13 +16,18 @@ module Json.Schema.Definitions
 
 {-|
 
-This module contains low-level structures of json schema. Normally you wouldn't need to use any of those. Limiting usage of this module only to decoder and encoder. If you're constructing schema in elm code, just use Json.Schema.Builder instead.
+This module contains low-level structures JSON Schema build from.
+Normally you wouldn't need to use any of those definitions.
+
+If you really need this low-level API you might need [JSON Schema spec](http://json-schema.org/documentation.html) as guidance.
+
+Feel free to open [issue](https://github.com/1602/json-schema) to describe your use-case, it will affect development roadmap of this library.
 
 # Definitions
 
 @docs Schema, SubSchema, Schemata, Items, Dependency, Type, SingleType, blankSchema, blankSubSchema
 
-# Transforms
+# Decoding / encoding
 
 @docs decoder, encode
 
@@ -106,7 +111,7 @@ type Schemata
 
 
 {-|
-Items definition
+Items definition.
 -}
 type Items
     = NoItems
@@ -115,13 +120,14 @@ type Items
 
 
 {-|
+Dependency definition.
 -}
 type Dependency
     = ArrayPropNames (List String)
     | PropSchema Schema
 
 
-{-|
+{-| Create blank JSON Schema `{}`.
 -}
 blankSchema : Schema
 blankSchema =
