@@ -1,6 +1,6 @@
-# JSON Schema for elm
+# JSON Schema decoder and validator for elm
 
-[![Build Status](https://travis-ci.org/1602/elm-json-schema.svg?branch=master)](https://travis-ci.org/1602/elm-json-schema)
+[![Build Status](https://travis-ci.org/1602/json-schema.svg?branch=master)](https://travis-ci.org/1602/json-schema)
 
 > JSON Schema is a vocabulary that allows you to annotate and validate JSON documents. (http://json-schema.org/)
 
