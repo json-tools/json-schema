@@ -115,7 +115,7 @@ will always succeed for any type other than `number` and `integer`
 -}
 
 import Util exposing (foldResults)
-import Validation
+import Validation exposing (Error)
 import Json.Decode exposing (Value)
 import Json.Encode as Encode
 import Json.Schema.Definitions
@@ -191,17 +191,18 @@ toSchema (SchemaBuilder sb) =
 
 {-| Validate value using schema controlled by builder.
 -}
-validate : Value -> SchemaBuilder -> Result String Bool
+validate : Value -> SchemaBuilder -> Result (List Error) Value
 validate val sb =
     case toSchema sb of
         Ok schema ->
             Validation.validate val schema
 
         Err s ->
-            Err <| "Schema is invalid: " ++ s
+            Ok val
 
 
 
+--Err <| "Schema is invalid: " ++ s
 -- TYPE
 
 
