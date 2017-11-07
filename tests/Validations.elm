@@ -654,7 +654,7 @@ all =
                             , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int -1)
-                        |> Expect.equal (Err [ Error [] OneOf ])
+                        |> Expect.equal (Err [ Error [] OneOfNoneSucceed ])
             , test "failure because of success for both" <|
                 \() ->
                     buildSchema
@@ -663,7 +663,7 @@ all =
                             , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int 1)
-                        |> Expect.equal (Err [ Error [] OneOf ])
+                        |> Expect.equal (Err [ Error [] <| OneOfManySucceed 2 ])
             ]
         , describe "boolean schema"
             [ test "true always validates any value" <|

@@ -39,6 +39,7 @@ type alias JsonPath =
 
 
 {-|
+Attempt to validate returns `Result` with list of `Error` instances as an `Err`.
 -}
 type alias Error =
     { jsonPath : JsonPath
@@ -47,6 +48,20 @@ type alias Error =
 
 
 {-|
+Validation errors with details. The rule of parametrized errors like `Maximum` is that first parameter is always expected value, second parameter is actual value. Most of errors named after respective validation properties, only exception from this rule for cases like `AlwaysFail` which doesn't have keyword (this is result of boolean schema false), or `AdditionalPropertiesDisallowed` which represent subset of `.additionalProperties` validation when its value equals to `false` and additional property is present.
+
+There are keywords in JSON Schema which doesn't have their dedicated error codes:
+
+- items
+- additionalItems
+- properties
+- patternProperties
+- dependencies
+- allOf
+- oneOf
+
+because the nature of these errors is to go deeper into the nested schema. Current implementation of validation only creates errors for leaves in Value, not for nodes, e.g. if one of properties fail validation, error list will contain error for property but not for the object containing it. This decision is made to reduce noise in errors, since it is kind of obvious that all parent objects containing invalid properties are also invalid, and this information can be derived from json path if needed.
+
 -}
 type ValidationError
     = MultipleOf Float Float
@@ -57,7 +72,6 @@ type ValidationError
     | MaxLength Int Int
     | MinLength Int Int
     | Pattern String String
-    | Items
     | MaxItems Int Int
     | MinItems Int Int
     | UniqueItems
@@ -65,17 +79,14 @@ type ValidationError
     | MaxProperties Int Int
     | MinProperties Int Int
     | Required (List String)
-    | Properties
-    | PatternProperties
     | AdditionalPropertiesDisallowed
-    | Dependencies
     | InvalidPropertyName (List Error)
     | Enum
     | Const
     | InvalidType String
-    | AllOf
     | AnyOf
-    | OneOf
+    | OneOfNoneSucceed
+    | OneOfManySucceed Int
     | Not
     | Ref
     | UnresolvableReference
@@ -705,10 +716,10 @@ validate value schema =
                                 Ok val
 
                             0 ->
-                                Err [ Error jsonPath OneOf ]
+                                Err [ Error jsonPath OneOfNoneSucceed ]
 
                             len ->
-                                Err [ Error jsonPath OneOf ]
+                                Err [ Error jsonPath <| OneOfManySucceed len ]
                 )
 
         validateNot : JsonPath -> Value -> SubSchema -> Result (List Error) Value
