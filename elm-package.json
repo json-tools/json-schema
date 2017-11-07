@@ -10,6 +10,7 @@
         "Json.Schema",
         "Json.Schema.Random",
         "Json.Schema.Builder",
+        "Json.Schema.Validation",
         "Json.Schema.Definitions"
     ],
     "dependencies": {
