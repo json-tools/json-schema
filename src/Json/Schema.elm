@@ -20,16 +20,16 @@ Use `fromValue` or `fromString` methods if you receive schema from external sour
 
 -}
 
-import Validation
 import Json.Schema.Definitions exposing (Schema, decoder)
+import Json.Schema.Validation exposing (Error, validate)
 import Json.Decode exposing (Value, decodeValue, decodeString)
 
 
 {-| Validate value against JSON Schema. Returns True Result if case if object is valid, or string error otherwise.
 -}
-validateValue : Value -> Schema -> Result String Bool
+validateValue : Value -> Schema -> Result (List Error) Value
 validateValue =
-    Validation.validate
+    validate
 
 
 {-| Construct JSON Schema from JSON value

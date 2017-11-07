@@ -115,7 +115,7 @@ will always succeed for any type other than `number` and `integer`
 -}
 
 import Util exposing (foldResults)
-import Validation exposing (Error)
+import Json.Schema.Validation as Validation exposing (Error)
 import Json.Decode exposing (Value)
 import Json.Encode as Encode
 import Json.Schema.Definitions

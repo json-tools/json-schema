@@ -1,4 +1,16 @@
-module Validation exposing (Error, ValidationError(..), validate)
+module Json.Schema.Validation exposing (Error, ValidationError(..), validate, JsonPath)
+
+{-|
+
+# Validate
+
+@docs validate
+
+# Validation Errors
+
+@docs Error, ValidationError, JsonPath
+
+-}
 
 import Json.Decode as Decode exposing (Value, Decoder)
 import Json.Encode as Encode exposing (int, float, string)
@@ -20,16 +32,22 @@ import Json.Schema.Definitions
         )
 
 
+{-|
+-}
 type alias JsonPath =
     List String
 
 
+{-|
+-}
 type alias Error =
     { jsonPath : JsonPath
     , error : ValidationError
     }
 
 
+{-|
+-}
 type ValidationError
     = MultipleOf Float Float
     | Maximum Float Float
@@ -413,6 +431,7 @@ validate value schema =
                 (Decode.keyValuePairs Decode.value)
                 (\properties obj ->
                     obj
+                        |> List.reverse
                         |> List.map
                             (\( key, value ) ->
                                 case getSchema key properties of

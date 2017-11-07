@@ -40,9 +40,9 @@ import Json.Schema.Builder as JSB
         )
 import Json.Encode as Encode exposing (int)
 import Json.Decode as Decode exposing (decodeValue)
-import Validation exposing (Error, ValidationError(..))
+import Json.Schema.Validation as Validation exposing (Error, ValidationError(..))
 import Json.Schema.Definitions exposing (blankSchema)
-import Test exposing (Test, describe, test)
+import Test exposing (Test, describe, test, only)
 import Expect
 
 
@@ -680,6 +680,22 @@ all =
                         |> Result.withDefault blankSchema
                         |> Validation.validate (int 1)
                         |> Expect.equal (Err [ Error [] AlwaysFail ])
+            ]
+        , describe "multiple errors"
+            [ test "validation should return multiple errors" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "foo", buildSchema |> withMaximum 1 )
+                            , ( "bar", buildSchema |> withMaximum 2 )
+                            ]
+                        |> JSB.validate (Encode.object [ ( "foo", int 7 ), ( "bar", int 28 ) ])
+                        |> Expect.equal
+                            (Err
+                                [ Error [ "foo" ] <| Maximum 1 7
+                                , Error [ "bar" ] <| Maximum 2 28
+                                ]
+                            )
             ]
         ]
 
