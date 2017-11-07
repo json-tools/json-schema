@@ -2,9 +2,9 @@ module Json.Schema exposing (fromValue, fromString, validateValue)
 
 {-|
 This library provides bunch of utility methods to work with JSON values using
-schemas defined in JSON Schema format.
+schemas defined in [JSON Schema](http://json-schema.org/) format.
 
-Currently it allows to construct schemata (draft-6), validate values and generate random
+Currently it allows to construct schemata ([draft-6](https://github.com/json-schema-org/json-schema-spec/blob/draft-06/schema.json)), validate values and generate random
 values based on schema (very experimental feature).
 It supports local references, but doesn't support remote references.
 

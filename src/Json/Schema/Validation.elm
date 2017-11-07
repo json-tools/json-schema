@@ -33,6 +33,13 @@ import Json.Schema.Definitions
 
 
 {-|
+Path in json value.
+
+A few notes:
+
+- empty list represents root
+- indices of array items are integers encoded as string
+
 -}
 type alias JsonPath =
     List String
@@ -50,7 +57,7 @@ type alias Error =
 {-|
 Validation errors with details. The rule of parametrized errors like `Maximum` is that first parameter is always expected value, second parameter is actual value. Most of errors named after respective validation properties, only exception from this rule for cases like `AlwaysFail` which doesn't have keyword (this is result of boolean schema false), or `AdditionalPropertiesDisallowed` which represent subset of `.additionalProperties` validation when its value equals to `false` and additional property is present.
 
-There are keywords in JSON Schema which doesn't have their dedicated error codes:
+There are keywords in JSON Schema which don't have their dedicated error codes:
 
 - items
 - additionalItems
@@ -60,7 +67,9 @@ There are keywords in JSON Schema which doesn't have their dedicated error codes
 - allOf
 - oneOf
 
-because the nature of these errors is to go deeper into the nested schema. Current implementation of validation only creates errors for leaves in Value, not for nodes, e.g. if one of properties fail validation, error list will contain error for property but not for the object containing it. This decision is made to reduce noise in errors, since it is kind of obvious that all parent objects containing invalid properties are also invalid, and this information can be derived from json path if needed.
+The reason for this is the nature of these errors is to go deeper into the nested Schema and Value.
+
+Current implementation of validation only creates errors for leaves of the Value, not for nodes, e.g. if one of the properties fails a validation, error list will contain an error for the property but not for the object containing it. This decision is made to reduce noise in errors, since it is obvious that all the parent objects containing invalid properties are also invalid, and this information can be derived from json path if needed.
 
 -}
 type ValidationError
