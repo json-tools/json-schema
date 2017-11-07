@@ -22,10 +22,6 @@ JSON Schema allows you to specify some meta data like title, description, exampl
 
 Instead of writing validation code as part of your frontend app you could describe it in a declarative way as JSON schema, so that you can focus on what your are validating rather than how. Combined with form generation this is a great time-saver while building interfaces.
 
-### ✋ decoding json values into elm types
-
-Some basic decoding of JSON values into elm records (no union types and fluffy structures), helpers to create JSON Schema by data, and elm code by JSON Schema.
-
 ## Current status of this project
 
 - [x] decode draft 6 of json-schema
@@ -36,4 +32,3 @@ Some basic decoding of JSON values into elm records (no union types and fluffy s
 - [x] demo: json editor
 - [ ] demo: docs generator
 - [ ] demo: schema builder
-- [ ] demo: decoding and schema inferring
