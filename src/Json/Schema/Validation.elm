@@ -4,6 +4,9 @@ module Json.Schema.Validation exposing (Error, ValidationError(..), validate, Js
 
 # Validate
 
+Validation fails with list of errors, one for each invalid leaf of the value object.
+When validation succeeds it also returns value being validated. Currently this value is the same as initial value, later version will allow options to be supplied in order to normalize value along the validation (e.g. apply defaults, remove additional properties, coerce types)
+
 @docs validate
 
 # Validation Errors
