@@ -625,7 +625,12 @@ all =
                             , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int -1)
-                        |> Expect.equal (Err [ Error [] AnyOf ])
+                        |> Expect.equal
+                            (Err
+                                [ Error [] <| Minimum 0 -1
+                                , Error [] <| Enum
+                                ]
+                            )
             ]
         , describe "oneOf"
             [ test "success for enum" <|

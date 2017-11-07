@@ -96,7 +96,6 @@ type ValidationError
     | Enum
     | Const
     | InvalidType String
-    | AnyOf
     | OneOfNoneSucceed
     | OneOfManySucceed Int
     | Not
@@ -707,16 +706,23 @@ validate value schema =
                 Decode.value
                 (\anyOf val ->
                     let
-                        validSubschema schema =
-                            validateSchema jsonPath val schema == (Ok val)
+                        validationResults =
+                            anyOf
+                                |> List.map (validateSchema jsonPath val)
 
-                        isValid =
-                            List.any validSubschema anyOf
+                        isOk res =
+                            case res of
+                                Ok _ ->
+                                    True
+
+                                _ ->
+                                    False
                     in
-                        if isValid then
+                        if List.any isOk validationResults then
                             Ok val
                         else
-                            Err [ Error jsonPath AnyOf ]
+                            validationResults
+                                |> concatErrors (Ok val)
                 )
 
         validateOneOf : JsonPath -> Value -> SubSchema -> Result (List Error) Value
