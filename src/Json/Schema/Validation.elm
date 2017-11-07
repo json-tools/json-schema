@@ -19,7 +19,7 @@ import Json.Decode as Decode exposing (Value, Decoder)
 import Json.Encode as Encode exposing (int, float, string)
 import Dict
 import Regex
-import Util exposing (isInt, isUnique)
+import Util exposing (isInt, indexOfFirstDuplicate)
 import Ref exposing (resolveReference)
 import Json.Schema.Definitions
     exposing
@@ -86,7 +86,7 @@ type ValidationError
     | Pattern String String
     | MaxItems Int Int
     | MinItems Int Int
-    | UniqueItems
+    | UniqueItems Value
     | Contains
     | MaxProperties Int Int
     | MinProperties Int Int
@@ -369,10 +369,15 @@ validate value schema =
             when .uniqueItems
                 (Decode.list Decode.value)
                 (\uniqueItems list ->
-                    if not uniqueItems || isUniqueItems list then
+                    if not uniqueItems then
                         Ok True
                     else
-                        Err [ Error jsonPath UniqueItems ]
+                        case findDuplicateItem list of
+                            Just v ->
+                                Err [ Error jsonPath <| UniqueItems v ]
+
+                            Nothing ->
+                                Ok True
                 )
 
         validateContains : JsonPath -> Value -> SubSchema -> Result (List Error) Value
@@ -766,10 +771,18 @@ validate value schema =
             props
                 |> List.filter (\( k, _ ) -> Regex.contains (Regex.regex pattern) k)
 
-        isUniqueItems list =
+        findDuplicateItem list =
             list
-                |> List.map toString
-                |> isUnique
+                |> List.map (Encode.encode 0)
+                |> indexOfFirstDuplicate
+                |> (\x ->
+                        if x == -1 then
+                            Nothing
+                        else
+                            list
+                                |> List.drop x
+                                |> List.head
+                   )
 
         when propOf decoder fn value schema =
             case propOf schema of

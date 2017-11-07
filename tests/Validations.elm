@@ -283,7 +283,7 @@ all =
                     buildSchema
                         |> withUniqueItems True
                         |> validate (Encode.list [ int 1, int 1 ])
-                        |> Expect.equal (Err [ Error [] UniqueItems ])
+                        |> Expect.equal (Err [ Error [] <| UniqueItems (int 1) ])
             ]
         , describe "contains"
             [ test "success" <|

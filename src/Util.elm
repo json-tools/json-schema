@@ -1,4 +1,4 @@
-module Util exposing (foldResults, resultToDecoder, isInt, uncons, getAt, isUnique)
+module Util exposing (foldResults, resultToDecoder, isInt, uncons, getAt, isUnique, indexOfFirstDuplicate)
 
 import Json.Decode exposing (Decoder, succeed, fail)
 
@@ -44,12 +44,23 @@ getAt index =
 
 isUnique : List comparable -> Bool
 isUnique list =
-    case list of
-        head :: tail ->
-            tail
-                |> List.member head
-                |> not
-                |> (\x -> x && (isUnique tail))
+    indexOfFirstDuplicate list == -1
 
-        _ ->
-            True
+
+indexOfFirstDuplicate : List comparable -> Int
+indexOfFirstDuplicate list =
+    list
+        |> List.foldl
+            (\x ( index, res, sublist ) ->
+                ( index + 1
+                , if res > -1 then
+                    res
+                  else if List.member x sublist then
+                    index
+                  else
+                    -1
+                , sublist |> List.drop 1
+                )
+            )
+            ( 0, -1, list |> List.drop 1 )
+        |> \( _, r, _ ) -> r
