@@ -418,6 +418,15 @@ all =
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
                         |> Expect.equal (Err [ Error [ "bar" ] <| Maximum 20 200 ])
+            , test "success: boolean false" <|
+                \() ->
+                    buildSchema
+                        |> withPatternProperties
+                            [ ( "o{2}", buildSchema |> withMaximum 100 )
+                            ]
+                        |> withAdditionalProperties (boolSchema False)
+                        |> JSB.validate (Encode.object [ ( "foo", int 100 ) ])
+                        |> expectOk
             , test "failure: boolean false" <|
                 \() ->
                     buildSchema
@@ -426,7 +435,7 @@ all =
                             ]
                         |> withAdditionalProperties (boolSchema False)
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
-                        |> Expect.equal (Err [ Error [] AdditionalPropertiesDisallowed ])
+                        |> Expect.equal (Err [ Error [] <| AdditionalPropertiesDisallowed [ "bar" ] ])
             ]
         , describe "dependencies"
             [ test "success" <|
