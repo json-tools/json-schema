@@ -91,7 +91,7 @@ type ValidationError
     | MaxProperties Int Int
     | MinProperties Int Int
     | Required (List String)
-    | AdditionalPropertiesDisallowed
+    | AdditionalPropertiesDisallowed (List String)
     | InvalidPropertyName (List Error)
     | Enum
     | Const
@@ -530,8 +530,10 @@ validate value schema =
                                         BooleanSchema bs ->
                                             if bs then
                                                 Ok v
+                                            else if List.isEmpty obj then
+                                                Ok v
                                             else
-                                                Err [ Error jsonPath <| AdditionalPropertiesDisallowed ]
+                                                Err [ Error jsonPath <| AdditionalPropertiesDisallowed <| List.map (\( name, _ ) -> name) obj ]
 
                                         ObjectSchema _ ->
                                             obj
