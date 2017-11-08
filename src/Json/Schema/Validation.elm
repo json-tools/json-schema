@@ -99,8 +99,7 @@ type ValidationError
     | OneOfNoneSucceed
     | OneOfManySucceed Int
     | Not
-    | Ref
-    | UnresolvableReference
+    | UnresolvableReference String
     | AlwaysFail
 
 
@@ -763,10 +762,12 @@ validate value schema =
             when .ref
                 Decode.value
                 (\ref val ->
-                    ref
-                        |> resolveReference rootSchema
-                        |> Result.fromMaybe [ Error jsonPath UnresolvableReference ]
-                        |> Result.andThen (validateSchema jsonPath val)
+                    case ref |> resolveReference rootSchema of
+                        Just schema ->
+                            validateSchema jsonPath val schema
+
+                        Nothing ->
+                            Err [ Error jsonPath <| UnresolvableReference ref ]
                 )
 
         getSchema key (Schemata props) =
