@@ -1,3 +1,7 @@
+## 3.0.0
+
+- changed validation errors (added more info to facilitate error messages building)
+
 ## 2.0.0
 
 Multiple errors with details returned by validation:
