@@ -17,6 +17,7 @@ When validation succeeds it also returns value being validated. Currently this v
 
 import Json.Decode as Decode exposing (Value, Decoder)
 import Json.Encode as Encode exposing (int, float, string)
+import String.UTF32 as UTF32
 import Dict
 import Regex
 import Util exposing (isInt, indexOfFirstDuplicate)
@@ -248,7 +249,7 @@ validate value schema =
                 (\maxLength str ->
                     let
                         x =
-                            String.length str
+                            UTF32.length str
                     in
                         if x <= maxLength then
                             Ok True
@@ -263,9 +264,9 @@ validate value schema =
                 (\minLength str ->
                     let
                         x =
-                            String.length str
+                            UTF32.length str
                     in
-                        if String.length str >= minLength then
+                        if x >= minLength then
                             Ok True
                         else
                             Err [ Error jsonPath <| MinLength minLength x ]
