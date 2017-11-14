@@ -358,7 +358,7 @@ decoder =
                 |>
                     optional "title" (nullable string) Nothing
                 |> optional "description" (nullable string) Nothing
-                |> optional "default" (nullable value) Nothing
+                |> optional "default" (value |> Decode.map Just) Nothing
                 |> optional "examples" (nullable <| list value) Nothing
                 |> optional "definitions" (nullable <| lazy <| \_ -> schemataDecoder) Nothing
                 -- number
@@ -391,7 +391,7 @@ decoder =
                 |> optional "dependencies" (lazy (\_ -> dependenciesDecoder)) []
                 |> optional "propertyNames" (nullable <| lazy (\_ -> decoder)) Nothing
                 |> optional "enum" (nullable nonEmptyUniqueArrayOfValuesDecoder) Nothing
-                |> optional "const" (nullable value) Nothing
+                |> optional "const" (value |> Decode.map Just) Nothing
                 |> optional "allOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
                 |> optional "anyOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
                 |> optional "oneOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
