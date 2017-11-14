@@ -61,8 +61,7 @@ examine schemaSource dataSource outcome =
                     Expect.fail "Unexpected success"
 
                 Err _ ->
-                    Expect.pass
-`
+                    Expect.pass`;
 }
 
 function body(name, tests) {
@@ -70,17 +69,17 @@ function body(name, tests) {
         [ ` +
     tests.map(({filename, suite}) => {
         return `describe "${filename}"
-             [ ${printSuite(suite).join('\n        , ')} ]`
-    }).join('\n            , ')
-    + ']';
+            [ ${printSuite(suite).join('\n            , ')}
+            ]`
+    }).join('\n        , ')
+    + '\n        ]';
 }
 
 function printSuite(cases) {
     return cases.map(({description, schema, tests}) => {
         return `describe "suite: ${description}"
                 [ ${printCases(schema, tests).join('\n                , ')}
-                ]
-            `
+                ]`
         ;
     });
 }
