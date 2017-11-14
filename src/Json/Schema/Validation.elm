@@ -481,6 +481,14 @@ validate value schema =
                 )
                 v
 
+        {-
+           Validation succeeds if, for each instance name that matches any regular
+           expressions that appear as a property name in this keyword's value, the
+           child instance for that name successfully validates against each schema
+           that corresponds to a matching regular expression.
+
+           Excerpt from http://json-schema.org/latest/json-schema-validation.html#rfc.section.6.19
+        -}
         validatePatternProperties : JsonPath -> Value -> SubSchema -> Result (List Error) Value
         validatePatternProperties jsonPath v =
             when .patternProperties
@@ -488,19 +496,23 @@ validate value schema =
                 (\(Schemata patternProperties) obj ->
                     List.foldl
                         (\( pattern, schema ) res ->
-                            if res == (Ok v) then
-                                obj
-                                    |> getPropsByPattern pattern
-                                    |> List.foldl
-                                        (\( key, value ) res ->
-                                            if res == (Ok v) then
-                                                validateSchema (jsonPath ++ [ key ]) value schema
-                                            else
-                                                res
-                                        )
-                                        (Ok v)
-                            else
-                                res
+                            case res of
+                                Ok _ ->
+                                    obj
+                                        |> getPropsByPattern pattern
+                                        |> List.foldl
+                                            (\( key, value ) res ->
+                                                case res of
+                                                    Ok _ ->
+                                                        validateSchema (jsonPath ++ [ key ]) value schema
+
+                                                    Err _ ->
+                                                        res
+                                            )
+                                            (Ok v)
+
+                                Err _ ->
+                                    res
                         )
                         (Ok v)
                         patternProperties
