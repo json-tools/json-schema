@@ -518,11 +518,11 @@ validate value schema =
                     case props of
                         Just (Schemata p) ->
                             let
-                                keys =
+                                whitelist =
                                     p |> List.map (\( k, _ ) -> k)
                             in
                                 obj
-                                    |> List.filter (\( key, _ ) -> List.any (\pr -> fn pr key |> not) keys)
+                                    |> List.filter (\( key, _ ) -> whitelist |> List.any (\allowed -> fn allowed key) |> not)
 
                         Nothing ->
                             obj
