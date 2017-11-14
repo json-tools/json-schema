@@ -1,4 +1,4 @@
-module Generate exposing (all)
+module Generator exposing (all)
 
 import Test exposing (Test, describe, test, only)
 import Json.Schema.Builder
