@@ -7,7 +7,7 @@
   "license": "ISC",
   "scripts": {
     "start": "elm-live src/Main.elm --output=elm.js --open",
-    "test": "elm-test tests/Tests.elm --watch",
+    "test": "elm-test --watch",
     "deploy": "gh-pages -d dist -a"
   },
   "devDependencies": {
