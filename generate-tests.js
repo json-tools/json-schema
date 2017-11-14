@@ -2,10 +2,9 @@ const { readdirSync, readFileSync } = require('fs');
 const { join } = require('path');
 
 const namespace = process.argv[2];
-console.log(namespace)
 
-if (namespace !== 'draft-3' && namespace !== 'draft-4' && namespace !== 'draft-6') {
-    console.error('Pleace specify namespace as a param. Avalable options: draft-3, draft-4, draft-6.');
+if (namespace !== 'draft-4' && namespace !== 'draft-6') {
+    console.error('Pleace specify namespace as a param. Avalable options: draft-4, draft-6.');
     console.error('Usage example: node generate-tests.js draft-6');
     process.exit(1);
 }
@@ -20,6 +19,7 @@ function load(path) {
     return readdirSync(path)
         .filter(x => x.endsWith('.json'))
         .filter(x => x !== 'refRemote.json')
+        .filter(x => x !== 'ref.json')
         .map(filename => {
             return { filename, suite: JSON.parse(readFileSync(join(path, filename))) };
         });
@@ -103,10 +103,10 @@ function printCases(schema, collection) {
                     \\() ->
                         examine
                             """
-                            ${JSON.stringify(schema, null, '    ').replace(/\n/g, '\n                            ')}
+                            ${JSON.stringify(schema, null, '    ').replace(/\n/g, '\n                                ')}
                             """
                             """
-                            ${JSON.stringify(data, null, '    ').replace(/\n/g, '\n                            ')}
+                            ${JSON.stringify(data, null, '    ').replace(/\n/g, '\n                                ')}
                             """
                             ${valid ? 'True' : 'False'}`
     });

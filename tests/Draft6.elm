@@ -18,21 +18,21 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {}
-                                ],
-                                "additionalItems": {
-                                    "type": "integer"
+                                    "items": [
+                                        {}
+                                    ],
+                                    "additionalItems": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                null,
-                                2,
-                                3,
-                                4
-                            ]
+                                    null,
+                                    2,
+                                    3,
+                                    4
+                                ]
                             """
                             True
                 , test "additional items do not match schema" <|
@@ -40,21 +40,21 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {}
-                                ],
-                                "additionalItems": {
-                                    "type": "integer"
+                                    "items": [
+                                        {}
+                                    ],
+                                    "additionalItems": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                null,
-                                2,
-                                3,
-                                "foo"
-                            ]
+                                    null,
+                                    2,
+                                    3,
+                                    "foo"
+                                ]
                             """
                             False
                 ]
@@ -64,18 +64,18 @@ all =
                         examine
                             """
                             {
-                                "items": {},
-                                "additionalItems": false
-                            }
+                                    "items": {},
+                                    "additionalItems": false
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3,
-                                4,
-                                5
-                            ]
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5
+                                ]
                             """
                             True
                 ]
@@ -85,19 +85,19 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {},
-                                    {},
-                                    {}
-                                ],
-                                "additionalItems": false
-                            }
+                                    "items": [
+                                        {},
+                                        {},
+                                        {}
+                                    ],
+                                    "additionalItems": false
+                                }
                             """
                             """
                             [
-                                1,
-                                2
-                            ]
+                                    1,
+                                    2
+                                ]
                             """
                             True
                 , test "equal number of items present" <|
@@ -105,20 +105,20 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {},
-                                    {},
-                                    {}
-                                ],
-                                "additionalItems": false
-                            }
+                                    "items": [
+                                        {},
+                                        {},
+                                        {}
+                                    ],
+                                    "additionalItems": false
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3
-                            ]
+                                    1,
+                                    2,
+                                    3
+                                ]
                             """
                             True
                 , test "additional items are not permitted" <|
@@ -126,21 +126,21 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {},
-                                    {},
-                                    {}
-                                ],
-                                "additionalItems": false
-                            }
+                                    "items": [
+                                        {},
+                                        {},
+                                        {}
+                                    ],
+                                    "additionalItems": false
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3,
-                                4
-                            ]
+                                    1,
+                                    2,
+                                    3,
+                                    4
+                                ]
                             """
                             False
                 ]
@@ -150,17 +150,17 @@ all =
                         examine
                             """
                             {
-                                "additionalItems": false
-                            }
+                                    "additionalItems": false
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3,
-                                4,
-                                5
-                            ]
+                                    1,
+                                    2,
+                                    3,
+                                    4,
+                                    5
+                                ]
                             """
                             True
                 , test "ignores non-arrays" <|
@@ -168,13 +168,13 @@ all =
                         examine
                             """
                             {
-                                "additionalItems": false
-                            }
+                                    "additionalItems": false
+                                }
                             """
                             """
                             {
-                                "foo": "bar"
-                            }
+                                    "foo": "bar"
+                                }
                             """
                             True
                 ]
@@ -184,19 +184,19 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                1,
-                                "foo",
-                                false
-                            ]
+                                    1,
+                                    "foo",
+                                    false
+                                ]
                             """
                             True
                 ]
@@ -208,20 +208,20 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "patternProperties": {
-                                    "^v": {}
-                                },
-                                "additionalProperties": false
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "patternProperties": {
+                                        "^v": {}
+                                    },
+                                    "additionalProperties": false
+                                }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "an additional property is invalid" <|
@@ -229,22 +229,22 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "patternProperties": {
-                                    "^v": {}
-                                },
-                                "additionalProperties": false
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "patternProperties": {
+                                        "^v": {}
+                                    },
+                                    "additionalProperties": false
+                                }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2,
-                                "quux": "boom"
-                            }
+                                    "foo": 1,
+                                    "bar": 2,
+                                    "quux": "boom"
+                                }
                             """
                             False
                 , test "ignores arrays" <|
@@ -252,22 +252,22 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "patternProperties": {
-                                    "^v": {}
-                                },
-                                "additionalProperties": false
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "patternProperties": {
+                                        "^v": {}
+                                    },
+                                    "additionalProperties": false
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3
-                            ]
+                                    1,
+                                    2,
+                                    3
+                                ]
                             """
                             True
                 , test "ignores strings" <|
@@ -275,15 +275,15 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "patternProperties": {
-                                    "^v": {}
-                                },
-                                "additionalProperties": false
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "patternProperties": {
+                                        "^v": {}
+                                    },
+                                    "additionalProperties": false
+                                }
                             """
                             """
                             "foobarbaz"
@@ -294,15 +294,15 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "patternProperties": {
-                                    "^v": {}
-                                },
-                                "additionalProperties": false
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "patternProperties": {
+                                        "^v": {}
+                                    },
+                                    "additionalProperties": false
+                                }
                             """
                             """
                             12
@@ -313,21 +313,21 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "patternProperties": {
-                                    "^v": {}
-                                },
-                                "additionalProperties": false
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "patternProperties": {
+                                        "^v": {}
+                                    },
+                                    "additionalProperties": false
+                                }
                             """
                             """
                             {
-                                "foo": 1,
-                                "vroom": 2
-                            }
+                                    "foo": 1,
+                                    "vroom": 2
+                                }
                             """
                             True
                 ]
@@ -337,19 +337,19 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "additionalProperties": {
-                                    "type": "boolean"
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "an additional valid property is valid" <|
@@ -357,21 +357,21 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "additionalProperties": {
-                                    "type": "boolean"
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2,
-                                "quux": true
-                            }
+                                    "foo": 1,
+                                    "bar": 2,
+                                    "quux": true
+                                }
                             """
                             True
                 , test "an additional invalid property is invalid" <|
@@ -379,21 +379,21 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "additionalProperties": {
-                                    "type": "boolean"
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2,
-                                "quux": 12
-                            }
+                                    "foo": 1,
+                                    "bar": 2,
+                                    "quux": 12
+                                }
                             """
                             False
                 ]
@@ -403,15 +403,15 @@ all =
                         examine
                             """
                             {
-                                "additionalProperties": {
-                                    "type": "boolean"
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": true
-                            }
+                                    "foo": true
+                                }
                             """
                             True
                 , test "an additional invalid property is invalid" <|
@@ -419,15 +419,15 @@ all =
                         examine
                             """
                             {
-                                "additionalProperties": {
-                                    "type": "boolean"
+                                    "additionalProperties": {
+                                        "type": "boolean"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             False
                 ]
@@ -437,18 +437,18 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2,
-                                "quux": true
-                            }
+                                    "foo": 1,
+                                    "bar": 2,
+                                    "quux": true
+                                }
                             """
                             True
                 ]
@@ -460,35 +460,35 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "bar": {
-                                                "type": "integer"
-                                            }
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "bar"
+                                            ]
                                         },
-                                        "required": [
-                                            "bar"
-                                        ]
-                                    },
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "baz",
-                                "bar": 2
-                            }
+                                    "foo": "baz",
+                                    "bar": 2
+                                }
                             """
                             True
                 , test "mismatch second" <|
@@ -496,34 +496,34 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "bar": {
-                                                "type": "integer"
-                                            }
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "bar"
+                                            ]
                                         },
-                                        "required": [
-                                            "bar"
-                                        ]
-                                    },
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "baz"
-                            }
+                                    "foo": "baz"
+                                }
                             """
                             False
                 , test "mismatch first" <|
@@ -531,34 +531,34 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "bar": {
-                                                "type": "integer"
-                                            }
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "bar"
+                                            ]
                                         },
-                                        "required": [
-                                            "bar"
-                                        ]
-                                    },
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "wrong type" <|
@@ -566,35 +566,35 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "bar": {
-                                                "type": "integer"
-                                            }
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
+                                            },
+                                            "required": [
+                                                "bar"
+                                            ]
                                         },
-                                        "required": [
-                                            "bar"
-                                        ]
-                                    },
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "baz",
-                                "bar": "quux"
-                            }
+                                    "foo": "baz",
+                                    "bar": "quux"
+                                }
                             """
                             False
                 ]
@@ -604,44 +604,44 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ],
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
+                                    "properties": {
+                                        "bar": {
+                                            "type": "integer"
+                                        }
                                     },
-                                    {
-                                        "properties": {
-                                            "baz": {
-                                                "type": "null"
-                                            }
+                                    "required": [
+                                        "bar"
+                                    ],
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
                                         },
-                                        "required": [
-                                            "baz"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "baz": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "baz"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "quux",
-                                "bar": 2,
-                                "baz": null
-                            }
+                                    "foo": "quux",
+                                    "bar": 2,
+                                    "baz": null
+                                }
                             """
                             True
                 , test "mismatch base schema" <|
@@ -649,43 +649,43 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ],
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
+                                    "properties": {
+                                        "bar": {
+                                            "type": "integer"
+                                        }
                                     },
-                                    {
-                                        "properties": {
-                                            "baz": {
-                                                "type": "null"
-                                            }
+                                    "required": [
+                                        "bar"
+                                    ],
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
                                         },
-                                        "required": [
-                                            "baz"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "baz": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "baz"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "quux",
-                                "baz": null
-                            }
+                                    "foo": "quux",
+                                    "baz": null
+                                }
                             """
                             False
                 , test "mismatch first allOf" <|
@@ -693,43 +693,43 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ],
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
+                                    "properties": {
+                                        "bar": {
+                                            "type": "integer"
+                                        }
                                     },
-                                    {
-                                        "properties": {
-                                            "baz": {
-                                                "type": "null"
-                                            }
+                                    "required": [
+                                        "bar"
+                                    ],
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
                                         },
-                                        "required": [
-                                            "baz"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "baz": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "baz"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "bar": 2,
-                                "baz": null
-                            }
+                                    "bar": 2,
+                                    "baz": null
+                                }
                             """
                             False
                 , test "mismatch second allOf" <|
@@ -737,43 +737,43 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ],
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
+                                    "properties": {
+                                        "bar": {
+                                            "type": "integer"
+                                        }
                                     },
-                                    {
-                                        "properties": {
-                                            "baz": {
-                                                "type": "null"
-                                            }
+                                    "required": [
+                                        "bar"
+                                    ],
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
                                         },
-                                        "required": [
-                                            "baz"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "baz": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "baz"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "quux",
-                                "bar": 2
-                            }
+                                    "foo": "quux",
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "mismatch both" <|
@@ -781,42 +781,42 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "integer"
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ],
-                                "allOf": [
-                                    {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "string"
-                                            }
-                                        },
-                                        "required": [
-                                            "foo"
-                                        ]
+                                    "properties": {
+                                        "bar": {
+                                            "type": "integer"
+                                        }
                                     },
-                                    {
-                                        "properties": {
-                                            "baz": {
-                                                "type": "null"
-                                            }
+                                    "required": [
+                                        "bar"
+                                    ],
+                                    "allOf": [
+                                        {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "string"
+                                                }
+                                            },
+                                            "required": [
+                                                "foo"
+                                            ]
                                         },
-                                        "required": [
-                                            "baz"
-                                        ]
-                                    }
-                                ]
-                            }
+                                        {
+                                            "properties": {
+                                                "baz": {
+                                                    "type": "null"
+                                                }
+                                            },
+                                            "required": [
+                                                "baz"
+                                            ]
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             False
                 ]
@@ -826,15 +826,15 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    {
-                                        "maximum": 30
-                                    },
-                                    {
-                                        "minimum": 20
-                                    }
-                                ]
-                            }
+                                    "allOf": [
+                                        {
+                                            "maximum": 30
+                                        },
+                                        {
+                                            "minimum": 20
+                                        }
+                                    ]
+                                }
                             """
                             """
                             25
@@ -845,15 +845,15 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    {
-                                        "maximum": 30
-                                    },
-                                    {
-                                        "minimum": 20
-                                    }
-                                ]
-                            }
+                                    "allOf": [
+                                        {
+                                            "maximum": 30
+                                        },
+                                        {
+                                            "minimum": 20
+                                        }
+                                    ]
+                                }
                             """
                             """
                             35
@@ -866,11 +866,11 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    true,
-                                    true
-                                ]
-                            }
+                                    "allOf": [
+                                        true,
+                                        true
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -883,11 +883,11 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    true,
-                                    false
-                                ]
-                            }
+                                    "allOf": [
+                                        true,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -900,11 +900,11 @@ all =
                         examine
                             """
                             {
-                                "allOf": [
-                                    false,
-                                    false
-                                ]
-                            }
+                                    "allOf": [
+                                        false,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -919,15 +919,15 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "anyOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             1
@@ -938,15 +938,15 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "anyOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             2.5
@@ -957,15 +957,15 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "anyOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             3
@@ -976,15 +976,15 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "anyOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             1.5
@@ -997,16 +997,16 @@ all =
                         examine
                             """
                             {
-                                "type": "string",
-                                "anyOf": [
-                                    {
-                                        "maxLength": 2
-                                    },
-                                    {
-                                        "minLength": 4
-                                    }
-                                ]
-                            }
+                                    "type": "string",
+                                    "anyOf": [
+                                        {
+                                            "maxLength": 2
+                                        },
+                                        {
+                                            "minLength": 4
+                                        }
+                                    ]
+                                }
                             """
                             """
                             3
@@ -1017,16 +1017,16 @@ all =
                         examine
                             """
                             {
-                                "type": "string",
-                                "anyOf": [
-                                    {
-                                        "maxLength": 2
-                                    },
-                                    {
-                                        "minLength": 4
-                                    }
-                                ]
-                            }
+                                    "type": "string",
+                                    "anyOf": [
+                                        {
+                                            "maxLength": 2
+                                        },
+                                        {
+                                            "minLength": 4
+                                        }
+                                    ]
+                                }
                             """
                             """
                             "foobar"
@@ -1037,16 +1037,16 @@ all =
                         examine
                             """
                             {
-                                "type": "string",
-                                "anyOf": [
-                                    {
-                                        "maxLength": 2
-                                    },
-                                    {
-                                        "minLength": 4
-                                    }
-                                ]
-                            }
+                                    "type": "string",
+                                    "anyOf": [
+                                        {
+                                            "maxLength": 2
+                                        },
+                                        {
+                                            "minLength": 4
+                                        }
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -1059,11 +1059,11 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    true,
-                                    true
-                                ]
-                            }
+                                    "anyOf": [
+                                        true,
+                                        true
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -1076,11 +1076,11 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    true,
-                                    false
-                                ]
-                            }
+                                    "anyOf": [
+                                        true,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -1093,11 +1093,11 @@ all =
                         examine
                             """
                             {
-                                "anyOf": [
-                                    false,
-                                    false
-                                ]
-                            }
+                                    "anyOf": [
+                                        false,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -1165,8 +1165,8 @@ all =
                             """
                             """
                             {
-                                "foo": "bar"
-                            }
+                                    "foo": "bar"
+                                }
                             """
                             True
                 , test "empty object is valid" <|
@@ -1187,8 +1187,8 @@ all =
                             """
                             """
                             [
-                                "foo"
-                            ]
+                                    "foo"
+                                ]
                             """
                             True
                 , test "empty array is valid" <|
@@ -1261,8 +1261,8 @@ all =
                             """
                             """
                             {
-                                "foo": "bar"
-                            }
+                                    "foo": "bar"
+                                }
                             """
                             False
                 , test "empty object is invalid" <|
@@ -1283,8 +1283,8 @@ all =
                             """
                             """
                             [
-                                "foo"
-                            ]
+                                    "foo"
+                                ]
                             """
                             False
                 , test "empty array is invalid" <|
@@ -1306,8 +1306,8 @@ all =
                         examine
                             """
                             {
-                                "const": 2
-                            }
+                                    "const": 2
+                                }
                             """
                             """
                             2
@@ -1318,8 +1318,8 @@ all =
                         examine
                             """
                             {
-                                "const": 2
-                            }
+                                    "const": 2
+                                }
                             """
                             """
                             5
@@ -1330,8 +1330,8 @@ all =
                         examine
                             """
                             {
-                                "const": 2
-                            }
+                                    "const": 2
+                                }
                             """
                             """
                             "a"
@@ -1344,17 +1344,17 @@ all =
                         examine
                             """
                             {
-                                "const": {
-                                    "foo": "bar",
-                                    "baz": "bax"
+                                    "const": {
+                                        "foo": "bar",
+                                        "baz": "bax"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "bar",
-                                "baz": "bax"
-                            }
+                                    "foo": "bar",
+                                    "baz": "bax"
+                                }
                             """
                             True
                 , test "same object with different property order is valid" <|
@@ -1362,17 +1362,17 @@ all =
                         examine
                             """
                             {
-                                "const": {
-                                    "foo": "bar",
-                                    "baz": "bax"
+                                    "const": {
+                                        "foo": "bar",
+                                        "baz": "bax"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "baz": "bax",
-                                "foo": "bar"
-                            }
+                                    "baz": "bax",
+                                    "foo": "bar"
+                                }
                             """
                             True
                 , test "another object is invalid" <|
@@ -1380,16 +1380,16 @@ all =
                         examine
                             """
                             {
-                                "const": {
-                                    "foo": "bar",
-                                    "baz": "bax"
+                                    "const": {
+                                        "foo": "bar",
+                                        "baz": "bax"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "bar"
-                            }
+                                    "foo": "bar"
+                                }
                             """
                             False
                 , test "another type is invalid" <|
@@ -1397,17 +1397,17 @@ all =
                         examine
                             """
                             {
-                                "const": {
-                                    "foo": "bar",
-                                    "baz": "bax"
+                                    "const": {
+                                        "foo": "bar",
+                                        "baz": "bax"
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                1,
-                                2
-                            ]
+                                    1,
+                                    2
+                                ]
                             """
                             False
                 ]
@@ -1417,19 +1417,19 @@ all =
                         examine
                             """
                             {
-                                "const": [
+                                    "const": [
+                                        {
+                                            "foo": "bar"
+                                        }
+                                    ]
+                                }
+                            """
+                            """
+                            [
                                     {
                                         "foo": "bar"
                                     }
                                 ]
-                            }
-                            """
-                            """
-                            [
-                                {
-                                    "foo": "bar"
-                                }
-                            ]
                             """
                             True
                 , test "another array item is invalid" <|
@@ -1437,17 +1437,17 @@ all =
                         examine
                             """
                             {
-                                "const": [
-                                    {
-                                        "foo": "bar"
-                                    }
-                                ]
-                            }
+                                    "const": [
+                                        {
+                                            "foo": "bar"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                2
-                            ]
+                                    2
+                                ]
                             """
                             False
                 , test "array with additional items is invalid" <|
@@ -1455,19 +1455,19 @@ all =
                         examine
                             """
                             {
-                                "const": [
-                                    {
-                                        "foo": "bar"
-                                    }
-                                ]
-                            }
+                                    "const": [
+                                        {
+                                            "foo": "bar"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3
-                            ]
+                                    1,
+                                    2,
+                                    3
+                                ]
                             """
                             False
                 ]
@@ -1477,8 +1477,8 @@ all =
                         examine
                             """
                             {
-                                "const": null
-                            }
+                                    "const": null
+                                }
                             """
                             """
                             null
@@ -1489,8 +1489,8 @@ all =
                         examine
                             """
                             {
-                                "const": null
-                            }
+                                    "const": null
+                                }
                             """
                             """
                             0
@@ -1505,17 +1505,17 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "minimum": 5
+                                    "contains": {
+                                        "minimum": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                3,
-                                4,
-                                5
-                            ]
+                                    3,
+                                    4,
+                                    5
+                                ]
                             """
                             True
                 , test "array with item matching schema (6) is valid" <|
@@ -1523,17 +1523,17 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "minimum": 5
+                                    "contains": {
+                                        "minimum": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                3,
-                                4,
-                                6
-                            ]
+                                    3,
+                                    4,
+                                    6
+                                ]
                             """
                             True
                 , test "array with two items matching schema (5, 6) is valid" <|
@@ -1541,18 +1541,18 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "minimum": 5
+                                    "contains": {
+                                        "minimum": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                3,
-                                4,
-                                5,
-                                6
-                            ]
+                                    3,
+                                    4,
+                                    5,
+                                    6
+                                ]
                             """
                             True
                 , test "array without items matching schema is invalid" <|
@@ -1560,17 +1560,17 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "minimum": 5
+                                    "contains": {
+                                        "minimum": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                2,
-                                3,
-                                4
-                            ]
+                                    2,
+                                    3,
+                                    4
+                                ]
                             """
                             False
                 , test "empty array is invalid" <|
@@ -1578,10 +1578,10 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "minimum": 5
+                                    "contains": {
+                                        "minimum": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             []
@@ -1592,10 +1592,10 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "minimum": 5
+                                    "contains": {
+                                        "minimum": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -1608,17 +1608,17 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "const": 5
+                                    "contains": {
+                                        "const": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                3,
-                                4,
-                                5
-                            ]
+                                    3,
+                                    4,
+                                    5
+                                ]
                             """
                             True
                 , test "array with two items 5 is valid" <|
@@ -1626,18 +1626,18 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "const": 5
+                                    "contains": {
+                                        "const": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                3,
-                                4,
-                                5,
-                                5
-                            ]
+                                    3,
+                                    4,
+                                    5,
+                                    5
+                                ]
                             """
                             True
                 , test "array without item 5 is invalid" <|
@@ -1645,18 +1645,18 @@ all =
                         examine
                             """
                             {
-                                "contains": {
-                                    "const": 5
+                                    "contains": {
+                                        "const": 5
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3,
-                                4
-                            ]
+                                    1,
+                                    2,
+                                    3,
+                                    4
+                                ]
                             """
                             False
                 ]
@@ -1666,13 +1666,13 @@ all =
                         examine
                             """
                             {
-                                "contains": true
-                            }
+                                    "contains": true
+                                }
                             """
                             """
                             [
-                                "foo"
-                            ]
+                                    "foo"
+                                ]
                             """
                             True
                 , test "empty array is invalid" <|
@@ -1680,8 +1680,8 @@ all =
                         examine
                             """
                             {
-                                "contains": true
-                            }
+                                    "contains": true
+                                }
                             """
                             """
                             []
@@ -1694,13 +1694,13 @@ all =
                         examine
                             """
                             {
-                                "contains": false
-                            }
+                                    "contains": false
+                                }
                             """
                             """
                             [
-                                "foo"
-                            ]
+                                    "foo"
+                                ]
                             """
                             False
                 , test "empty array is invalid" <|
@@ -1708,8 +1708,8 @@ all =
                         examine
                             """
                             {
-                                "contains": false
-                            }
+                                    "contains": false
+                                }
                             """
                             """
                             []
@@ -1724,18 +1724,18 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer",
-                                        "default": []
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer",
+                                            "default": []
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 13
-                            }
+                                    "foo": 13
+                                }
                             """
                             True
                 , test "still valid when the invalid default is used" <|
@@ -1743,13 +1743,13 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer",
-                                        "default": []
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer",
+                                            "default": []
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {}
@@ -1762,19 +1762,19 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "string",
-                                        "minLength": 4,
-                                        "default": "bad"
+                                    "properties": {
+                                        "bar": {
+                                            "type": "string",
+                                            "minLength": 4,
+                                            "default": "bad"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": "good"
-                            }
+                                    "bar": "good"
+                                }
                             """
                             True
                 , test "still valid when the invalid default is used" <|
@@ -1782,14 +1782,14 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "bar": {
-                                        "type": "string",
-                                        "minLength": 4,
-                                        "default": "bad"
+                                    "properties": {
+                                        "bar": {
+                                            "type": "string",
+                                            "minLength": 4,
+                                            "default": "bad"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {}
@@ -1804,17 +1804,17 @@ all =
                         examine
                             """
                             {
-                                "$ref": "http://json-schema.org/draft-06/schema#"
-                            }
+                                    "$ref": "http://json-schema.org/draft-06/schema#"
+                                }
                             """
                             """
                             {
-                                "definitions": {
-                                    "foo": {
-                                        "type": "integer"
+                                    "definitions": {
+                                        "foo": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             True
                 ]
@@ -1824,17 +1824,17 @@ all =
                         examine
                             """
                             {
-                                "$ref": "http://json-schema.org/draft-06/schema#"
-                            }
+                                    "$ref": "http://json-schema.org/draft-06/schema#"
+                                }
                             """
                             """
                             {
-                                "definitions": {
-                                    "foo": {
-                                        "type": 1
+                                    "definitions": {
+                                        "foo": {
+                                            "type": 1
+                                        }
                                     }
                                 }
-                            }
                             """
                             False
                 ]
@@ -1846,12 +1846,12 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -1862,17 +1862,17 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "with dependency" <|
@@ -1880,18 +1880,18 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             True
                 , test "missing dependency" <|
@@ -1899,17 +1899,17 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "ignores arrays" <|
@@ -1917,17 +1917,17 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                "bar"
-                            ]
+                                    "bar"
+                                ]
                             """
                             True
                 , test "ignores strings" <|
@@ -1935,12 +1935,12 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             "foobar"
@@ -1951,12 +1951,12 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": [
-                                        "foo"
-                                    ]
+                                    "dependencies": {
+                                        "bar": [
+                                            "foo"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             12
@@ -1969,10 +1969,10 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": []
+                                    "dependencies": {
+                                        "bar": []
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -1983,15 +1983,15 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": []
+                                    "dependencies": {
+                                        "bar": []
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             True
                 ]
@@ -2001,13 +2001,13 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "quux": [
-                                        "foo",
-                                        "bar"
-                                    ]
+                                    "dependencies": {
+                                        "quux": [
+                                            "foo",
+                                            "bar"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -2018,19 +2018,19 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "quux": [
-                                        "foo",
-                                        "bar"
-                                    ]
+                                    "dependencies": {
+                                        "quux": [
+                                            "foo",
+                                            "bar"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             True
                 , test "with dependencies" <|
@@ -2038,20 +2038,20 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "quux": [
-                                        "foo",
-                                        "bar"
-                                    ]
+                                    "dependencies": {
+                                        "quux": [
+                                            "foo",
+                                            "bar"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2,
-                                "quux": 3
-                            }
+                                    "foo": 1,
+                                    "bar": 2,
+                                    "quux": 3
+                                }
                             """
                             True
                 , test "missing dependency" <|
@@ -2059,19 +2059,19 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "quux": [
-                                        "foo",
-                                        "bar"
-                                    ]
+                                    "dependencies": {
+                                        "quux": [
+                                            "foo",
+                                            "bar"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "quux": 2
-                            }
+                                    "foo": 1,
+                                    "quux": 2
+                                }
                             """
                             False
                 , test "missing other dependency" <|
@@ -2079,19 +2079,19 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "quux": [
-                                        "foo",
-                                        "bar"
-                                    ]
+                                    "dependencies": {
+                                        "quux": [
+                                            "foo",
+                                            "bar"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 1,
-                                "quux": 2
-                            }
+                                    "bar": 1,
+                                    "quux": 2
+                                }
                             """
                             False
                 , test "missing both dependencies" <|
@@ -2099,18 +2099,18 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "quux": [
-                                        "foo",
-                                        "bar"
-                                    ]
+                                    "dependencies": {
+                                        "quux": [
+                                            "foo",
+                                            "bar"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "quux": 1
-                            }
+                                    "quux": 1
+                                }
                             """
                             False
                 ]
@@ -2120,25 +2120,25 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "integer"
-                                            },
-                                            "bar": {
-                                                "type": "integer"
+                                    "dependencies": {
+                                        "bar": {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "integer"
+                                                },
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             True
                 , test "no dependency" <|
@@ -2146,24 +2146,24 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "integer"
-                                            },
-                                            "bar": {
-                                                "type": "integer"
+                                    "dependencies": {
+                                        "bar": {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "integer"
+                                                },
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "quux"
-                            }
+                                    "foo": "quux"
+                                }
                             """
                             True
                 , test "wrong type" <|
@@ -2171,25 +2171,25 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "integer"
-                                            },
-                                            "bar": {
-                                                "type": "integer"
+                                    "dependencies": {
+                                        "bar": {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "integer"
+                                                },
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "quux",
-                                "bar": 2
-                            }
+                                    "foo": "quux",
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "wrong type other" <|
@@ -2197,25 +2197,25 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "integer"
-                                            },
-                                            "bar": {
-                                                "type": "integer"
+                                    "dependencies": {
+                                        "bar": {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "integer"
+                                                },
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 2,
-                                "bar": "quux"
-                            }
+                                    "foo": 2,
+                                    "bar": "quux"
+                                }
                             """
                             False
                 , test "wrong type both" <|
@@ -2223,25 +2223,25 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "bar": {
-                                        "properties": {
-                                            "foo": {
-                                                "type": "integer"
-                                            },
-                                            "bar": {
-                                                "type": "integer"
+                                    "dependencies": {
+                                        "bar": {
+                                            "properties": {
+                                                "foo": {
+                                                    "type": "integer"
+                                                },
+                                                "bar": {
+                                                    "type": "integer"
+                                                }
                                             }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "quux",
-                                "bar": "quux"
-                            }
+                                    "foo": "quux",
+                                    "bar": "quux"
+                                }
                             """
                             False
                 ]
@@ -2251,16 +2251,16 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "foo": true,
-                                    "bar": false
+                                    "dependencies": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "object with property having schema false is invalid" <|
@@ -2268,16 +2268,16 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "foo": true,
-                                    "bar": false
+                                    "dependencies": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "object with both properties is invalid" <|
@@ -2285,17 +2285,17 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "foo": true,
-                                    "bar": false
+                                    "dependencies": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "empty object is valid" <|
@@ -2303,11 +2303,11 @@ all =
                         examine
                             """
                             {
-                                "dependencies": {
-                                    "foo": true,
-                                    "bar": false
+                                    "dependencies": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -2322,12 +2322,12 @@ all =
                         examine
                             """
                             {
-                                "enum": [
-                                    1,
-                                    2,
-                                    3
-                                ]
-                            }
+                                    "enum": [
+                                        1,
+                                        2,
+                                        3
+                                    ]
+                                }
                             """
                             """
                             1
@@ -2338,12 +2338,12 @@ all =
                         examine
                             """
                             {
-                                "enum": [
-                                    1,
-                                    2,
-                                    3
-                                ]
-                            }
+                                    "enum": [
+                                        1,
+                                        2,
+                                        3
+                                    ]
+                                }
                             """
                             """
                             4
@@ -2356,16 +2356,16 @@ all =
                         examine
                             """
                             {
-                                "enum": [
-                                    6,
-                                    "foo",
-                                    [],
-                                    true,
-                                    {
-                                        "foo": 12
-                                    }
-                                ]
-                            }
+                                    "enum": [
+                                        6,
+                                        "foo",
+                                        [],
+                                        true,
+                                        {
+                                            "foo": 12
+                                        }
+                                    ]
+                                }
                             """
                             """
                             []
@@ -2376,16 +2376,16 @@ all =
                         examine
                             """
                             {
-                                "enum": [
-                                    6,
-                                    "foo",
-                                    [],
-                                    true,
-                                    {
-                                        "foo": 12
-                                    }
-                                ]
-                            }
+                                    "enum": [
+                                        6,
+                                        "foo",
+                                        [],
+                                        true,
+                                        {
+                                            "foo": 12
+                                        }
+                                    ]
+                                }
                             """
                             """
                             null
@@ -2396,21 +2396,21 @@ all =
                         examine
                             """
                             {
-                                "enum": [
-                                    6,
-                                    "foo",
-                                    [],
-                                    true,
-                                    {
-                                        "foo": 12
-                                    }
-                                ]
-                            }
+                                    "enum": [
+                                        6,
+                                        "foo",
+                                        [],
+                                        true,
+                                        {
+                                            "foo": 12
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": false
-                            }
+                                    "foo": false
+                                }
                             """
                             False
                 ]
@@ -2420,29 +2420,29 @@ all =
                         examine
                             """
                             {
-                                "type": "object",
-                                "properties": {
-                                    "foo": {
-                                        "enum": [
-                                            "foo"
-                                        ]
+                                    "type": "object",
+                                    "properties": {
+                                        "foo": {
+                                            "enum": [
+                                                "foo"
+                                            ]
+                                        },
+                                        "bar": {
+                                            "enum": [
+                                                "bar"
+                                            ]
+                                        }
                                     },
-                                    "bar": {
-                                        "enum": [
-                                            "bar"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ]
-                            }
+                                    "required": [
+                                        "bar"
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "foo",
-                                "bar": "bar"
-                            }
+                                    "foo": "foo",
+                                    "bar": "bar"
+                                }
                             """
                             True
                 , test "missing optional property is valid" <|
@@ -2450,28 +2450,28 @@ all =
                         examine
                             """
                             {
-                                "type": "object",
-                                "properties": {
-                                    "foo": {
-                                        "enum": [
-                                            "foo"
-                                        ]
+                                    "type": "object",
+                                    "properties": {
+                                        "foo": {
+                                            "enum": [
+                                                "foo"
+                                            ]
+                                        },
+                                        "bar": {
+                                            "enum": [
+                                                "bar"
+                                            ]
+                                        }
                                     },
-                                    "bar": {
-                                        "enum": [
-                                            "bar"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ]
-                            }
+                                    "required": [
+                                        "bar"
+                                    ]
+                                }
                             """
                             """
                             {
-                                "bar": "bar"
-                            }
+                                    "bar": "bar"
+                                }
                             """
                             True
                 , test "missing required property is invalid" <|
@@ -2479,28 +2479,28 @@ all =
                         examine
                             """
                             {
-                                "type": "object",
-                                "properties": {
-                                    "foo": {
-                                        "enum": [
-                                            "foo"
-                                        ]
+                                    "type": "object",
+                                    "properties": {
+                                        "foo": {
+                                            "enum": [
+                                                "foo"
+                                            ]
+                                        },
+                                        "bar": {
+                                            "enum": [
+                                                "bar"
+                                            ]
+                                        }
                                     },
-                                    "bar": {
-                                        "enum": [
-                                            "bar"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ]
-                            }
+                                    "required": [
+                                        "bar"
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": "foo"
-                            }
+                                    "foo": "foo"
+                                }
                             """
                             False
                 , test "missing all properties is invalid" <|
@@ -2508,23 +2508,23 @@ all =
                         examine
                             """
                             {
-                                "type": "object",
-                                "properties": {
-                                    "foo": {
-                                        "enum": [
-                                            "foo"
-                                        ]
+                                    "type": "object",
+                                    "properties": {
+                                        "foo": {
+                                            "enum": [
+                                                "foo"
+                                            ]
+                                        },
+                                        "bar": {
+                                            "enum": [
+                                                "bar"
+                                            ]
+                                        }
                                     },
-                                    "bar": {
-                                        "enum": [
-                                            "bar"
-                                        ]
-                                    }
-                                },
-                                "required": [
-                                    "bar"
-                                ]
-                            }
+                                    "required": [
+                                        "bar"
+                                    ]
+                                }
                             """
                             """
                             {}
@@ -2539,8 +2539,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMaximum": 3
-                            }
+                                    "exclusiveMaximum": 3
+                                }
                             """
                             """
                             2.2
@@ -2551,8 +2551,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMaximum": 3
-                            }
+                                    "exclusiveMaximum": 3
+                                }
                             """
                             """
                             3
@@ -2563,8 +2563,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMaximum": 3
-                            }
+                                    "exclusiveMaximum": 3
+                                }
                             """
                             """
                             3.5
@@ -2575,8 +2575,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMaximum": 3
-                            }
+                                    "exclusiveMaximum": 3
+                                }
                             """
                             """
                             "x"
@@ -2591,8 +2591,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMinimum": 1.1
-                            }
+                                    "exclusiveMinimum": 1.1
+                                }
                             """
                             """
                             1.2
@@ -2603,8 +2603,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMinimum": 1.1
-                            }
+                                    "exclusiveMinimum": 1.1
+                                }
                             """
                             """
                             1.1
@@ -2615,8 +2615,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMinimum": 1.1
-                            }
+                                    "exclusiveMinimum": 1.1
+                                }
                             """
                             """
                             0.6
@@ -2627,8 +2627,8 @@ all =
                         examine
                             """
                             {
-                                "exclusiveMinimum": 1.1
-                            }
+                                    "exclusiveMinimum": 1.1
+                                }
                             """
                             """
                             "x"
@@ -2643,17 +2643,17 @@ all =
                         examine
                             """
                             {
-                                "items": {
-                                    "type": "integer"
+                                    "items": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3
-                            ]
+                                    1,
+                                    2,
+                                    3
+                                ]
                             """
                             True
                 , test "wrong type of items" <|
@@ -2661,16 +2661,16 @@ all =
                         examine
                             """
                             {
-                                "items": {
-                                    "type": "integer"
+                                    "items": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                1,
-                                "x"
-                            ]
+                                    1,
+                                    "x"
+                                ]
                             """
                             False
                 , test "ignores non-arrays" <|
@@ -2678,15 +2678,15 @@ all =
                         examine
                             """
                             {
-                                "items": {
-                                    "type": "integer"
+                                    "items": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "bar"
-                            }
+                                    "foo": "bar"
+                                }
                             """
                             True
                 , test "JavaScript pseudo-array is valid" <|
@@ -2694,16 +2694,16 @@ all =
                         examine
                             """
                             {
-                                "items": {
-                                    "type": "integer"
+                                    "items": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "0": "invalid",
-                                "length": 1
-                            }
+                                    "0": "invalid",
+                                    "length": 1
+                                }
                             """
                             True
                 ]
@@ -2713,21 +2713,21 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                1,
-                                "foo"
-                            ]
+                                    1,
+                                    "foo"
+                                ]
                             """
                             True
                 , test "wrong types" <|
@@ -2735,21 +2735,21 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                "foo",
-                                1
-                            ]
+                                    "foo",
+                                    1
+                                ]
                             """
                             False
                 , test "incomplete array of items" <|
@@ -2757,20 +2757,20 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                1
-                            ]
+                                    1
+                                ]
                             """
                             True
                 , test "array with additional items" <|
@@ -2778,22 +2778,22 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             [
-                                1,
-                                "foo",
-                                true
-                            ]
+                                    1,
+                                    "foo",
+                                    true
+                                ]
                             """
                             True
                 , test "empty array" <|
@@ -2801,15 +2801,15 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             []
@@ -2820,22 +2820,22 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "type": "string"
-                                    }
-                                ]
-                            }
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "type": "string"
+                                        }
+                                    ]
+                                }
                             """
                             """
                             {
-                                "0": "invalid",
-                                "1": "valid",
-                                "length": 2
-                            }
+                                    "0": "invalid",
+                                    "1": "valid",
+                                    "length": 2
+                                }
                             """
                             True
                 ]
@@ -2845,15 +2845,15 @@ all =
                         examine
                             """
                             {
-                                "items": true
-                            }
+                                    "items": true
+                                }
                             """
                             """
                             [
-                                1,
-                                "foo",
-                                true
-                            ]
+                                    1,
+                                    "foo",
+                                    true
+                                ]
                             """
                             True
                 , test "empty array is valid" <|
@@ -2861,8 +2861,8 @@ all =
                         examine
                             """
                             {
-                                "items": true
-                            }
+                                    "items": true
+                                }
                             """
                             """
                             []
@@ -2875,15 +2875,15 @@ all =
                         examine
                             """
                             {
-                                "items": false
-                            }
+                                    "items": false
+                                }
                             """
                             """
                             [
-                                1,
-                                "foo",
-                                true
-                            ]
+                                    1,
+                                    "foo",
+                                    true
+                                ]
                             """
                             False
                 , test "empty array is valid" <|
@@ -2891,8 +2891,8 @@ all =
                         examine
                             """
                             {
-                                "items": false
-                            }
+                                    "items": false
+                                }
                             """
                             """
                             []
@@ -2905,16 +2905,16 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    true,
-                                    false
-                                ]
-                            }
+                                    "items": [
+                                        true,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             [
-                                1
-                            ]
+                                    1
+                                ]
                             """
                             True
                 , test "array with two items is invalid" <|
@@ -2922,17 +2922,17 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    true,
-                                    false
-                                ]
-                            }
+                                    "items": [
+                                        true,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             [
-                                1,
-                                "foo"
-                            ]
+                                    1,
+                                    "foo"
+                                ]
                             """
                             False
                 , test "empty array is valid" <|
@@ -2940,11 +2940,11 @@ all =
                         examine
                             """
                             {
-                                "items": [
-                                    true,
-                                    false
-                                ]
-                            }
+                                    "items": [
+                                        true,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             []
@@ -2959,13 +2959,13 @@ all =
                         examine
                             """
                             {
-                                "maxItems": 2
-                            }
+                                    "maxItems": 2
+                                }
                             """
                             """
                             [
-                                1
-                            ]
+                                    1
+                                ]
                             """
                             True
                 , test "exact length is valid" <|
@@ -2973,14 +2973,14 @@ all =
                         examine
                             """
                             {
-                                "maxItems": 2
-                            }
+                                    "maxItems": 2
+                                }
                             """
                             """
                             [
-                                1,
-                                2
-                            ]
+                                    1,
+                                    2
+                                ]
                             """
                             True
                 , test "too long is invalid" <|
@@ -2988,15 +2988,15 @@ all =
                         examine
                             """
                             {
-                                "maxItems": 2
-                            }
+                                    "maxItems": 2
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3
-                            ]
+                                    1,
+                                    2,
+                                    3
+                                ]
                             """
                             False
                 , test "ignores non-arrays" <|
@@ -3004,8 +3004,8 @@ all =
                         examine
                             """
                             {
-                                "maxItems": 2
-                            }
+                                    "maxItems": 2
+                                }
                             """
                             """
                             "foobar"
@@ -3020,8 +3020,8 @@ all =
                         examine
                             """
                             {
-                                "maxLength": 2
-                            }
+                                    "maxLength": 2
+                                }
                             """
                             """
                             "f"
@@ -3032,8 +3032,8 @@ all =
                         examine
                             """
                             {
-                                "maxLength": 2
-                            }
+                                    "maxLength": 2
+                                }
                             """
                             """
                             "fo"
@@ -3044,8 +3044,8 @@ all =
                         examine
                             """
                             {
-                                "maxLength": 2
-                            }
+                                    "maxLength": 2
+                                }
                             """
                             """
                             "foo"
@@ -3056,8 +3056,8 @@ all =
                         examine
                             """
                             {
-                                "maxLength": 2
-                            }
+                                    "maxLength": 2
+                                }
                             """
                             """
                             100
@@ -3068,8 +3068,8 @@ all =
                         examine
                             """
                             {
-                                "maxLength": 2
-                            }
+                                    "maxLength": 2
+                                }
                             """
                             """
                             "💩💩"
@@ -3084,13 +3084,13 @@ all =
                         examine
                             """
                             {
-                                "maxProperties": 2
-                            }
+                                    "maxProperties": 2
+                                }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "exact length is valid" <|
@@ -3098,14 +3098,14 @@ all =
                         examine
                             """
                             {
-                                "maxProperties": 2
-                            }
+                                    "maxProperties": 2
+                                }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             True
                 , test "too long is invalid" <|
@@ -3113,15 +3113,15 @@ all =
                         examine
                             """
                             {
-                                "maxProperties": 2
-                            }
+                                    "maxProperties": 2
+                                }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2,
-                                "baz": 3
-                            }
+                                    "foo": 1,
+                                    "bar": 2,
+                                    "baz": 3
+                                }
                             """
                             False
                 , test "ignores arrays" <|
@@ -3129,15 +3129,15 @@ all =
                         examine
                             """
                             {
-                                "maxProperties": 2
-                            }
+                                    "maxProperties": 2
+                                }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3
-                            ]
+                                    1,
+                                    2,
+                                    3
+                                ]
                             """
                             True
                 , test "ignores strings" <|
@@ -3145,8 +3145,8 @@ all =
                         examine
                             """
                             {
-                                "maxProperties": 2
-                            }
+                                    "maxProperties": 2
+                                }
                             """
                             """
                             "foobar"
@@ -3157,8 +3157,8 @@ all =
                         examine
                             """
                             {
-                                "maxProperties": 2
-                            }
+                                    "maxProperties": 2
+                                }
                             """
                             """
                             12
@@ -3173,8 +3173,8 @@ all =
                         examine
                             """
                             {
-                                "maximum": 3
-                            }
+                                    "maximum": 3
+                                }
                             """
                             """
                             2.6
@@ -3185,8 +3185,8 @@ all =
                         examine
                             """
                             {
-                                "maximum": 3
-                            }
+                                    "maximum": 3
+                                }
                             """
                             """
                             3
@@ -3197,8 +3197,8 @@ all =
                         examine
                             """
                             {
-                                "maximum": 3
-                            }
+                                    "maximum": 3
+                                }
                             """
                             """
                             3.5
@@ -3209,8 +3209,8 @@ all =
                         examine
                             """
                             {
-                                "maximum": 3
-                            }
+                                    "maximum": 3
+                                }
                             """
                             """
                             "x"
@@ -3225,14 +3225,14 @@ all =
                         examine
                             """
                             {
-                                "minItems": 1
-                            }
+                                    "minItems": 1
+                                }
                             """
                             """
                             [
-                                1,
-                                2
-                            ]
+                                    1,
+                                    2
+                                ]
                             """
                             True
                 , test "exact length is valid" <|
@@ -3240,13 +3240,13 @@ all =
                         examine
                             """
                             {
-                                "minItems": 1
-                            }
+                                    "minItems": 1
+                                }
                             """
                             """
                             [
-                                1
-                            ]
+                                    1
+                                ]
                             """
                             True
                 , test "too short is invalid" <|
@@ -3254,8 +3254,8 @@ all =
                         examine
                             """
                             {
-                                "minItems": 1
-                            }
+                                    "minItems": 1
+                                }
                             """
                             """
                             []
@@ -3266,8 +3266,8 @@ all =
                         examine
                             """
                             {
-                                "minItems": 1
-                            }
+                                    "minItems": 1
+                                }
                             """
                             """
                             ""
@@ -3282,8 +3282,8 @@ all =
                         examine
                             """
                             {
-                                "minLength": 2
-                            }
+                                    "minLength": 2
+                                }
                             """
                             """
                             "foo"
@@ -3294,8 +3294,8 @@ all =
                         examine
                             """
                             {
-                                "minLength": 2
-                            }
+                                    "minLength": 2
+                                }
                             """
                             """
                             "fo"
@@ -3306,8 +3306,8 @@ all =
                         examine
                             """
                             {
-                                "minLength": 2
-                            }
+                                    "minLength": 2
+                                }
                             """
                             """
                             "f"
@@ -3318,8 +3318,8 @@ all =
                         examine
                             """
                             {
-                                "minLength": 2
-                            }
+                                    "minLength": 2
+                                }
                             """
                             """
                             1
@@ -3330,8 +3330,8 @@ all =
                         examine
                             """
                             {
-                                "minLength": 2
-                            }
+                                    "minLength": 2
+                                }
                             """
                             """
                             "💩"
@@ -3346,14 +3346,14 @@ all =
                         examine
                             """
                             {
-                                "minProperties": 1
-                            }
+                                    "minProperties": 1
+                                }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             True
                 , test "exact length is valid" <|
@@ -3361,13 +3361,13 @@ all =
                         examine
                             """
                             {
-                                "minProperties": 1
-                            }
+                                    "minProperties": 1
+                                }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "too short is invalid" <|
@@ -3375,8 +3375,8 @@ all =
                         examine
                             """
                             {
-                                "minProperties": 1
-                            }
+                                    "minProperties": 1
+                                }
                             """
                             """
                             {}
@@ -3387,8 +3387,8 @@ all =
                         examine
                             """
                             {
-                                "minProperties": 1
-                            }
+                                    "minProperties": 1
+                                }
                             """
                             """
                             []
@@ -3399,8 +3399,8 @@ all =
                         examine
                             """
                             {
-                                "minProperties": 1
-                            }
+                                    "minProperties": 1
+                                }
                             """
                             """
                             ""
@@ -3411,8 +3411,8 @@ all =
                         examine
                             """
                             {
-                                "minProperties": 1
-                            }
+                                    "minProperties": 1
+                                }
                             """
                             """
                             12
@@ -3427,8 +3427,8 @@ all =
                         examine
                             """
                             {
-                                "minimum": 1.1
-                            }
+                                    "minimum": 1.1
+                                }
                             """
                             """
                             2.6
@@ -3439,8 +3439,8 @@ all =
                         examine
                             """
                             {
-                                "minimum": 1.1
-                            }
+                                    "minimum": 1.1
+                                }
                             """
                             """
                             1.1
@@ -3451,8 +3451,8 @@ all =
                         examine
                             """
                             {
-                                "minimum": 1.1
-                            }
+                                    "minimum": 1.1
+                                }
                             """
                             """
                             0.6
@@ -3463,8 +3463,8 @@ all =
                         examine
                             """
                             {
-                                "minimum": 1.1
-                            }
+                                    "minimum": 1.1
+                                }
                             """
                             """
                             "x"
@@ -3479,8 +3479,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 2
-                            }
+                                    "multipleOf": 2
+                                }
                             """
                             """
                             10
@@ -3491,8 +3491,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 2
-                            }
+                                    "multipleOf": 2
+                                }
                             """
                             """
                             7
@@ -3503,8 +3503,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 2
-                            }
+                                    "multipleOf": 2
+                                }
                             """
                             """
                             "foo"
@@ -3517,8 +3517,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 1.5
-                            }
+                                    "multipleOf": 1.5
+                                }
                             """
                             """
                             0
@@ -3529,8 +3529,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 1.5
-                            }
+                                    "multipleOf": 1.5
+                                }
                             """
                             """
                             4.5
@@ -3541,8 +3541,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 1.5
-                            }
+                                    "multipleOf": 1.5
+                                }
                             """
                             """
                             35
@@ -3555,8 +3555,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 0.0001
-                            }
+                                    "multipleOf": 0.0001
+                                }
                             """
                             """
                             0.0075
@@ -3567,8 +3567,8 @@ all =
                         examine
                             """
                             {
-                                "multipleOf": 0.0001
-                            }
+                                    "multipleOf": 0.0001
+                                }
                             """
                             """
                             0.00751
@@ -3583,10 +3583,10 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": "integer"
+                                    "not": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             "foo"
@@ -3597,10 +3597,10 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": "integer"
+                                    "not": {
+                                        "type": "integer"
+                                    }
                                 }
-                            }
                             """
                             """
                             1
@@ -3613,13 +3613,13 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": [
-                                        "integer",
-                                        "boolean"
-                                    ]
+                                    "not": {
+                                        "type": [
+                                            "integer",
+                                            "boolean"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             "foo"
@@ -3630,13 +3630,13 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": [
-                                        "integer",
-                                        "boolean"
-                                    ]
+                                    "not": {
+                                        "type": [
+                                            "integer",
+                                            "boolean"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             1
@@ -3647,13 +3647,13 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": [
-                                        "integer",
-                                        "boolean"
-                                    ]
+                                    "not": {
+                                        "type": [
+                                            "integer",
+                                            "boolean"
+                                        ]
+                                    }
                                 }
-                            }
                             """
                             """
                             true
@@ -3666,15 +3666,15 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": "object",
-                                    "properties": {
-                                        "foo": {
-                                            "type": "string"
+                                    "not": {
+                                        "type": "object",
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             1
@@ -3685,20 +3685,20 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": "object",
-                                    "properties": {
-                                        "foo": {
-                                            "type": "string"
+                                    "not": {
+                                        "type": "object",
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "mismatch" <|
@@ -3706,20 +3706,20 @@ all =
                         examine
                             """
                             {
-                                "not": {
-                                    "type": "object",
-                                    "properties": {
-                                        "foo": {
-                                            "type": "string"
+                                    "not": {
+                                        "type": "object",
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
                                         }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "bar"
-                            }
+                                    "foo": "bar"
+                                }
                             """
                             False
                 ]
@@ -3729,18 +3729,18 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "not": {}
+                                    "properties": {
+                                        "foo": {
+                                            "not": {}
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "property absent" <|
@@ -3748,18 +3748,18 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "not": {}
+                                    "properties": {
+                                        "foo": {
+                                            "not": {}
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 1,
-                                "baz": 2
-                            }
+                                    "bar": 1,
+                                    "baz": 2
+                                }
                             """
                             True
                 ]
@@ -3769,8 +3769,8 @@ all =
                         examine
                             """
                             {
-                                "not": true
-                            }
+                                    "not": true
+                                }
                             """
                             """
                             "foo"
@@ -3783,8 +3783,8 @@ all =
                         examine
                             """
                             {
-                                "not": false
-                            }
+                                    "not": false
+                                }
                             """
                             """
                             "foo"
@@ -3799,15 +3799,15 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "oneOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             1
@@ -3818,15 +3818,15 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "oneOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             2.5
@@ -3837,15 +3837,15 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "oneOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             3
@@ -3856,15 +3856,15 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "minimum": 2
-                                    }
-                                ]
-                            }
+                                    "oneOf": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "minimum": 2
+                                        }
+                                    ]
+                                }
                             """
                             """
                             1.5
@@ -3877,16 +3877,16 @@ all =
                         examine
                             """
                             {
-                                "type": "string",
-                                "oneOf": [
-                                    {
-                                        "minLength": 2
-                                    },
-                                    {
-                                        "maxLength": 4
-                                    }
-                                ]
-                            }
+                                    "type": "string",
+                                    "oneOf": [
+                                        {
+                                            "minLength": 2
+                                        },
+                                        {
+                                            "maxLength": 4
+                                        }
+                                    ]
+                                }
                             """
                             """
                             3
@@ -3897,16 +3897,16 @@ all =
                         examine
                             """
                             {
-                                "type": "string",
-                                "oneOf": [
-                                    {
-                                        "minLength": 2
-                                    },
-                                    {
-                                        "maxLength": 4
-                                    }
-                                ]
-                            }
+                                    "type": "string",
+                                    "oneOf": [
+                                        {
+                                            "minLength": 2
+                                        },
+                                        {
+                                            "maxLength": 4
+                                        }
+                                    ]
+                                }
                             """
                             """
                             "foobar"
@@ -3917,16 +3917,16 @@ all =
                         examine
                             """
                             {
-                                "type": "string",
-                                "oneOf": [
-                                    {
-                                        "minLength": 2
-                                    },
-                                    {
-                                        "maxLength": 4
-                                    }
-                                ]
-                            }
+                                    "type": "string",
+                                    "oneOf": [
+                                        {
+                                            "minLength": 2
+                                        },
+                                        {
+                                            "maxLength": 4
+                                        }
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -3939,12 +3939,12 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    true,
-                                    true,
-                                    true
-                                ]
-                            }
+                                    "oneOf": [
+                                        true,
+                                        true,
+                                        true
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -3957,12 +3957,12 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    true,
-                                    false,
-                                    false
-                                ]
-                            }
+                                    "oneOf": [
+                                        true,
+                                        false,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -3975,12 +3975,12 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    true,
-                                    true,
-                                    false
-                                ]
-                            }
+                                    "oneOf": [
+                                        true,
+                                        true,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -3993,12 +3993,12 @@ all =
                         examine
                             """
                             {
-                                "oneOf": [
-                                    false,
-                                    false,
-                                    false
-                                ]
-                            }
+                                    "oneOf": [
+                                        false,
+                                        false,
+                                        false
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -4013,8 +4013,8 @@ all =
                         examine
                             """
                             {
-                                "pattern": "^a*$"
-                            }
+                                    "pattern": "^a*$"
+                                }
                             """
                             """
                             "aaa"
@@ -4025,8 +4025,8 @@ all =
                         examine
                             """
                             {
-                                "pattern": "^a*$"
-                            }
+                                    "pattern": "^a*$"
+                                }
                             """
                             """
                             "abc"
@@ -4037,8 +4037,8 @@ all =
                         examine
                             """
                             {
-                                "pattern": "^a*$"
-                            }
+                                    "pattern": "^a*$"
+                                }
                             """
                             """
                             true
@@ -4051,8 +4051,8 @@ all =
                         examine
                             """
                             {
-                                "pattern": "a+"
-                            }
+                                    "pattern": "a+"
+                                }
                             """
                             """
                             "xxaayy"
@@ -4067,17 +4067,17 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "multiple valid matches is valid" <|
@@ -4085,18 +4085,18 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "foooooo": 2
-                            }
+                                    "foo": 1,
+                                    "foooooo": 2
+                                }
                             """
                             True
                 , test "a single invalid match is invalid" <|
@@ -4104,18 +4104,18 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "bar",
-                                "fooooo": 2
-                            }
+                                    "foo": "bar",
+                                    "fooooo": 2
+                                }
                             """
                             False
                 , test "multiple invalid matches is invalid" <|
@@ -4123,18 +4123,18 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": "bar",
-                                "foooooo": "baz"
-                            }
+                                    "foo": "bar",
+                                    "foooooo": "baz"
+                                }
                             """
                             False
                 , test "ignores arrays" <|
@@ -4142,17 +4142,17 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             [
-                                "foo"
-                            ]
+                                    "foo"
+                                ]
                             """
                             True
                 , test "ignores strings" <|
@@ -4160,12 +4160,12 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             "foo"
@@ -4176,12 +4176,12 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*o": {
-                                        "type": "integer"
+                                    "patternProperties": {
+                                        "f.*o": {
+                                            "type": "integer"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             12
@@ -4194,20 +4194,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "a*": {
-                                        "type": "integer"
-                                    },
-                                    "aaa*": {
-                                        "maximum": 20
+                                    "patternProperties": {
+                                        "a*": {
+                                            "type": "integer"
+                                        },
+                                        "aaa*": {
+                                            "maximum": 20
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "a": 21
-                            }
+                                    "a": 21
+                                }
                             """
                             True
                 , test "a simultaneous match is valid" <|
@@ -4215,20 +4215,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "a*": {
-                                        "type": "integer"
-                                    },
-                                    "aaa*": {
-                                        "maximum": 20
+                                    "patternProperties": {
+                                        "a*": {
+                                            "type": "integer"
+                                        },
+                                        "aaa*": {
+                                            "maximum": 20
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "aaaa": 18
-                            }
+                                    "aaaa": 18
+                                }
                             """
                             True
                 , test "multiple matches is valid" <|
@@ -4236,21 +4236,21 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "a*": {
-                                        "type": "integer"
-                                    },
-                                    "aaa*": {
-                                        "maximum": 20
+                                    "patternProperties": {
+                                        "a*": {
+                                            "type": "integer"
+                                        },
+                                        "aaa*": {
+                                            "maximum": 20
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "a": 21,
-                                "aaaa": 18
-                            }
+                                    "a": 21,
+                                    "aaaa": 18
+                                }
                             """
                             True
                 , test "an invalid due to one is invalid" <|
@@ -4258,20 +4258,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "a*": {
-                                        "type": "integer"
-                                    },
-                                    "aaa*": {
-                                        "maximum": 20
+                                    "patternProperties": {
+                                        "a*": {
+                                            "type": "integer"
+                                        },
+                                        "aaa*": {
+                                            "maximum": 20
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "a": "bar"
-                            }
+                                    "a": "bar"
+                                }
                             """
                             False
                 , test "an invalid due to the other is invalid" <|
@@ -4279,20 +4279,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "a*": {
-                                        "type": "integer"
-                                    },
-                                    "aaa*": {
-                                        "maximum": 20
+                                    "patternProperties": {
+                                        "a*": {
+                                            "type": "integer"
+                                        },
+                                        "aaa*": {
+                                            "maximum": 20
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "aaaa": 31
-                            }
+                                    "aaaa": 31
+                                }
                             """
                             False
                 , test "an invalid due to both is invalid" <|
@@ -4300,21 +4300,21 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "a*": {
-                                        "type": "integer"
-                                    },
-                                    "aaa*": {
-                                        "maximum": 20
+                                    "patternProperties": {
+                                        "a*": {
+                                            "type": "integer"
+                                        },
+                                        "aaa*": {
+                                            "maximum": 20
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "aaa": "foo",
-                                "aaaa": 31
-                            }
+                                    "aaa": "foo",
+                                    "aaaa": 31
+                                }
                             """
                             False
                 ]
@@ -4324,20 +4324,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "[0-9]{2,}": {
-                                        "type": "boolean"
-                                    },
-                                    "X_": {
-                                        "type": "string"
+                                    "patternProperties": {
+                                        "[0-9]{2,}": {
+                                            "type": "boolean"
+                                        },
+                                        "X_": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "answer 1": "42"
-                            }
+                                    "answer 1": "42"
+                                }
                             """
                             True
                 , test "recognized members are accounted for" <|
@@ -4345,20 +4345,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "[0-9]{2,}": {
-                                        "type": "boolean"
-                                    },
-                                    "X_": {
-                                        "type": "string"
+                                    "patternProperties": {
+                                        "[0-9]{2,}": {
+                                            "type": "boolean"
+                                        },
+                                        "X_": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "a31b": null
-                            }
+                                    "a31b": null
+                                }
                             """
                             False
                 , test "regexes are case sensitive" <|
@@ -4366,20 +4366,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "[0-9]{2,}": {
-                                        "type": "boolean"
-                                    },
-                                    "X_": {
-                                        "type": "string"
+                                    "patternProperties": {
+                                        "[0-9]{2,}": {
+                                            "type": "boolean"
+                                        },
+                                        "X_": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "a_x_3": 3
-                            }
+                                    "a_x_3": 3
+                                }
                             """
                             True
                 , test "regexes are case sensitive, 2" <|
@@ -4387,20 +4387,20 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "[0-9]{2,}": {
-                                        "type": "boolean"
-                                    },
-                                    "X_": {
-                                        "type": "string"
+                                    "patternProperties": {
+                                        "[0-9]{2,}": {
+                                            "type": "boolean"
+                                        },
+                                        "X_": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "a_X_3": 3
-                            }
+                                    "a_X_3": 3
+                                }
                             """
                             False
                 ]
@@ -4410,16 +4410,16 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*": true,
-                                    "b.*": false
+                                    "patternProperties": {
+                                        "f.*": true,
+                                        "b.*": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "object with property matching schema false is invalid" <|
@@ -4427,16 +4427,16 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*": true,
-                                    "b.*": false
+                                    "patternProperties": {
+                                        "f.*": true,
+                                        "b.*": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "object with both properties is invalid" <|
@@ -4444,17 +4444,17 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*": true,
-                                    "b.*": false
+                                    "patternProperties": {
+                                        "f.*": true,
+                                        "b.*": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "empty object is valid" <|
@@ -4462,11 +4462,11 @@ all =
                         examine
                             """
                             {
-                                "patternProperties": {
-                                    "f.*": true,
-                                    "b.*": false
+                                    "patternProperties": {
+                                        "f.*": true,
+                                        "b.*": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -4481,21 +4481,21 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "type": "string"
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": "baz"
-                            }
+                                    "foo": 1,
+                                    "bar": "baz"
+                                }
                             """
                             True
                 , test "one property invalid is invalid" <|
@@ -4503,21 +4503,21 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "type": "string"
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": {}
-                            }
+                                    "foo": 1,
+                                    "bar": {}
+                                }
                             """
                             False
                 , test "both properties invalid is invalid" <|
@@ -4525,21 +4525,21 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "type": "string"
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": [],
-                                "bar": {}
-                            }
+                                    "foo": [],
+                                    "bar": {}
+                                }
                             """
                             False
                 , test "doesn't invalidate other properties" <|
@@ -4547,20 +4547,20 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "type": "string"
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             {
-                                "quux": []
-                            }
+                                    "quux": []
+                                }
                             """
                             True
                 , test "ignores arrays" <|
@@ -4568,15 +4568,15 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "type": "string"
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             []
@@ -4587,15 +4587,15 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "type": "string"
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "type": "string"
+                                        }
                                     }
                                 }
-                            }
                             """
                             """
                             12
@@ -4608,32 +4608,32 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": [
-                                    1,
-                                    2
-                                ]
-                            }
+                                    "foo": [
+                                        1,
+                                        2
+                                    ]
+                                }
                             """
                             True
                 , test "property invalidates property" <|
@@ -4641,34 +4641,34 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": [
-                                    1,
-                                    2,
-                                    3,
-                                    4
-                                ]
-                            }
+                                    "foo": [
+                                        1,
+                                        2,
+                                        3,
+                                        4
+                                    ]
+                                }
                             """
                             False
                 , test "patternProperty invalidates property" <|
@@ -4676,29 +4676,29 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": []
-                            }
+                                    "foo": []
+                                }
                             """
                             False
                 , test "patternProperty validates nonproperty" <|
@@ -4706,32 +4706,32 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "fxo": [
-                                    1,
-                                    2
-                                ]
-                            }
+                                    "fxo": [
+                                        1,
+                                        2
+                                    ]
+                                }
                             """
                             True
                 , test "patternProperty invalidates nonproperty" <|
@@ -4739,29 +4739,29 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "fxo": []
-                            }
+                                    "fxo": []
+                                }
                             """
                             False
                 , test "additionalProperty ignores property" <|
@@ -4769,29 +4769,29 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": []
-                            }
+                                    "bar": []
+                                }
                             """
                             True
                 , test "additionalProperty validates others" <|
@@ -4799,29 +4799,29 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "quux": 3
-                            }
+                                    "quux": 3
+                                }
                             """
                             True
                 , test "additionalProperty invalidates others" <|
@@ -4829,29 +4829,29 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {
-                                        "type": "array",
-                                        "maxItems": 3
+                                    "properties": {
+                                        "foo": {
+                                            "type": "array",
+                                            "maxItems": 3
+                                        },
+                                        "bar": {
+                                            "type": "array"
+                                        }
                                     },
-                                    "bar": {
-                                        "type": "array"
+                                    "patternProperties": {
+                                        "f.o": {
+                                            "minItems": 2
+                                        }
+                                    },
+                                    "additionalProperties": {
+                                        "type": "integer"
                                     }
-                                },
-                                "patternProperties": {
-                                    "f.o": {
-                                        "minItems": 2
-                                    }
-                                },
-                                "additionalProperties": {
-                                    "type": "integer"
                                 }
-                            }
                             """
                             """
                             {
-                                "quux": "foo"
-                            }
+                                    "quux": "foo"
+                                }
                             """
                             False
                 ]
@@ -4861,11 +4861,11 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": true,
-                                    "bar": false
+                                    "properties": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -4876,16 +4876,16 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": true,
-                                    "bar": false
+                                    "properties": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "only 'false' property present is invalid" <|
@@ -4893,16 +4893,16 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": true,
-                                    "bar": false
+                                    "properties": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "bar": 2
-                            }
+                                    "bar": 2
+                                }
                             """
                             False
                 , test "both properties present is invalid" <|
@@ -4910,17 +4910,17 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": true,
-                                    "bar": false
+                                    "properties": {
+                                        "foo": true,
+                                        "bar": false
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": 1,
-                                "bar": 2
-                            }
+                                    "foo": 1,
+                                    "bar": 2
+                                }
                             """
                             False
                 ]
@@ -4932,16 +4932,16 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": {
-                                    "maxLength": 3
+                                    "propertyNames": {
+                                        "maxLength": 3
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "f": {},
-                                "foo": {}
-                            }
+                                    "f": {},
+                                    "foo": {}
+                                }
                             """
                             True
                 , test "some property names invalid" <|
@@ -4949,16 +4949,16 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": {
-                                    "maxLength": 3
+                                    "propertyNames": {
+                                        "maxLength": 3
+                                    }
                                 }
-                            }
                             """
                             """
                             {
-                                "foo": {},
-                                "foobar": {}
-                            }
+                                    "foo": {},
+                                    "foobar": {}
+                                }
                             """
                             False
                 , test "object without properties is valid" <|
@@ -4966,10 +4966,10 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": {
-                                    "maxLength": 3
+                                    "propertyNames": {
+                                        "maxLength": 3
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -4980,18 +4980,18 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": {
-                                    "maxLength": 3
+                                    "propertyNames": {
+                                        "maxLength": 3
+                                    }
                                 }
-                            }
                             """
                             """
                             [
-                                1,
-                                2,
-                                3,
-                                4
-                            ]
+                                    1,
+                                    2,
+                                    3,
+                                    4
+                                ]
                             """
                             True
                 , test "ignores strings" <|
@@ -4999,10 +4999,10 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": {
-                                    "maxLength": 3
+                                    "propertyNames": {
+                                        "maxLength": 3
+                                    }
                                 }
-                            }
                             """
                             """
                             "foobar"
@@ -5013,10 +5013,10 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": {
-                                    "maxLength": 3
+                                    "propertyNames": {
+                                        "maxLength": 3
+                                    }
                                 }
-                            }
                             """
                             """
                             12
@@ -5029,13 +5029,13 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": true
-                            }
+                                    "propertyNames": true
+                                }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "empty object is valid" <|
@@ -5043,8 +5043,8 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": true
-                            }
+                                    "propertyNames": true
+                                }
                             """
                             """
                             {}
@@ -5057,13 +5057,13 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": false
-                            }
+                                    "propertyNames": false
+                                }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             False
                 , test "empty object is valid" <|
@@ -5071,775 +5071,13 @@ all =
                         examine
                             """
                             {
-                                "propertyNames": false
-                            }
+                                    "propertyNames": false
+                                }
                             """
                             """
                             {}
                             """
                             True
-                ]
-            ]
-        , describe "ref.json"
-            [ describe "suite: root pointer ref"
-                [ test "match" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#"
-                                    }
-                                },
-                                "additionalProperties": false
-                            }
-                            """
-                            """
-                            {
-                                "foo": false
-                            }
-                            """
-                            True
-                , test "recursive match" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#"
-                                    }
-                                },
-                                "additionalProperties": false
-                            }
-                            """
-                            """
-                            {
-                                "foo": {
-                                    "foo": false
-                                }
-                            }
-                            """
-                            True
-                , test "mismatch" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#"
-                                    }
-                                },
-                                "additionalProperties": false
-                            }
-                            """
-                            """
-                            {
-                                "bar": false
-                            }
-                            """
-                            False
-                , test "recursive mismatch" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#"
-                                    }
-                                },
-                                "additionalProperties": false
-                            }
-                            """
-                            """
-                            {
-                                "foo": {
-                                    "bar": false
-                                }
-                            }
-                            """
-                            False
-                ]
-            , describe "suite: relative pointer ref to object"
-                [ test "match" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "$ref": "#/properties/foo"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "bar": 3
-                            }
-                            """
-                            True
-                , test "mismatch" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "foo": {
-                                        "type": "integer"
-                                    },
-                                    "bar": {
-                                        "$ref": "#/properties/foo"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "bar": true
-                            }
-                            """
-                            False
-                ]
-            , describe "suite: relative pointer ref to array"
-                [ test "match array" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "$ref": "#/items/0"
-                                    }
-                                ]
-                            }
-                            """
-                            """
-                            [
-                                1,
-                                2
-                            ]
-                            """
-                            True
-                , test "mismatch array" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "items": [
-                                    {
-                                        "type": "integer"
-                                    },
-                                    {
-                                        "$ref": "#/items/0"
-                                    }
-                                ]
-                            }
-                            """
-                            """
-                            [
-                                1,
-                                "foo"
-                            ]
-                            """
-                            False
-                ]
-            , describe "suite: escaped pointer ref"
-                [ test "slash invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "tilda~field": {
-                                    "type": "integer"
-                                },
-                                "slash/field": {
-                                    "type": "integer"
-                                },
-                                "percent%field": {
-                                    "type": "integer"
-                                },
-                                "properties": {
-                                    "tilda": {
-                                        "$ref": "#/tilda~0field"
-                                    },
-                                    "slash": {
-                                        "$ref": "#/slash~1field"
-                                    },
-                                    "percent": {
-                                        "$ref": "#/percent%25field"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "slash": "aoeu"
-                            }
-                            """
-                            False
-                , test "tilda invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "tilda~field": {
-                                    "type": "integer"
-                                },
-                                "slash/field": {
-                                    "type": "integer"
-                                },
-                                "percent%field": {
-                                    "type": "integer"
-                                },
-                                "properties": {
-                                    "tilda": {
-                                        "$ref": "#/tilda~0field"
-                                    },
-                                    "slash": {
-                                        "$ref": "#/slash~1field"
-                                    },
-                                    "percent": {
-                                        "$ref": "#/percent%25field"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "tilda": "aoeu"
-                            }
-                            """
-                            False
-                , test "percent invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "tilda~field": {
-                                    "type": "integer"
-                                },
-                                "slash/field": {
-                                    "type": "integer"
-                                },
-                                "percent%field": {
-                                    "type": "integer"
-                                },
-                                "properties": {
-                                    "tilda": {
-                                        "$ref": "#/tilda~0field"
-                                    },
-                                    "slash": {
-                                        "$ref": "#/slash~1field"
-                                    },
-                                    "percent": {
-                                        "$ref": "#/percent%25field"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "percent": "aoeu"
-                            }
-                            """
-                            False
-                , test "slash valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "tilda~field": {
-                                    "type": "integer"
-                                },
-                                "slash/field": {
-                                    "type": "integer"
-                                },
-                                "percent%field": {
-                                    "type": "integer"
-                                },
-                                "properties": {
-                                    "tilda": {
-                                        "$ref": "#/tilda~0field"
-                                    },
-                                    "slash": {
-                                        "$ref": "#/slash~1field"
-                                    },
-                                    "percent": {
-                                        "$ref": "#/percent%25field"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "slash": 123
-                            }
-                            """
-                            True
-                , test "tilda valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "tilda~field": {
-                                    "type": "integer"
-                                },
-                                "slash/field": {
-                                    "type": "integer"
-                                },
-                                "percent%field": {
-                                    "type": "integer"
-                                },
-                                "properties": {
-                                    "tilda": {
-                                        "$ref": "#/tilda~0field"
-                                    },
-                                    "slash": {
-                                        "$ref": "#/slash~1field"
-                                    },
-                                    "percent": {
-                                        "$ref": "#/percent%25field"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "tilda": 123
-                            }
-                            """
-                            True
-                , test "percent valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "tilda~field": {
-                                    "type": "integer"
-                                },
-                                "slash/field": {
-                                    "type": "integer"
-                                },
-                                "percent%field": {
-                                    "type": "integer"
-                                },
-                                "properties": {
-                                    "tilda": {
-                                        "$ref": "#/tilda~0field"
-                                    },
-                                    "slash": {
-                                        "$ref": "#/slash~1field"
-                                    },
-                                    "percent": {
-                                        "$ref": "#/percent%25field"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "percent": 123
-                            }
-                            """
-                            True
-                ]
-            , describe "suite: nested refs"
-                [ test "nested ref valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "definitions": {
-                                    "a": {
-                                        "type": "integer"
-                                    },
-                                    "b": {
-                                        "$ref": "#/definitions/a"
-                                    },
-                                    "c": {
-                                        "$ref": "#/definitions/b"
-                                    }
-                                },
-                                "$ref": "#/definitions/c"
-                            }
-                            """
-                            """
-                            5
-                            """
-                            True
-                , test "nested ref invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "definitions": {
-                                    "a": {
-                                        "type": "integer"
-                                    },
-                                    "b": {
-                                        "$ref": "#/definitions/a"
-                                    },
-                                    "c": {
-                                        "$ref": "#/definitions/b"
-                                    }
-                                },
-                                "$ref": "#/definitions/c"
-                            }
-                            """
-                            """
-                            "a"
-                            """
-                            False
-                ]
-            , describe "suite: ref overrides any sibling keywords"
-                [ test "ref valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "definitions": {
-                                    "reffed": {
-                                        "type": "array"
-                                    }
-                                },
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#/definitions/reffed",
-                                        "maxItems": 2
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "foo": []
-                            }
-                            """
-                            True
-                , test "ref valid, maxItems ignored" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "definitions": {
-                                    "reffed": {
-                                        "type": "array"
-                                    }
-                                },
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#/definitions/reffed",
-                                        "maxItems": 2
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "foo": [
-                                    1,
-                                    2,
-                                    3
-                                ]
-                            }
-                            """
-                            True
-                , test "ref invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "definitions": {
-                                    "reffed": {
-                                        "type": "array"
-                                    }
-                                },
-                                "properties": {
-                                    "foo": {
-                                        "$ref": "#/definitions/reffed",
-                                        "maxItems": 2
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "foo": "string"
-                            }
-                            """
-                            False
-                ]
-            , describe "suite: remote ref, containing refs itself"
-                [ test "remote ref valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "$ref": "http://json-schema.org/draft-06/schema#"
-                            }
-                            """
-                            """
-                            {
-                                "minLength": 1
-                            }
-                            """
-                            True
-                , test "remote ref invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "$ref": "http://json-schema.org/draft-06/schema#"
-                            }
-                            """
-                            """
-                            {
-                                "minLength": -1
-                            }
-                            """
-                            False
-                ]
-            , describe "suite: property named $ref that is not a reference"
-                [ test "property named $ref valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "$ref": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "$ref": "a"
-                            }
-                            """
-                            True
-                , test "property named $ref invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "properties": {
-                                    "$ref": {
-                                        "type": "string"
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "$ref": 2
-                            }
-                            """
-                            False
-                ]
-            , describe "suite: $ref to boolean schema true"
-                [ test "any value is valid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "$ref": "#/definitions/bool",
-                                "definitions": {
-                                    "bool": true
-                                }
-                            }
-                            """
-                            """
-                            "foo"
-                            """
-                            True
-                ]
-            , describe "suite: $ref to boolean schema false"
-                [ test "any value is invalid" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "$ref": "#/definitions/bool",
-                                "definitions": {
-                                    "bool": false
-                                }
-                            }
-                            """
-                            """
-                            "foo"
-                            """
-                            False
-                ]
-            , describe "suite: Recursive references between schemas"
-                [ test "valid tree" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "$id": "http://localhost:1234/tree",
-                                "description": "tree of nodes",
-                                "type": "object",
-                                "properties": {
-                                    "meta": {
-                                        "type": "string"
-                                    },
-                                    "nodes": {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "node"
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "meta",
-                                    "nodes"
-                                ],
-                                "definitions": {
-                                    "node": {
-                                        "$id": "http://localhost:1234/node",
-                                        "description": "node",
-                                        "type": "object",
-                                        "properties": {
-                                            "value": {
-                                                "type": "number"
-                                            },
-                                            "subtree": {
-                                                "$ref": "tree"
-                                            }
-                                        },
-                                        "required": [
-                                            "value"
-                                        ]
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "meta": "root",
-                                "nodes": [
-                                    {
-                                        "value": 1,
-                                        "subtree": {
-                                            "meta": "child",
-                                            "nodes": [
-                                                {
-                                                    "value": 1.1
-                                                },
-                                                {
-                                                    "value": 1.2
-                                                }
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "value": 2,
-                                        "subtree": {
-                                            "meta": "child",
-                                            "nodes": [
-                                                {
-                                                    "value": 2.1
-                                                },
-                                                {
-                                                    "value": 2.2
-                                                }
-                                            ]
-                                        }
-                                    }
-                                ]
-                            }
-                            """
-                            True
-                , test "invalid tree" <|
-                    \() ->
-                        examine
-                            """
-                            {
-                                "$id": "http://localhost:1234/tree",
-                                "description": "tree of nodes",
-                                "type": "object",
-                                "properties": {
-                                    "meta": {
-                                        "type": "string"
-                                    },
-                                    "nodes": {
-                                        "type": "array",
-                                        "items": {
-                                            "$ref": "node"
-                                        }
-                                    }
-                                },
-                                "required": [
-                                    "meta",
-                                    "nodes"
-                                ],
-                                "definitions": {
-                                    "node": {
-                                        "$id": "http://localhost:1234/node",
-                                        "description": "node",
-                                        "type": "object",
-                                        "properties": {
-                                            "value": {
-                                                "type": "number"
-                                            },
-                                            "subtree": {
-                                                "$ref": "tree"
-                                            }
-                                        },
-                                        "required": [
-                                            "value"
-                                        ]
-                                    }
-                                }
-                            }
-                            """
-                            """
-                            {
-                                "meta": "root",
-                                "nodes": [
-                                    {
-                                        "value": 1,
-                                        "subtree": {
-                                            "meta": "child",
-                                            "nodes": [
-                                                {
-                                                    "value": "string is invalid"
-                                                },
-                                                {
-                                                    "value": 1.2
-                                                }
-                                            ]
-                                        }
-                                    },
-                                    {
-                                        "value": 2,
-                                        "subtree": {
-                                            "meta": "child",
-                                            "nodes": [
-                                                {
-                                                    "value": 2.1
-                                                },
-                                                {
-                                                    "value": 2.2
-                                                }
-                                            ]
-                                        }
-                                    }
-                                ]
-                            }
-                            """
-                            False
                 ]
             ]
         , describe "required.json"
@@ -5849,19 +5087,19 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "required": [
-                                    "foo"
-                                ]
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "required": [
+                                        "foo"
+                                    ]
+                                }
                             """
                             """
                             {
-                                "foo": 1
-                            }
+                                    "foo": 1
+                                }
                             """
                             True
                 , test "non-present required property is invalid" <|
@@ -5869,19 +5107,19 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "required": [
-                                    "foo"
-                                ]
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "required": [
+                                        "foo"
+                                    ]
+                                }
                             """
                             """
                             {
-                                "bar": 1
-                            }
+                                    "bar": 1
+                                }
                             """
                             False
                 , test "ignores arrays" <|
@@ -5889,14 +5127,14 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "required": [
-                                    "foo"
-                                ]
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "required": [
+                                        "foo"
+                                    ]
+                                }
                             """
                             """
                             []
@@ -5907,14 +5145,14 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "required": [
-                                    "foo"
-                                ]
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "required": [
+                                        "foo"
+                                    ]
+                                }
                             """
                             """
                             ""
@@ -5925,14 +5163,14 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {},
-                                    "bar": {}
-                                },
-                                "required": [
-                                    "foo"
-                                ]
-                            }
+                                    "properties": {
+                                        "foo": {},
+                                        "bar": {}
+                                    },
+                                    "required": [
+                                        "foo"
+                                    ]
+                                }
                             """
                             """
                             12
@@ -5945,10 +5183,10 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {}
+                                    "properties": {
+                                        "foo": {}
+                                    }
                                 }
-                            }
                             """
                             """
                             {}
@@ -5961,11 +5199,11 @@ all =
                         examine
                             """
                             {
-                                "properties": {
-                                    "foo": {}
-                                },
-                                "required": []
-                            }
+                                    "properties": {
+                                        "foo": {}
+                                    },
+                                    "required": []
+                                }
                             """
                             """
                             {}
@@ -5980,8 +5218,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             1
@@ -5992,8 +5230,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             1.1
@@ -6004,8 +5242,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             "foo"
@@ -6016,8 +5254,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             "1"
@@ -6028,8 +5266,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             {}
@@ -6040,8 +5278,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             []
@@ -6052,8 +5290,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             true
@@ -6064,8 +5302,8 @@ all =
                         examine
                             """
                             {
-                                "type": "integer"
-                            }
+                                    "type": "integer"
+                                }
                             """
                             """
                             null
@@ -6078,8 +5316,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             1
@@ -6090,8 +5328,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             1.1
@@ -6102,8 +5340,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             "foo"
@@ -6114,8 +5352,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             "1"
@@ -6126,8 +5364,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             {}
@@ -6138,8 +5376,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             []
@@ -6150,8 +5388,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             true
@@ -6162,8 +5400,8 @@ all =
                         examine
                             """
                             {
-                                "type": "number"
-                            }
+                                    "type": "number"
+                                }
                             """
                             """
                             null
@@ -6176,8 +5414,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             1
@@ -6188,8 +5426,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             1.1
@@ -6200,8 +5438,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             "foo"
@@ -6212,8 +5450,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             "1"
@@ -6224,8 +5462,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             {}
@@ -6236,8 +5474,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             []
@@ -6248,8 +5486,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             true
@@ -6260,8 +5498,8 @@ all =
                         examine
                             """
                             {
-                                "type": "string"
-                            }
+                                    "type": "string"
+                                }
                             """
                             """
                             null
@@ -6274,8 +5512,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             1
@@ -6286,8 +5524,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             1.1
@@ -6298,8 +5536,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             "foo"
@@ -6310,8 +5548,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             {}
@@ -6322,8 +5560,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             []
@@ -6334,8 +5572,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             true
@@ -6346,8 +5584,8 @@ all =
                         examine
                             """
                             {
-                                "type": "object"
-                            }
+                                    "type": "object"
+                                }
                             """
                             """
                             null
@@ -6360,8 +5598,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             1
@@ -6372,8 +5610,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             1.1
@@ -6384,8 +5622,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             "foo"
@@ -6396,8 +5634,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             {}
@@ -6408,8 +5646,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             []
@@ -6420,8 +5658,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             true
@@ -6432,8 +5670,8 @@ all =
                         examine
                             """
                             {
-                                "type": "array"
-                            }
+                                    "type": "array"
+                                }
                             """
                             """
                             null
@@ -6446,8 +5684,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             1
@@ -6458,8 +5696,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             1.1
@@ -6470,8 +5708,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             "foo"
@@ -6482,8 +5720,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             {}
@@ -6494,8 +5732,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             []
@@ -6506,8 +5744,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             true
@@ -6518,8 +5756,8 @@ all =
                         examine
                             """
                             {
-                                "type": "boolean"
-                            }
+                                    "type": "boolean"
+                                }
                             """
                             """
                             null
@@ -6532,8 +5770,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             1
@@ -6544,8 +5782,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             1.1
@@ -6556,8 +5794,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             "foo"
@@ -6568,8 +5806,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             {}
@@ -6580,8 +5818,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             []
@@ -6592,8 +5830,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             true
@@ -6604,8 +5842,8 @@ all =
                         examine
                             """
                             {
-                                "type": "null"
-                            }
+                                    "type": "null"
+                                }
                             """
                             """
                             null
@@ -6618,11 +5856,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             1
@@ -6633,11 +5871,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             "foo"
@@ -6648,11 +5886,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             1.1
@@ -6663,11 +5901,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             {}
@@ -6678,11 +5916,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             []
@@ -6693,11 +5931,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             true
@@ -6708,11 +5946,11 @@ all =
                         examine
                             """
                             {
-                                "type": [
-                                    "integer",
-                                    "string"
-                                ]
-                            }
+                                    "type": [
+                                        "integer",
+                                        "string"
+                                    ]
+                                }
                             """
                             """
                             null
@@ -6727,14 +5965,14 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                1,
-                                2
-                            ]
+                                    1,
+                                    2
+                                ]
                             """
                             True
                 , test "non-unique array of integers is invalid" <|
@@ -6742,14 +5980,14 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                1,
-                                1
-                            ]
+                                    1,
+                                    1
+                                ]
                             """
                             False
                 , test "numbers are unique if mathematically unequal" <|
@@ -6757,15 +5995,15 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                1,
-                                1,
-                                1
-                            ]
+                                    1,
+                                    1,
+                                    1
+                                ]
                             """
                             False
                 , test "unique array of objects is valid" <|
@@ -6773,18 +6011,18 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                {
-                                    "foo": "bar"
-                                },
-                                {
-                                    "foo": "baz"
-                                }
-                            ]
+                                    {
+                                        "foo": "bar"
+                                    },
+                                    {
+                                        "foo": "baz"
+                                    }
+                                ]
                             """
                             True
                 , test "non-unique array of objects is invalid" <|
@@ -6792,18 +6030,18 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                {
-                                    "foo": "bar"
-                                },
-                                {
-                                    "foo": "bar"
-                                }
-                            ]
+                                    {
+                                        "foo": "bar"
+                                    },
+                                    {
+                                        "foo": "bar"
+                                    }
+                                ]
                             """
                             False
                 , test "unique array of nested objects is valid" <|
@@ -6811,26 +6049,26 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                {
-                                    "foo": {
-                                        "bar": {
-                                            "baz": true
+                                    {
+                                        "foo": {
+                                            "bar": {
+                                                "baz": true
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "foo": {
+                                            "bar": {
+                                                "baz": false
+                                            }
                                         }
                                     }
-                                },
-                                {
-                                    "foo": {
-                                        "bar": {
-                                            "baz": false
-                                        }
-                                    }
-                                }
-                            ]
+                                ]
                             """
                             True
                 , test "non-unique array of nested objects is invalid" <|
@@ -6838,26 +6076,26 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                {
-                                    "foo": {
-                                        "bar": {
-                                            "baz": true
+                                    {
+                                        "foo": {
+                                            "bar": {
+                                                "baz": true
+                                            }
+                                        }
+                                    },
+                                    {
+                                        "foo": {
+                                            "bar": {
+                                                "baz": true
+                                            }
                                         }
                                     }
-                                },
-                                {
-                                    "foo": {
-                                        "bar": {
-                                            "baz": true
-                                        }
-                                    }
-                                }
-                            ]
+                                ]
                             """
                             False
                 , test "unique array of arrays is valid" <|
@@ -6865,18 +6103,18 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                [
-                                    "foo"
-                                ],
-                                [
-                                    "bar"
+                                    [
+                                        "foo"
+                                    ],
+                                    [
+                                        "bar"
+                                    ]
                                 ]
-                            ]
                             """
                             True
                 , test "non-unique array of arrays is invalid" <|
@@ -6884,18 +6122,18 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                [
-                                    "foo"
-                                ],
-                                [
-                                    "foo"
+                                    [
+                                        "foo"
+                                    ],
+                                    [
+                                        "foo"
+                                    ]
                                 ]
-                            ]
                             """
                             False
                 , test "1 and true are unique" <|
@@ -6903,14 +6141,14 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                1,
-                                true
-                            ]
+                                    1,
+                                    true
+                                ]
                             """
                             True
                 , test "0 and false are unique" <|
@@ -6918,14 +6156,14 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                0,
-                                false
-                            ]
+                                    0,
+                                    false
+                                ]
                             """
                             True
                 , test "unique heterogeneous types are valid" <|
@@ -6933,19 +6171,19 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                {},
-                                [
+                                    {},
+                                    [
+                                        1
+                                    ],
+                                    true,
+                                    null,
                                     1
-                                ],
-                                true,
-                                null,
-                                1
-                            ]
+                                ]
                             """
                             True
                 , test "non-unique heterogeneous types are invalid" <|
@@ -6953,20 +6191,20 @@ all =
                         examine
                             """
                             {
-                                "uniqueItems": true
-                            }
+                                    "uniqueItems": true
+                                }
                             """
                             """
                             [
-                                {},
-                                [
+                                    {},
+                                    [
+                                        1
+                                    ],
+                                    true,
+                                    null,
+                                    {},
                                     1
-                                ],
-                                true,
-                                null,
-                                {},
-                                1
-                            ]
+                                ]
                             """
                             False
                 ]
