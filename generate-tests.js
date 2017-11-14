@@ -1,8 +1,20 @@
 const { readdirSync, readFileSync } = require('fs');
 const { join } = require('path');
 
-const tests = load('./JSON-Schema-Test-Suite/tests/draft6');
-console.log(header('Draft6') + body('draft-6', tests) + footer());
+const namespace = process.argv[2];
+console.log(namespace)
+
+if (namespace !== 'draft-3' && namespace !== 'draft-4' && namespace !== 'draft-6') {
+    console.error('Pleace specify namespace as a param. Avalable options: draft-3, draft-4, draft-6.');
+    console.error('Usage example: node generate-tests.js draft-6');
+    process.exit(1);
+}
+
+const dirname = namespace.replace('-', '');
+const moduleName = dirname.substr(0, 1).toUpperCase() +  dirname.substr(1);
+
+const tests = load('./JSON-Schema-Test-Suite/tests/' + dirname);
+console.log(header(moduleName) + body(namespace, tests) + footer());
 
 function load(path) {
     return readdirSync(path)
