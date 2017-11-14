@@ -629,10 +629,10 @@ validate value schema =
                 (\const val ->
                     let
                         expected =
-                            toString const
+                            canonical const
 
                         actual =
-                            toString val
+                            canonical val
                     in
                         if expected == actual then
                             Ok True
