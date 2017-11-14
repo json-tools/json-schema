@@ -121,6 +121,7 @@ import Json.Encode as Encode
 import Json.Schema.Definitions
     exposing
         ( Schema(ObjectSchema, BooleanSchema)
+        , ExclusiveBoundary(BoolBoundary, NumberBoundary)
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType, BooleanType)
         , Schemata(Schemata)
@@ -431,14 +432,14 @@ withMinimum x =
 -}
 withExclusiveMaximum : Float -> SchemaBuilder -> SchemaBuilder
 withExclusiveMaximum x =
-    updateSchema (\s -> { s | exclusiveMaximum = Just x })
+    updateSchema (\s -> { s | exclusiveMaximum = Just (NumberBoundary x) })
 
 
 {-|
 -}
 withExclusiveMinimum : Float -> SchemaBuilder -> SchemaBuilder
 withExclusiveMinimum x =
-    updateSchema (\s -> { s | exclusiveMinimum = Just x })
+    updateSchema (\s -> { s | exclusiveMinimum = Just (NumberBoundary x) })
 
 
 {-|

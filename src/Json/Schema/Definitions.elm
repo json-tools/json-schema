@@ -12,6 +12,7 @@ module Json.Schema.Definitions
         , SubSchema
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
+        , ExclusiveBoundary(BoolBoundary, NumberBoundary)
         )
 
 {-|
@@ -69,10 +70,10 @@ type alias SubSchema =
         -- numeric validations
     , multipleOf : Maybe Float
     , maximum : Maybe Float
-    , exclusiveMaximum : Maybe Float
+    , exclusiveMaximum : Maybe ExclusiveBoundary
     , minimum : Maybe Float
     , exclusiveMinimum :
-        Maybe Float
+        Maybe ExclusiveBoundary
         -- string validations
     , maxLength : Maybe Int
     , minLength : Maybe Int
@@ -85,7 +86,9 @@ type alias SubSchema =
     , maxItems : Maybe Int
     , minItems : Maybe Int
     , uniqueItems : Maybe Bool
-    , contains : Maybe Schema
+    , contains :
+        Maybe Schema
+        -- object validations
     , maxProperties : Maybe Int
     , minProperties : Maybe Int
     , required : Maybe (List String)
@@ -93,7 +96,9 @@ type alias SubSchema =
     , patternProperties : Maybe Schemata
     , additionalProperties : Maybe Schema
     , dependencies : List ( String, Dependency )
-    , propertyNames : Maybe Schema
+    , propertyNames :
+        Maybe Schema
+        -- misc validations
     , enum : Maybe (List Value)
     , const : Maybe Value
     , allOf : Maybe (List Schema)
@@ -125,6 +130,14 @@ Dependency definition.
 type Dependency
     = ArrayPropNames (List String)
     | PropSchema Schema
+
+
+{-|
+Exclusive boundaries. Compatibility layer between draft-04 and draft-06
+-}
+type ExclusiveBoundary
+    = BoolBoundary Bool
+    | NumberBoundary Float
 
 
 {-| Create blank JSON Schema `{}`.
@@ -274,6 +287,15 @@ encode s =
             l
                 |> List.map (\( s, x ) -> ( s, encode x ))
                 |> Encode.object
+
+        encodeExclusiveBoundary : ExclusiveBoundary -> Value
+        encodeExclusiveBoundary eb =
+            case eb of
+                BoolBoundary b ->
+                    Encode.bool b
+
+                NumberBoundary f ->
+                    Encode.float f
     in
         case s of
             BooleanSchema bs ->
@@ -290,9 +312,9 @@ encode s =
                 , optionally encodeSchemata os.definitions "definitions"
                 , optionally Encode.float os.multipleOf "multipleOf"
                 , optionally Encode.float os.maximum "maximum"
-                , optionally Encode.float os.exclusiveMaximum "exclusiveMaximum"
+                , optionally encodeExclusiveBoundary os.exclusiveMaximum "exclusiveMaximum"
                 , optionally Encode.float os.minimum "minimum"
-                , optionally Encode.float os.exclusiveMinimum "exclusiveMinimum"
+                , optionally encodeExclusiveBoundary os.exclusiveMinimum "exclusiveMinimum"
                 , optionally Encode.int os.maxLength "maxLength"
                 , optionally Encode.int os.minLength "minLength"
                 , optionally Encode.string os.pattern "pattern"
@@ -347,6 +369,9 @@ decoder =
                             succeed (BooleanSchema False)
                     )
 
+        exclusiveBoundaryDecoder =
+            Decode.oneOf [ Decode.bool |> Decode.map BoolBoundary, Decode.float |> Decode.map NumberBoundary ]
+
         objectSchemaDecoder =
             decode SubSchema
                 |> optional "type"
@@ -365,9 +390,9 @@ decoder =
                 |>
                     optional "multipleOf" (nullable float) Nothing
                 |> optional "maximum" (nullable float) Nothing
-                |> optional "exclusiveMaximum" (nullable float) Nothing
+                |> optional "exclusiveMaximum" (nullable exclusiveBoundaryDecoder) Nothing
                 |> optional "minimum" (nullable float) Nothing
-                |> optional "exclusiveMinimum" (nullable float) Nothing
+                |> optional "exclusiveMinimum" (nullable exclusiveBoundaryDecoder) Nothing
                 -- string
                 |>
                     optional "maxLength" (nullable nonNegativeInt) Nothing

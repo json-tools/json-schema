@@ -30,6 +30,7 @@ import Json.Schema.Definitions
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , Schema(ObjectSchema, BooleanSchema)
+        , ExclusiveBoundary(BoolBoundary, NumberBoundary)
         , SubSchema
         , blankSchema
         , blankSubSchema
@@ -199,48 +200,84 @@ validate value schema =
                 )
 
         validateMaximum : JsonPath -> Value -> SubSchema -> Result (List Error) Value
-        validateMaximum jsonPath =
+        validateMaximum jsonPath v s =
             when .maximum
                 Decode.float
                 (\max x ->
-                    if x <= max then
-                        Ok True
-                    else
-                        Err [ Error jsonPath <| Maximum max x ]
+                    case s.exclusiveMaximum of
+                        Just (BoolBoundary True) ->
+                            if x < max then
+                                Ok True
+                            else
+                                Err [ Error jsonPath <| ExclusiveMaximum max x ]
+
+                        _ ->
+                            if x <= max then
+                                Ok True
+                            else
+                                Err [ Error jsonPath <| Maximum max x ]
                 )
+                v
+                s
 
         validateMinimum : JsonPath -> Value -> SubSchema -> Result (List Error) Value
-        validateMinimum jsonPath =
+        validateMinimum jsonPath v s =
             when .minimum
                 Decode.float
                 (\min x ->
-                    if x >= min then
-                        Ok True
-                    else
-                        Err [ Error jsonPath <| Minimum min x ]
+                    case s.exclusiveMinimum of
+                        Just (BoolBoundary True) ->
+                            if x > min then
+                                Ok True
+                            else
+                                Err [ Error jsonPath <| ExclusiveMinimum min x ]
+
+                        _ ->
+                            if x >= min then
+                                Ok True
+                            else
+                                Err [ Error jsonPath <| Minimum min x ]
                 )
+                v
+                s
 
         validateExclusiveMaximum : JsonPath -> Value -> SubSchema -> Result (List Error) Value
-        validateExclusiveMaximum jsonPath =
+        validateExclusiveMaximum jsonPath v s =
             when .exclusiveMaximum
                 Decode.float
                 (\max x ->
-                    if x < max then
-                        Ok True
-                    else
-                        Err [ Error jsonPath <| ExclusiveMaximum max x ]
+                    case max of
+                        NumberBoundary m ->
+                            if x < m then
+                                Ok True
+                            else
+                                Err [ Error jsonPath <| ExclusiveMaximum m x ]
+
+                        BoolBoundary _ ->
+                            -- draft-04 exclusive boundary validation only works as part of minimum/maximum
+                            Ok True
                 )
+                v
+                s
 
         validateExclusiveMinimum : JsonPath -> Value -> SubSchema -> Result (List Error) Value
-        validateExclusiveMinimum jsonPath =
+        validateExclusiveMinimum jsonPath v s =
             when .exclusiveMinimum
                 Decode.float
                 (\min x ->
-                    if x > min then
-                        Ok True
-                    else
-                        Err [ Error jsonPath <| ExclusiveMinimum min x ]
+                    case min of
+                        NumberBoundary m ->
+                            if x > m then
+                                Ok True
+                            else
+                                Err [ Error jsonPath <| ExclusiveMinimum m x ]
+
+                        BoolBoundary _ ->
+                            -- draft-04 exclusive boundary validation only works as part of minimum/maximum
+                            Ok True
                 )
+                v
+                s
 
         validateMaxLength : JsonPath -> Value -> SubSchema -> Result (List Error) Value
         validateMaxLength jsonPath =
