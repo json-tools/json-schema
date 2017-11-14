@@ -766,19 +766,6 @@ validate value schema =
                         Ok val
                 )
 
-        validateRef : JsonPath -> Value -> SubSchema -> Result (List Error) Value
-        validateRef jsonPath =
-            when .ref
-                Decode.value
-                (\ref val ->
-                    case ref |> resolveReference rootSchema of
-                        Just schema ->
-                            validateSchema jsonPath val schema
-
-                        Nothing ->
-                            Err [ Error jsonPath <| UnresolvableReference ref ]
-                )
-
         getSchema key (Schemata props) =
             props
                 |> List.filter (\( k, _ ) -> k == key)
