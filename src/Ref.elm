@@ -14,29 +14,32 @@ resolveReference schema ref =
                 else if ref |> String.startsWith "#/definitions/" then
                     os.definitions
                         |> Maybe.andThen (findDefinition ref)
-                        --|> debugSubSchema "find def?"
-                        |>
-                            Maybe.andThen
-                                (\def ->
-                                    case def.ref of
-                                        Just r ->
-                                            resolveReference schema r
+                        |> Maybe.andThen
+                            (\def ->
+                                case def of
+                                    ObjectSchema oss ->
+                                        case oss.ref of
+                                            Just r ->
+                                                resolveReference def r
 
-                                        Nothing ->
-                                            Just <| ObjectSchema def
-                                )
+                                            Nothing ->
+                                                Just def
+
+                                    BooleanSchema _ ->
+                                        Just def
+                            )
                 else
                     Nothing
             )
 
 
-findDefinition : String -> Schemata -> Maybe SubSchema
+findDefinition : String -> Schemata -> Maybe Schema
 findDefinition ref (Schemata defs) =
     defs
         |> List.foldl
             (\( key, def ) res ->
                 if res == Nothing && ("#/definitions/" ++ key) == ref then
-                    whenObjectSchema def
+                    Just def
                 else
                     res
             )
