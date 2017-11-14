@@ -112,37 +112,46 @@ validate value schema =
             schema
 
         validateSubschema jsonPath os value =
-            [ validateMultipleOf
-            , validateMaximum
-            , validateMinimum
-            , validateExclusiveMaximum
-            , validateExclusiveMinimum
-            , validateMaxLength
-            , validateMinLength
-            , validatePattern
-            , validateItems
-            , validateMaxItems
-            , validateMinItems
-            , validateUniqueItems
-            , validateContains
-            , validateMaxProperties
-            , validateMinProperties
-            , validateRequired
-            , validateProperties
-            , validatePatternProperties
-            , validateAdditionalProperties
-            , validateDependencies
-            , validatePropertyNames
-            , validateEnum
-            , validateConst
-            , validateType
-            , validateAllOf
-            , validateAnyOf
-            , validateOneOf
-            , validateNot
-            , validateRef
-            ]
-                |> failWithListErrors jsonPath value os
+            case os.ref of
+                Just ref ->
+                    case ref |> resolveReference rootSchema of
+                        Just schema ->
+                            validateSchema jsonPath value schema
+
+                        Nothing ->
+                            Err [ Error jsonPath <| UnresolvableReference ref ]
+
+                Nothing ->
+                    [ validateMultipleOf
+                    , validateMaximum
+                    , validateMinimum
+                    , validateExclusiveMaximum
+                    , validateExclusiveMinimum
+                    , validateMaxLength
+                    , validateMinLength
+                    , validatePattern
+                    , validateItems
+                    , validateMaxItems
+                    , validateMinItems
+                    , validateUniqueItems
+                    , validateContains
+                    , validateMaxProperties
+                    , validateMinProperties
+                    , validateRequired
+                    , validateProperties
+                    , validatePatternProperties
+                    , validateAdditionalProperties
+                    , validateDependencies
+                    , validatePropertyNames
+                    , validateEnum
+                    , validateConst
+                    , validateType
+                    , validateAllOf
+                    , validateAnyOf
+                    , validateOneOf
+                    , validateNot
+                    ]
+                        |> failWithListErrors jsonPath value os
 
         validateSchema jsonPath value s =
             case s of
