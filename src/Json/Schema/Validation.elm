@@ -825,6 +825,19 @@ stringify =
     Encode.encode 0
 
 
+canonical : Value -> String
+canonical v =
+    case Decode.decodeValue (Decode.keyValuePairs Decode.value) v of
+        Ok obj ->
+            obj
+                |> List.sortBy (\( k, _ ) -> k)
+                |> Encode.object
+                |> stringify
+
+        Err _ ->
+            stringify v
+
+
 concatErrors : Result (List b) a -> List (Result (List b) a) -> Result (List b) a
 concatErrors =
     List.foldl
