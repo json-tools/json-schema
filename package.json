@@ -8,7 +8,8 @@
   "scripts": {
     "start": "elm-live src/Main.elm --output=elm.js --open",
     "test": "elm-test --watch",
-    "deploy": "gh-pages -d dist -a"
+    "deploy": "gh-pages -d dist -a",
+    "generate-tests": "node ./generate-tests.js draft-6 > tests/Draft6.elm && node ./generate-tests.js draft-4 > tests/Draft4.elm"
   },
   "devDependencies": {
     "elm": "^0.18.0",
