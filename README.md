@@ -31,6 +31,8 @@ Instead of writing validation code as part of your frontend app you could descri
 - [x] random value generator
 - [x] demo: json editor
 - [x] multiple errors
+- [x] support draft-04 and draft-06 of JSON Schema
+- [ ] full `$ref` support
 - [ ] i18n
 - [ ] demo: docs generator
 - [ ] demo: schema builder

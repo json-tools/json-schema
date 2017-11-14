@@ -1,3 +1,10 @@
+## 4.0.0 (not published)
+
+- support full spec of draft-04 and draft-06
+- functionality validated by [official test suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
+- dozen of fixes in validation
+- new type `ExclusiveBoundary(BoolBoundary, NumberBoundary)` (compatibility layer between drafts 4 and 6)
+
 ## 3.0.0
 
 - changed validation errors (added more info to facilitate error messages building)
