@@ -6989,7 +6989,7 @@ examine schemaSource dataSource outcome =
 
         result =
             validateValue data schema
-                |> Result.mapError (\_ -> "")
+                |> Result.mapError toString
                 |> Result.map (\_ -> True)
     in
         if outcome then
