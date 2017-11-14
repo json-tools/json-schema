@@ -91,10 +91,10 @@ function printCases(schema, collection) {
                     \\() ->
                         examine
                             """
-                            ${JSON.stringify(schema)}
+                            ${JSON.stringify(schema, null, '    ').replace(/\n/g, '\n                            ')}
                             """
                             """
-                            ${JSON.stringify(data)}
+                            ${JSON.stringify(data, null, '    ').replace(/\n/g, '\n                            ')}
                             """
                             ${valid ? 'True' : 'False'}`
     });
