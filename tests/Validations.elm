@@ -40,7 +40,7 @@ import Json.Schema.Builder as JSB
         )
 import Json.Encode as Encode exposing (int)
 import Json.Decode as Decode exposing (decodeValue)
-import Json.Schema.Validation as Validation exposing (Error, ValidationError(..))
+import Json.Schema.Validation as Validation exposing (Error, JsonPointer, ValidationError(..))
 import Json.Schema.Definitions exposing (blankSchema)
 import Test exposing (Test, describe, test, only)
 import Expect
@@ -73,7 +73,7 @@ all =
                     buildSchema
                         |> withMultipleOf 3
                         |> JSB.validate (Encode.float (2 / 7))
-                        |> Expect.equal (Err [ Error [] <| MultipleOf 3 (2 / 7) ])
+                        |> Expect.equal (Err [ error [] <| MultipleOf 3 (2 / 7) ])
             ]
         , describe "maximum"
             [ test "success" <|
@@ -87,7 +87,7 @@ all =
                     buildSchema
                         |> withMaximum 2
                         |> JSB.validate (Encode.float 2.1)
-                        |> Expect.equal (Err [ Error [] <| Maximum 2.0 2.1 ])
+                        |> Expect.equal (Err [ error [] <| Maximum 2.0 2.1 ])
             ]
         , describe "minimum"
             [ test "success" <|
@@ -101,7 +101,7 @@ all =
                     buildSchema
                         |> withMinimum 2
                         |> JSB.validate (Encode.float 1.9)
-                        |> Expect.equal (Err [ Error [] <| Minimum 2.0 1.9 ])
+                        |> Expect.equal (Err [ error [] <| Minimum 2.0 1.9 ])
             ]
         , describe "exclusiveMaximum"
             [ test "success" <|
@@ -115,7 +115,7 @@ all =
                     buildSchema
                         |> withExclusiveMaximum 2
                         |> JSB.validate (Encode.float 2)
-                        |> Expect.equal (Err [ Error [] <| ExclusiveMaximum 2 2 ])
+                        |> Expect.equal (Err [ error [] <| ExclusiveMaximum 2 2 ])
             ]
         , describe "exclusiveMinimum"
             [ test "success" <|
@@ -129,7 +129,7 @@ all =
                     buildSchema
                         |> withExclusiveMinimum 2
                         |> JSB.validate (Encode.float 2)
-                        |> Expect.equal (Err [ Error [] <| ExclusiveMinimum 2 2 ])
+                        |> Expect.equal (Err [ error [] <| ExclusiveMinimum 2 2 ])
             ]
         , describe "maxLength"
             [ test "success" <|
@@ -149,7 +149,7 @@ all =
                     buildSchema
                         |> withMaxLength 2
                         |> validate (Encode.string "foo")
-                        |> Expect.equal (Err [ Error [] <| MaxLength 2 3 ])
+                        |> Expect.equal (Err [ error [] <| MaxLength 2 3 ])
             ]
         , describe "minLength"
             [ test "success" <|
@@ -163,7 +163,7 @@ all =
                     buildSchema
                         |> withMinLength 4
                         |> validate (Encode.string "foo")
-                        |> Expect.equal (Err [ Error [] <| MinLength 4 3 ])
+                        |> Expect.equal (Err [ error [] <| MinLength 4 3 ])
             ]
         , describe "pattern"
             [ test "success" <|
@@ -177,7 +177,7 @@ all =
                     buildSchema
                         |> withPattern "o{3}"
                         |> JSB.validate (Encode.string "foo")
-                        |> Expect.equal (Err [ Error [] <| Pattern "o{3}" "foo" ])
+                        |> Expect.equal (Err [ error [] <| Pattern "o{3}" "foo" ])
             ]
         , describe "items: schema"
             [ test "success" <|
@@ -191,7 +191,7 @@ all =
                     buildSchema
                         |> withItem (buildSchema |> withMaximum 10)
                         |> JSB.validate (Encode.list [ int 1, int 11 ])
-                        |> Expect.equal (Err [ Error [ "1" ] <| Maximum 10 11 ])
+                        |> Expect.equal (Err [ error [ "1" ] <| Maximum 10 11 ])
             ]
         , describe "items: array of schema"
             [ test "success" <|
@@ -215,7 +215,7 @@ all =
                                 |> withMaximum 100
                             ]
                         |> JSB.validate (Encode.list [ int 100, int 2 ])
-                        |> Expect.equal (Err [ Error [ "0" ] <| Maximum 11 100 ])
+                        |> Expect.equal (Err [ error [ "0" ] <| Maximum 11 100 ])
             ]
         , describe "items: array of schema with additional items"
             [ test "success" <|
@@ -241,7 +241,7 @@ all =
                             ]
                         |> withAdditionalItems (buildSchema |> withMaximum 1)
                         |> JSB.validate (Encode.list [ int 2, int 2, int 100 ])
-                        |> Expect.equal (Err [ Error [ "2" ] <| Maximum 1 100 ])
+                        |> Expect.equal (Err [ error [ "2" ] <| Maximum 1 100 ])
             ]
         , describe "maxItems"
             [ test "success" <|
@@ -255,7 +255,7 @@ all =
                     buildSchema
                         |> withMaxItems 2
                         |> validate (Encode.list [ int 1, int 2, int 3 ])
-                        |> Expect.equal (Err [ Error [] <| MaxItems 2 3 ])
+                        |> Expect.equal (Err [ error [] <| MaxItems 2 3 ])
             ]
         , describe "minItems"
             [ test "success" <|
@@ -269,7 +269,7 @@ all =
                     buildSchema
                         |> withMinItems 3
                         |> validate (Encode.list [ int 1, int 2 ])
-                        |> Expect.equal (Err [ Error [] <| MinItems 3 2 ])
+                        |> Expect.equal (Err [ error [] <| MinItems 3 2 ])
             ]
         , describe "uniqueItems"
             [ test "success" <|
@@ -283,7 +283,7 @@ all =
                     buildSchema
                         |> withUniqueItems True
                         |> validate (Encode.list [ int 1, int 1 ])
-                        |> Expect.equal (Err [ Error [] <| UniqueItems (int 1) ])
+                        |> Expect.equal (Err [ error [] <| UniqueItems (int 1) ])
             ]
         , describe "contains"
             [ test "success" <|
@@ -297,7 +297,7 @@ all =
                     buildSchema
                         |> withContains (buildSchema |> withMaximum 1)
                         |> JSB.validate (Encode.list [ int 10, int 20 ])
-                        |> Expect.equal (Err [ Error [] Contains ])
+                        |> Expect.equal (Err [ error [] Contains ])
             ]
         , describe "maxProperties"
             [ test "success" <|
@@ -311,7 +311,7 @@ all =
                     buildSchema
                         |> withMaxProperties 1
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
-                        |> Expect.equal (Err [ Error [] <| MaxProperties 1 2 ])
+                        |> Expect.equal (Err [ error [] <| MaxProperties 1 2 ])
             ]
         , describe "minProperties"
             [ test "success" <|
@@ -325,7 +325,7 @@ all =
                     buildSchema
                         |> withMinProperties 3
                         |> validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
-                        |> Expect.equal (Err [ Error [] <| MinProperties 3 2 ])
+                        |> Expect.equal (Err [ error [] <| MinProperties 3 2 ])
             ]
         , describe "required"
             [ test "success" <|
@@ -339,7 +339,7 @@ all =
                     buildSchema
                         |> withRequired [ "foo", "bar" ]
                         |> validate (Encode.object [ ( "foo", int 1 ) ])
-                        |> Expect.equal (Err [ Error [] <| Required [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| Required [ "bar" ] ])
             ]
         , describe "properties"
             [ test "success" <|
@@ -359,7 +359,7 @@ all =
                             , ( "bar", buildSchema |> withMaximum 20 )
                             ]
                         |> JSB.validate (Encode.object [ ( "bar", int 28 ) ])
-                        |> Expect.equal (Err [ Error [ "bar" ] <| Maximum 20 28 ])
+                        |> Expect.equal (Err [ error [ "bar" ] <| Maximum 20 28 ])
             ]
         , describe "patternProperties"
             [ test "success" <|
@@ -379,7 +379,7 @@ all =
                             , ( "a", buildSchema |> withMaximum 20 )
                             ]
                         |> JSB.validate (Encode.object [ ( "bar", int 28 ) ])
-                        |> Expect.equal (Err [ Error [ "bar" ] <| Maximum 20 28 ])
+                        |> Expect.equal (Err [ error [ "bar" ] <| Maximum 20 28 ])
             ]
         , describe "additionalProperties"
             [ test "success: pattern" <|
@@ -417,7 +417,7 @@ all =
                             ]
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
-                        |> Expect.equal (Err [ Error [ "bar" ] <| Maximum 20 200 ])
+                        |> Expect.equal (Err [ error [ "bar" ] <| Maximum 20 200 ])
             , test "success: boolean false" <|
                 \() ->
                     buildSchema
@@ -435,7 +435,7 @@ all =
                             ]
                         |> withAdditionalProperties (boolSchema False)
                         |> JSB.validate (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
-                        |> Expect.equal (Err [ Error [] <| AdditionalPropertiesDisallowed [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| AdditionalPropertiesDisallowed [ "bar" ] ])
             ]
         , describe "dependencies"
             [ test "success" <|
@@ -453,14 +453,14 @@ all =
                             "foo"
                             (buildSchema |> withRequired [ "bar" ])
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ) ])
-                        |> Expect.equal (Err [ Error [] <| Required [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| Required [ "bar" ] ])
               --|> Expect.equal (Err "Required property 'bar' is missing")
             , test "failure when dependency is array of strings" <|
                 \() ->
                     buildSchema
                         |> withPropNamesDependency "foo" [ "bar" ]
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ) ])
-                        |> Expect.equal (Err [ Error [] <| Required [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| Required [ "bar" ] ])
             ]
         , describe "propertyNames"
             [ test "success" <|
@@ -474,7 +474,7 @@ all =
                     buildSchema
                         |> withPropertyNames (buildSchema |> withPattern "^ba")
                         |> JSB.validate (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
-                        |> Expect.equal (Err [ Error [] <| InvalidPropertyName [ Error [ "foo" ] <| Pattern "^ba" "foo" ] ])
+                        |> Expect.equal (Err [ error [] <| InvalidPropertyName [ error [ "foo" ] <| Pattern "^ba" "foo" ] ])
             ]
         , describe "enum"
             [ test "success" <|
@@ -488,7 +488,7 @@ all =
                     buildSchema
                         |> withEnum [ int 1, int 2 ]
                         |> validate (Encode.int 3)
-                        |> Expect.equal (Err [ Error [] Enum ])
+                        |> Expect.equal (Err [ error [] Enum ])
             ]
         , describe "const"
             [ test "success" <|
@@ -502,7 +502,7 @@ all =
                     buildSchema
                         |> withConst (int 1)
                         |> validate (Encode.int 2)
-                        |> Expect.equal (Err [ Error [] Const ])
+                        |> Expect.equal (Err [ error [] Const ])
             ]
         , describe "type=string"
             [ test "success" <|
@@ -516,7 +516,7 @@ all =
                     buildSchema
                         |> withType "string"
                         |> JSB.validate (Encode.int 1)
-                        |> Expect.equal (Err [ Error [] <| InvalidType "Expecting a String but instead got: 1" ])
+                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a String but instead got: 1" ])
             ]
         , describe "type=number"
             [ test "success" <|
@@ -530,13 +530,13 @@ all =
                     buildSchema
                         |> withType "number"
                         |> JSB.validate (Encode.string "bar")
-                        |> Expect.equal (Err [ Error [] <| InvalidType "Expecting a Float but instead got: \"bar\"" ])
+                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a Float but instead got: \"bar\"" ])
             , test "failure with null" <|
                 \() ->
                     buildSchema
                         |> withType "number"
                         |> JSB.validate Encode.null
-                        |> Expect.equal (Err [ Error [] <| InvalidType "Expecting a Float but instead got: null" ])
+                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a Float but instead got: null" ])
             ]
         , describe "type=null,number"
             [ test "success" <|
@@ -556,7 +556,7 @@ all =
                     buildSchema
                         |> withNullableType "number"
                         |> JSB.validate (Encode.string "bar")
-                        |> Expect.equal (Err [ Error [] <| InvalidType "Expecting a Float but instead got: \"bar\"" ])
+                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a Float but instead got: \"bar\"" ])
             ]
         , describe "type=number,string"
             [ test "success for number" <|
@@ -576,7 +576,7 @@ all =
                     buildSchema
                         |> withUnionType [ "number", "string" ]
                         |> JSB.validate (Encode.object [])
-                        |> Expect.equal (Err [ Error [] <| InvalidType "None of desired types match" ])
+                        |> Expect.equal (Err [ error [] <| InvalidType "None of desired types match" ])
             ]
         , describe "allOf"
             [ test "success" <|
@@ -596,7 +596,7 @@ all =
                             , buildSchema |> withMaximum 1
                             ]
                         |> JSB.validate (Encode.int -1)
-                        |> Expect.equal (Err [ Error [] <| Minimum 0 -1 ])
+                        |> Expect.equal (Err [ error [] <| Minimum 0 -1 ])
             , test "failure because of maximum" <|
                 \() ->
                     buildSchema
@@ -605,7 +605,7 @@ all =
                             , buildSchema |> withMaximum 1
                             ]
                         |> JSB.validate (Encode.int 2)
-                        |> Expect.equal (Err [ Error [] <| Maximum 1 2 ])
+                        |> Expect.equal (Err [ error [] <| Maximum 1 2 ])
             ]
         , describe "anyOf"
             [ test "success for enum" <|
@@ -636,8 +636,8 @@ all =
                         |> JSB.validate (Encode.int -1)
                         |> Expect.equal
                             (Err
-                                [ Error [] <| Minimum 0 -1
-                                , Error [] <| Enum
+                                [ error [] <| Minimum 0 -1
+                                , error [] <| Enum
                                 ]
                             )
             ]
@@ -668,7 +668,7 @@ all =
                             , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int -1)
-                        |> Expect.equal (Err [ Error [] OneOfNoneSucceed ])
+                        |> Expect.equal (Err [ error [] OneOfNoneSucceed ])
             , test "failure because of success for both" <|
                 \() ->
                     buildSchema
@@ -677,7 +677,7 @@ all =
                             , buildSchema |> withEnum [ int 1 ]
                             ]
                         |> JSB.validate (Encode.int 1)
-                        |> Expect.equal (Err [ Error [] <| OneOfManySucceed 2 ])
+                        |> Expect.equal (Err [ error [] <| OneOfManySucceed 2 ])
             ]
         , describe "boolean schema"
             [ test "true always validates any value" <|
@@ -693,7 +693,7 @@ all =
                         |> decodeValue Json.Schema.Definitions.decoder
                         |> Result.withDefault blankSchema
                         |> Validation.validate (int 1)
-                        |> Expect.equal (Err [ Error [] AlwaysFail ])
+                        |> Expect.equal (Err [ error [] AlwaysFail ])
             ]
         , describe "multiple errors"
             [ test "validation should return multiple errors" <|
@@ -706,12 +706,17 @@ all =
                         |> JSB.validate (Encode.object [ ( "foo", int 7 ), ( "bar", int 28 ) ])
                         |> Expect.equal
                             (Err
-                                [ Error [ "foo" ] <| Maximum 1 7
-                                , Error [ "bar" ] <| Maximum 2 28
+                                [ error [ "foo" ] <| Maximum 1 7
+                                , error [ "bar" ] <| Maximum 2 28
                                 ]
                             )
             ]
         ]
+
+
+error : List String -> ValidationError -> Error
+error path =
+    Error (JsonPointer "" path)
 
 
 expectOk : Result x a -> Expect.Expectation

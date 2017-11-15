@@ -2,6 +2,7 @@ module Json.Schema.Definitions
     exposing
         ( Schema(ObjectSchema, BooleanSchema)
         , Schemata(Schemata)
+        , SchemataPool
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , stringToType
@@ -39,9 +40,10 @@ Feel free to open [issue](https://github.com/1602/json-schema) to describe your 
 -}
 
 import Util exposing (resultToDecoder, foldResults, isInt)
-import Json.Decode.Pipeline exposing (decode, optional)
+import Json.Decode.Pipeline exposing (decode, required, optional, requiredAt, optionalAt)
 import Json.Encode as Encode
-import Json.Decode as Decode exposing (Value, Decoder, succeed, fail, lazy, nullable, andThen, string, float, int, bool, list, value)
+import Json.Decode as Decode exposing (Value, Decoder, field, succeed, fail, lazy, nullable, andThen, string, float, int, bool, list, value)
+import Dict exposing (Dict)
 
 
 {-|
@@ -105,6 +107,7 @@ type alias SubSchema =
     , anyOf : Maybe (List Schema)
     , oneOf : Maybe (List Schema)
     , not : Maybe Schema
+    , source : Value
     }
 
 
@@ -113,6 +116,13 @@ List of schema-properties used in properties, definitions and patternProperties
 -}
 type Schemata
     = Schemata (List ( String, Schema ))
+
+
+{-|
+Pool of schemata used in refs lookup by id
+-}
+type alias SchemataPool =
+    Dict String Schema
 
 
 {-|
@@ -188,6 +198,7 @@ blankSubSchema =
     , anyOf = Nothing
     , oneOf = Nothing
     , not = Nothing
+    , source = Encode.object []
     }
 
 
@@ -377,8 +388,19 @@ decoder =
                 |> optional "type"
                     (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                     AnyType
-                |> optional "id" (nullable string) Nothing
-                |> optional "$ref" (nullable string) Nothing
+                |> optional "$id" (nullable string) Nothing
+                {-
+                   |>
+                       requiredAt []
+                           (Decode.oneOf
+                               [ field "$id" (string |> Decode.map Just)
+                               , field "id" (string |> Decode.map Just)
+                               , Decode.null Nothing
+                               ]
+                           )
+                -}
+                |>
+                    optional "$ref" (nullable string) Nothing
                 -- meta
                 |>
                     optional "title" (nullable string) Nothing
@@ -421,6 +443,7 @@ decoder =
                 |> optional "anyOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
                 |> optional "oneOf" (nullable (lazy (\_ -> nonEmptyListOfSchemas))) Nothing
                 |> optional "not" (nullable <| lazy (\_ -> decoder)) Nothing
+                |> requiredAt [] Decode.value
     in
         Decode.oneOf
             [ booleanSchemaDecoder
