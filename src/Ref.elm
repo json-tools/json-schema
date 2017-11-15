@@ -95,7 +95,8 @@ resolveReference ns pool schema ref =
             let
                 ( ns, path ) =
                     parseJsonPointer ref namespace
-                        |> Debug.log ("parse " ++ (toString ref) ++ " within ns " ++ (toString namespace))
+
+                --|> Debug.log ("parse " ++ (toString ref) ++ " within ns " ++ (toString namespace))
             in
                 if limit > 0 then
                     ns

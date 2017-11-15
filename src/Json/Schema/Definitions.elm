@@ -279,7 +279,7 @@ encode s =
                     ( "type", st |> singleTypeToString |> Encode.string ) :: res
 
                 NullableType st ->
-                    ( "type", st |> singleTypeToString |> Encode.string ) :: res
+                    ( "type", [ "null" |> Encode.string, st |> singleTypeToString |> Encode.string ] |> Encode.list ) :: res
 
                 UnionType ut ->
                     ( "type", ut |> List.map (singleTypeToString >> Encode.string) |> Encode.list ) :: res
@@ -388,19 +388,18 @@ decoder =
                 |> optional "type"
                     (Decode.oneOf [ multipleTypes, Decode.map SingleType singleType ])
                     AnyType
-                |> optional "$id" (nullable string) Nothing
-                {-
-                   |>
-                       requiredAt []
-                           (Decode.oneOf
-                               [ field "$id" (string |> Decode.map Just)
-                               , field "id" (string |> Decode.map Just)
-                               , Decode.null Nothing
-                               ]
-                           )
-                -}
-                |>
-                    optional "$ref" (nullable string) Nothing
+                |> Json.Decode.Pipeline.custom
+                    (Decode.map2
+                        (\a b ->
+                            if a == Nothing then
+                                b
+                            else
+                                a
+                        )
+                        (field "$id" string |> Decode.maybe)
+                        (field "id" string |> Decode.maybe)
+                    )
+                |> optional "$ref" (nullable string) Nothing
                 -- meta
                 |>
                     optional "title" (nullable string) Nothing

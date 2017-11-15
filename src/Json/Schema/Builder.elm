@@ -182,7 +182,7 @@ toSchema (SchemaBuilder sb) =
             Nothing ->
                 case sb.schema of
                     Just ss ->
-                        Ok <| ObjectSchema ss
+                        Ok <| ObjectSchema { ss | source = Json.Schema.Definitions.encode (ObjectSchema ss) }
 
                     Nothing ->
                         Ok <| ObjectSchema blankSubSchema
