@@ -5080,6 +5080,768 @@ all =
                             True
                 ]
             ]
+        , describe "ref.json"
+            [ describe "suite: root pointer ref"
+                [ test "match" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            """
+                            """
+                            {
+                                    "foo": false
+                                }
+                            """
+                            True
+                , test "recursive match" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            """
+                            """
+                            {
+                                    "foo": {
+                                        "foo": false
+                                    }
+                                }
+                            """
+                            True
+                , test "mismatch" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            """
+                            """
+                            {
+                                    "bar": false
+                                }
+                            """
+                            False
+                , test "recursive mismatch" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#"
+                                        }
+                                    },
+                                    "additionalProperties": false
+                                }
+                            """
+                            """
+                            {
+                                    "foo": {
+                                        "bar": false
+                                    }
+                                }
+                            """
+                            False
+                ]
+            , describe "suite: relative pointer ref to object"
+                [ test "match" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "$ref": "#/properties/foo"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "bar": 3
+                                }
+                            """
+                            True
+                , test "mismatch" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "foo": {
+                                            "type": "integer"
+                                        },
+                                        "bar": {
+                                            "$ref": "#/properties/foo"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "bar": true
+                                }
+                            """
+                            False
+                ]
+            , describe "suite: relative pointer ref to array"
+                [ test "match array" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "$ref": "#/items/0"
+                                        }
+                                    ]
+                                }
+                            """
+                            """
+                            [
+                                    1,
+                                    2
+                                ]
+                            """
+                            True
+                , test "mismatch array" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "items": [
+                                        {
+                                            "type": "integer"
+                                        },
+                                        {
+                                            "$ref": "#/items/0"
+                                        }
+                                    ]
+                                }
+                            """
+                            """
+                            [
+                                    1,
+                                    "foo"
+                                ]
+                            """
+                            False
+                ]
+            , describe "suite: escaped pointer ref"
+                [ test "slash invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "tilda~field": {
+                                        "type": "integer"
+                                    },
+                                    "slash/field": {
+                                        "type": "integer"
+                                    },
+                                    "percent%field": {
+                                        "type": "integer"
+                                    },
+                                    "properties": {
+                                        "tilda": {
+                                            "$ref": "#/tilda~0field"
+                                        },
+                                        "slash": {
+                                            "$ref": "#/slash~1field"
+                                        },
+                                        "percent": {
+                                            "$ref": "#/percent%25field"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "slash": "aoeu"
+                                }
+                            """
+                            False
+                , test "tilda invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "tilda~field": {
+                                        "type": "integer"
+                                    },
+                                    "slash/field": {
+                                        "type": "integer"
+                                    },
+                                    "percent%field": {
+                                        "type": "integer"
+                                    },
+                                    "properties": {
+                                        "tilda": {
+                                            "$ref": "#/tilda~0field"
+                                        },
+                                        "slash": {
+                                            "$ref": "#/slash~1field"
+                                        },
+                                        "percent": {
+                                            "$ref": "#/percent%25field"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "tilda": "aoeu"
+                                }
+                            """
+                            False
+                , test "percent invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "tilda~field": {
+                                        "type": "integer"
+                                    },
+                                    "slash/field": {
+                                        "type": "integer"
+                                    },
+                                    "percent%field": {
+                                        "type": "integer"
+                                    },
+                                    "properties": {
+                                        "tilda": {
+                                            "$ref": "#/tilda~0field"
+                                        },
+                                        "slash": {
+                                            "$ref": "#/slash~1field"
+                                        },
+                                        "percent": {
+                                            "$ref": "#/percent%25field"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "percent": "aoeu"
+                                }
+                            """
+                            False
+                , test "slash valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "tilda~field": {
+                                        "type": "integer"
+                                    },
+                                    "slash/field": {
+                                        "type": "integer"
+                                    },
+                                    "percent%field": {
+                                        "type": "integer"
+                                    },
+                                    "properties": {
+                                        "tilda": {
+                                            "$ref": "#/tilda~0field"
+                                        },
+                                        "slash": {
+                                            "$ref": "#/slash~1field"
+                                        },
+                                        "percent": {
+                                            "$ref": "#/percent%25field"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "slash": 123
+                                }
+                            """
+                            True
+                , test "tilda valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "tilda~field": {
+                                        "type": "integer"
+                                    },
+                                    "slash/field": {
+                                        "type": "integer"
+                                    },
+                                    "percent%field": {
+                                        "type": "integer"
+                                    },
+                                    "properties": {
+                                        "tilda": {
+                                            "$ref": "#/tilda~0field"
+                                        },
+                                        "slash": {
+                                            "$ref": "#/slash~1field"
+                                        },
+                                        "percent": {
+                                            "$ref": "#/percent%25field"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "tilda": 123
+                                }
+                            """
+                            True
+                , test "percent valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "tilda~field": {
+                                        "type": "integer"
+                                    },
+                                    "slash/field": {
+                                        "type": "integer"
+                                    },
+                                    "percent%field": {
+                                        "type": "integer"
+                                    },
+                                    "properties": {
+                                        "tilda": {
+                                            "$ref": "#/tilda~0field"
+                                        },
+                                        "slash": {
+                                            "$ref": "#/slash~1field"
+                                        },
+                                        "percent": {
+                                            "$ref": "#/percent%25field"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "percent": 123
+                                }
+                            """
+                            True
+                ]
+            , describe "suite: nested refs"
+                [ test "nested ref valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "definitions": {
+                                        "a": {
+                                            "type": "integer"
+                                        },
+                                        "b": {
+                                            "$ref": "#/definitions/a"
+                                        },
+                                        "c": {
+                                            "$ref": "#/definitions/b"
+                                        }
+                                    },
+                                    "$ref": "#/definitions/c"
+                                }
+                            """
+                            """
+                            5
+                            """
+                            True
+                , test "nested ref invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "definitions": {
+                                        "a": {
+                                            "type": "integer"
+                                        },
+                                        "b": {
+                                            "$ref": "#/definitions/a"
+                                        },
+                                        "c": {
+                                            "$ref": "#/definitions/b"
+                                        }
+                                    },
+                                    "$ref": "#/definitions/c"
+                                }
+                            """
+                            """
+                            "a"
+                            """
+                            False
+                ]
+            , describe "suite: ref overrides any sibling keywords"
+                [ test "ref valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "definitions": {
+                                        "reffed": {
+                                            "type": "array"
+                                        }
+                                    },
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#/definitions/reffed",
+                                            "maxItems": 2
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "foo": []
+                                }
+                            """
+                            True
+                , test "ref valid, maxItems ignored" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "definitions": {
+                                        "reffed": {
+                                            "type": "array"
+                                        }
+                                    },
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#/definitions/reffed",
+                                            "maxItems": 2
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "foo": [
+                                        1,
+                                        2,
+                                        3
+                                    ]
+                                }
+                            """
+                            True
+                , test "ref invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "definitions": {
+                                        "reffed": {
+                                            "type": "array"
+                                        }
+                                    },
+                                    "properties": {
+                                        "foo": {
+                                            "$ref": "#/definitions/reffed",
+                                            "maxItems": 2
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "foo": "string"
+                                }
+                            """
+                            False
+                ]
+            , describe "suite: remote ref, containing refs itself"
+                [ test "remote ref valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "$ref": "http://json-schema.org/draft-06/schema#"
+                                }
+                            """
+                            """
+                            {
+                                    "minLength": 1
+                                }
+                            """
+                            True
+                , test "remote ref invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "$ref": "http://json-schema.org/draft-06/schema#"
+                                }
+                            """
+                            """
+                            {
+                                    "minLength": -1
+                                }
+                            """
+                            False
+                ]
+            , describe "suite: property named $ref that is not a reference"
+                [ test "property named $ref valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "$ref": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "$ref": "a"
+                                }
+                            """
+                            True
+                , test "property named $ref invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "properties": {
+                                        "$ref": {
+                                            "type": "string"
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "$ref": 2
+                                }
+                            """
+                            False
+                ]
+            , describe "suite: $ref to boolean schema true"
+                [ test "any value is valid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "$ref": "#/definitions/bool",
+                                    "definitions": {
+                                        "bool": true
+                                    }
+                                }
+                            """
+                            """
+                            "foo"
+                            """
+                            True
+                ]
+            , describe "suite: $ref to boolean schema false"
+                [ test "any value is invalid" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "$ref": "#/definitions/bool",
+                                    "definitions": {
+                                        "bool": false
+                                    }
+                                }
+                            """
+                            """
+                            "foo"
+                            """
+                            False
+                ]
+            , describe "suite: Recursive references between schemas"
+                [ test "valid tree" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "$id": "http://localhost:1234/tree",
+                                    "description": "tree of nodes",
+                                    "type": "object",
+                                    "properties": {
+                                        "meta": {
+                                            "type": "string"
+                                        },
+                                        "nodes": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "node"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "meta",
+                                        "nodes"
+                                    ],
+                                    "definitions": {
+                                        "node": {
+                                            "$id": "http://localhost:1234/node",
+                                            "description": "node",
+                                            "type": "object",
+                                            "properties": {
+                                                "value": {
+                                                    "type": "number"
+                                                },
+                                                "subtree": {
+                                                    "$ref": "tree"
+                                                }
+                                            },
+                                            "required": [
+                                                "value"
+                                            ]
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "meta": "root",
+                                    "nodes": [
+                                        {
+                                            "value": 1,
+                                            "subtree": {
+                                                "meta": "child",
+                                                "nodes": [
+                                                    {
+                                                        "value": 1.1
+                                                    },
+                                                    {
+                                                        "value": 1.2
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "value": 2,
+                                            "subtree": {
+                                                "meta": "child",
+                                                "nodes": [
+                                                    {
+                                                        "value": 2.1
+                                                    },
+                                                    {
+                                                        "value": 2.2
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            """
+                            True
+                , test "invalid tree" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                    "$id": "http://localhost:1234/tree",
+                                    "description": "tree of nodes",
+                                    "type": "object",
+                                    "properties": {
+                                        "meta": {
+                                            "type": "string"
+                                        },
+                                        "nodes": {
+                                            "type": "array",
+                                            "items": {
+                                                "$ref": "node"
+                                            }
+                                        }
+                                    },
+                                    "required": [
+                                        "meta",
+                                        "nodes"
+                                    ],
+                                    "definitions": {
+                                        "node": {
+                                            "$id": "http://localhost:1234/node",
+                                            "description": "node",
+                                            "type": "object",
+                                            "properties": {
+                                                "value": {
+                                                    "type": "number"
+                                                },
+                                                "subtree": {
+                                                    "$ref": "tree"
+                                                }
+                                            },
+                                            "required": [
+                                                "value"
+                                            ]
+                                        }
+                                    }
+                                }
+                            """
+                            """
+                            {
+                                    "meta": "root",
+                                    "nodes": [
+                                        {
+                                            "value": 1,
+                                            "subtree": {
+                                                "meta": "child",
+                                                "nodes": [
+                                                    {
+                                                        "value": "string is invalid"
+                                                    },
+                                                    {
+                                                        "value": 1.2
+                                                    }
+                                                ]
+                                            }
+                                        },
+                                        {
+                                            "value": 2,
+                                            "subtree": {
+                                                "meta": "child",
+                                                "nodes": [
+                                                    {
+                                                        "value": 2.1
+                                                    },
+                                                    {
+                                                        "value": 2.2
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            """
+                            False
+                ]
+            ]
         , describe "required.json"
             [ describe "suite: required validation"
                 [ test "present required property is valid" <|

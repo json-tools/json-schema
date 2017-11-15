@@ -19,7 +19,6 @@ function load(path) {
     return readdirSync(path)
         .filter(x => x.endsWith('.json'))
         .filter(x => x !== 'refRemote.json')
-        .filter(x => x !== 'ref.json')
         .map(filename => {
             return { filename, suite: JSON.parse(readFileSync(join(path, filename))) };
         });
@@ -103,10 +102,10 @@ function printCases(schema, collection) {
                     \\() ->
                         examine
                             """
-                            ${JSON.stringify(schema, null, '    ').replace(/\n/g, '\n                                ')}
+                            ${JSON.stringify(schema, null, '    ').replace(/\n/g, '\n                            ')}
                             """
                             """
-                            ${JSON.stringify(data, null, '    ').replace(/\n/g, '\n                                ')}
+                            ${JSON.stringify(data, null, '    ').replace(/\n/g, '\n                            ')}
                             """
                             ${valid ? 'True' : 'False'}`
     });
