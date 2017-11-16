@@ -60,7 +60,7 @@ Attempt to validate returns `Result` with list of `Error` instances as an `Err`.
 -}
 type alias Error =
     { jsonPointer : JsonPointer
-    , error : ValidationError
+    , details : ValidationError
     }
 
 
