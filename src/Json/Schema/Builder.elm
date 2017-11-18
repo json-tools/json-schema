@@ -118,6 +118,7 @@ import Util exposing (foldResults)
 import Json.Schema.Validation as Validation exposing (Error)
 import Json.Decode exposing (Value)
 import Json.Encode as Encode
+import Ref
 import Json.Schema.Definitions
     exposing
         ( Schema(ObjectSchema, BooleanSchema)
@@ -196,7 +197,7 @@ validate : Value -> SchemaBuilder -> Result (List Error) Value
 validate val sb =
     case toSchema sb of
         Ok schema ->
-            Validation.validate val schema
+            Validation.validate Ref.defaultPool val schema schema
 
         Err s ->
             Ok val

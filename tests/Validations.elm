@@ -43,6 +43,7 @@ import Json.Decode as Decode exposing (decodeValue)
 import Json.Schema.Validation as Validation exposing (Error, JsonPointer, ValidationError(..))
 import Json.Schema.Definitions exposing (blankSchema)
 import Test exposing (Test, describe, test, only)
+import Ref
 import Expect
 
 
@@ -685,14 +686,14 @@ all =
                     Encode.bool True
                         |> decodeValue Json.Schema.Definitions.decoder
                         |> Result.withDefault blankSchema
-                        |> Validation.validate (int 1)
+                        |> (\s -> Validation.validate Ref.defaultPool (int 1) s s)
                         |> expectOk
             , test "false always fails validation" <|
                 \() ->
                     Encode.bool False
                         |> decodeValue Json.Schema.Definitions.decoder
                         |> Result.withDefault blankSchema
-                        |> Validation.validate (int 1)
+                        |> (\s -> Validation.validate Ref.defaultPool (int 1) s s)
                         |> Expect.equal (Err [ error [] AlwaysFail ])
             ]
         , describe "multiple errors"

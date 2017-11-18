@@ -11,6 +11,7 @@ module Json.Schema.Helpers
         , resolve
         , resolveReference
         , calcSubSchemaType
+        , collectIds
         )
 
 import Dict exposing (Dict)
@@ -28,6 +29,7 @@ import Json.Schema.Definitions
         , blankSchema
         , blankSubSchema
         )
+import Ref exposing (SchemataPool)
 
 
 type alias ImpliedType =
@@ -391,7 +393,7 @@ tryAllSchemas actualValue rootSchema listSchemas =
                 if res == Nothing then
                     case actualValue of
                         Just av ->
-                            case Validation.validate av schema of
+                            case Validation.validate Ref.defaultPool av rootSchema schema of
                                 Ok _ ->
                                     schema
                                         |> whenObjectSchema
@@ -478,3 +480,35 @@ debugSubSchema msg schema =
                     Debug.log msg "Nothing"
     in
         schema
+
+
+collectIds : Schema -> SchemataPool -> SchemataPool
+collectIds schema pool =
+    let
+        walkValue source pool =
+            source
+                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                |> Result.withDefault []
+                |> List.foldl
+                    (\( key, val ) ->
+                        if key == "id" || key == "$id" then
+                            source
+                                |> Decode.decodeValue Json.Schema.Definitions.decoder
+                                |> Result.andThen
+                                    (\s ->
+                                        val
+                                            |> Decode.decodeValue Decode.string
+                                            |> Result.map (\id -> Dict.insert id s)
+                                    )
+                                |> Result.withDefault identity
+                        else
+                            walkValue val
+                    )
+                    pool
+    in
+        case schema of
+            ObjectSchema { source } ->
+                walkValue source pool
+
+            _ ->
+                pool

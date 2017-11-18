@@ -2,7 +2,6 @@ module Json.Schema.Definitions
     exposing
         ( Schema(ObjectSchema, BooleanSchema)
         , Schemata(Schemata)
-        , SchemataPool
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
         , stringToType
@@ -116,13 +115,6 @@ List of schema-properties used in properties, definitions and patternProperties
 -}
 type Schemata
     = Schemata (List ( String, Schema ))
-
-
-{-|
-Pool of schemata used in refs lookup by id
--}
-type alias SchemataPool =
-    Dict String Schema
 
 
 {-|

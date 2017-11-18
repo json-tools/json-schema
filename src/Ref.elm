@@ -1,9 +1,26 @@
-module Ref exposing (resolveReference)
+module Ref exposing (resolveReference, defaultPool, SchemataPool)
 
 import Regex exposing (regex, HowMany(All))
 import Json.Decode as Decode
-import Json.Schema.Definitions exposing (Schema(ObjectSchema, BooleanSchema), SubSchema, Schemata(Schemata), SchemataPool, decoder)
-import Dict
+import Json.Schema.Definitions exposing (Schema(ObjectSchema, BooleanSchema), SubSchema, Schemata(Schemata), decoder)
+import Dict exposing (Dict)
+import Json.Schemata as Schemata
+
+
+{-|
+Pool of schemata used in refs lookup by id
+-}
+type alias SchemataPool =
+    Dict String Schema
+
+
+{-| Default schemata pool containing schemata draft-04 and draft-06
+-}
+defaultPool : SchemataPool
+defaultPool =
+    Dict.empty
+        |> Dict.insert "http://json-schema.org/draft-06/schema" Schemata.draft6
+        |> Dict.insert "http://json-schema.org/draft-04/schema" Schemata.draft4
 
 
 parseJsonPointer : String -> String -> ( String, List String )

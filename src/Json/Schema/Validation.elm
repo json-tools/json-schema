@@ -21,13 +21,12 @@ import String.UTF32 as UTF32
 import Dict
 import Regex
 import Util exposing (isInt, indexOfFirstDuplicate)
-import Ref exposing (resolveReference)
+import Ref exposing (resolveReference, SchemataPool)
 import Json.Schemata as Schemata
 import Json.Schema.Definitions
     exposing
         ( Items(ItemDefinition, ArrayOfItems, NoItems)
         , Schemata(Schemata)
-        , SchemataPool
         , Dependency(ArrayPropNames, PropSchema)
         , Type(AnyType, SingleType, NullableType, UnionType)
         , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
@@ -110,52 +109,11 @@ type ValidationError
     | AlwaysFail
 
 
-collectIds : Schema -> SchemataPool -> SchemataPool
-collectIds schema pool =
-    let
-        walkValue source pool =
-            source
-                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
-                |> Result.withDefault []
-                |> List.foldl
-                    (\( key, val ) ->
-                        if key == "id" || key == "$id" then
-                            source
-                                |> Decode.decodeValue decoder
-                                |> Result.andThen
-                                    (\s ->
-                                        val
-                                            |> Decode.decodeValue Decode.string
-                                            |> Result.map (\id -> Dict.insert id s)
-                                    )
-                                |> Result.withDefault identity
-                        else
-                            walkValue val
-                    )
-                    pool
-    in
-        case schema of
-            ObjectSchema { source } ->
-                walkValue source pool
-
-            _ ->
-                pool
-
-
 {-| Validate value against schema
 -}
-validate : Value -> Schema -> Result (List Error) Value
-validate value schema =
+validate : SchemataPool -> Value -> Schema -> Schema -> Result (List Error) Value
+validate pool value rootSchema schema =
     let
-        pool =
-            Dict.empty
-                |> Dict.insert "http://json-schema.org/draft-06/schema" Schemata.draft6
-                |> Dict.insert "http://json-schema.org/draft-04/schema" Schemata.draft4
-                |> collectIds schema
-
-        rootSchema =
-            schema
-
         validateSubschema jsonPointer os value =
             [ validateMultipleOf
             , validateMaximum
