@@ -1,4 +1,4 @@
-module Json.Schema.Random exposing (value, GeneratorSettings, defaultSettings)
+module Json.Schema.Random exposing (value, valueAt, GeneratorSettings, defaultSettings)
 
 {-|
 Generate random values based on JSON Schema.
@@ -7,7 +7,7 @@ Experimental module.
 
 # Generator
 
-@docs value
+@docs value, valueAt
 
 # Settings
 
@@ -15,7 +15,6 @@ Experimental module.
 
 -}
 
-import Json.Schema.Helpers exposing (resolve)
 import Json.Schema.Definitions
     exposing
         ( Schema(ObjectSchema, BooleanSchema)
@@ -28,6 +27,9 @@ import Json.Encode as Encode exposing (Value)
 import Random exposing (Generator, Seed)
 import Char
 import Util exposing (getAt, uncons)
+import Json.Schema.Helpers exposing (collectIds)
+import Ref exposing (defaultPool)
+import Dict
 
 
 {-|
@@ -64,6 +66,16 @@ defaultSettings =
 randomString : Int -> Int -> Maybe String -> Generator String
 randomString minLength maxLength format =
     case format of
+        Just "url" ->
+            Random.bool
+                |> Random.map
+                    (\x ->
+                        if x then
+                            "http://example.com/"
+                        else
+                            "https://github.com"
+                    )
+
         Just "uri" ->
             Random.bool
                 |> Random.map
@@ -138,14 +150,14 @@ upgradeSettings settings =
     }
 
 
-randomObject : GeneratorSettings -> Schema -> List ( String, Schema ) -> List String -> Generator Value
-randomObject settings rootSchema props required =
+randomObject : GeneratorSettings -> String -> Ref.SchemataPool -> List ( String, Schema ) -> List String -> Generator Value
+randomObject settings ns pool props required =
     props
         |> List.foldl
             (\( k, v ) res ->
                 if List.member k required then
                     v
-                        |> valueGenerator (upgradeSettings settings) rootSchema
+                        |> valueGenerator (upgradeSettings settings) ns pool
                         |> Random.andThen (\x -> res |> Random.map ((::) ( k, x )))
                 else
                     Random.float 0 1
@@ -153,7 +165,7 @@ randomObject settings rootSchema props required =
                             (\isRequired ->
                                 if isRequired < settings.optionalPropertyProbability then
                                     v
-                                        |> valueGenerator (upgradeSettings settings) rootSchema
+                                        |> valueGenerator (upgradeSettings settings) ns pool
                                         |> Random.andThen (\x -> res |> Random.map ((::) ( k, x )))
                                 else
                                     res
@@ -163,15 +175,15 @@ randomObject settings rootSchema props required =
         |> Random.map (List.reverse >> Encode.object)
 
 
-randomList : GeneratorSettings -> Schema -> Int -> Int -> Schema -> Generator Value
-randomList settings rootSchema minItems maxItems schema =
+randomList : GeneratorSettings -> String -> Ref.SchemataPool -> Int -> Int -> Schema -> Generator Value
+randomList settings ns pool minItems maxItems schema =
     Random.int minItems maxItems
-        |> Random.andThen (flip Random.list (valueGenerator (upgradeSettings settings) rootSchema schema))
+        |> Random.andThen (flip Random.list (valueGenerator (upgradeSettings settings) ns pool schema))
         |> Random.map (Encode.list)
 
 
 {-|
-Default value generator.
+Random value generator.
 
     buildSchema
         |> withProperties
@@ -187,19 +199,65 @@ See tests for more examples.
 -}
 value : GeneratorSettings -> Schema -> Generator Value
 value settings s =
-    valueGenerator settings s s
+    let
+        ( pool, ns ) =
+            collectIds s defaultPool
+    in
+        valueGenerator settings ns pool s
 
 
-valueGenerator : GeneratorSettings -> Schema -> Schema -> Generator Value
-valueGenerator settings rootSchema schema =
-    case schema |> resolve rootSchema of
-        BooleanSchema b ->
+{-|
+Random value generator at path.
+-}
+valueAt : GeneratorSettings -> Schema -> String -> Generator Value
+valueAt settings s ref =
+    let
+        ( pool, ns ) =
+            collectIds s defaultPool
+
+        --|> Debug.log "pool is"
+        a =
+            pool
+                |> Dict.keys
+                |> Debug.log "pool keys are"
+    in
+        case Ref.resolveReference ns pool s ref of
+            Just ( ns, ss ) ->
+                valueGenerator settings ns pool ss
+
+            Nothing ->
+                nullGenerator
+
+
+resolve : String -> Ref.SchemataPool -> Schema -> Maybe ( String, Schema )
+resolve ns pool schema =
+    case schema of
+        BooleanSchema _ ->
+            Just ( ns, schema )
+
+        ObjectSchema os ->
+            case os.ref of
+                Just ref ->
+                    Ref.resolveReference ns pool schema ref
+                        |> Debug.log ("resolving this :( " ++ ref ++ " " ++ (toString ns))
+
+                Nothing ->
+                    Just ( ns, schema )
+
+
+valueGenerator : GeneratorSettings -> String -> Ref.SchemataPool -> Schema -> Generator Value
+valueGenerator settings ns pool schema =
+    case schema |> resolve ns pool of
+        Nothing ->
+            nullGenerator
+
+        Just ( ns, BooleanSchema b ) ->
             if b then
                 Random.bool |> Random.map (\_ -> Encode.object [])
             else
                 Random.bool |> Random.map (\_ -> Encode.null)
 
-        ObjectSchema os ->
+        Just ( ns, ObjectSchema os ) ->
             [ Maybe.andThen uncons os.examples
                 |> Maybe.map randomItemFromList
             , Maybe.andThen uncons os.enum
@@ -235,11 +293,12 @@ valueGenerator settings rootSchema schema =
                 _ ->
                     Nothing
             , os.properties
-                |> Maybe.map (\(Schemata props) -> randomObject settings rootSchema props (os.required |> Maybe.withDefault []))
+                |> Maybe.map (\(Schemata props) -> randomObject settings ns pool props (os.required |> Maybe.withDefault []))
             , case os.items of
                 ItemDefinition schema ->
                     randomList settings
-                        rootSchema
+                        ns
+                        pool
                         (os.minItems |> Maybe.withDefault 0)
                         (os.maxItems |> Maybe.withDefault settings.defaultListLengthLimit)
                         schema

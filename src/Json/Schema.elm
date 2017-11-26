@@ -32,7 +32,11 @@ import Json.Schema.Helpers exposing (collectIds)
 -}
 validateValue : Value -> Schema -> Result (List Error) Value
 validateValue value schema =
-    validate (collectIds schema defaultPool) value schema schema
+    let
+        ( pool, _ ) =
+            collectIds schema defaultPool
+    in
+        validate pool value schema schema
 
 
 {-| Validate value using subschema identified by URI.
@@ -40,7 +44,7 @@ validateValue value schema =
 validateAt : Value -> Schema -> String -> Result (List Error) Value
 validateAt value schema uri =
     let
-        pool =
+        ( pool, _ ) =
             collectIds schema defaultPool
     in
         case Ref.resolveReference "" pool schema uri of
