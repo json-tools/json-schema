@@ -72,8 +72,10 @@ parseJsonPointer pointer currentNamespace =
                 |> String.split "/"
                 |> List.drop 1
                 |> List.map unescapeJsonPathFragment
-          else
+          else if hash /= "" then
             [ hash ]
+          else
+            []
         )
 
 
