@@ -60,7 +60,7 @@ parseJsonPointer pointer currentNamespace =
                             |> Debug.log "case 3.2"
                     else
                         ( merge currentNamespace a, b )
-                            |> Debug.log "case 3.3"
+                            |> Debug.log "case 3.4"
 
         isPointer =
             hasFragments hash
@@ -153,8 +153,12 @@ resolveReference ns pool schema ref =
             in
                 if limit > 0 then
                     (if isPointer then
-                        pool
-                            |> Dict.get ns
+                        (if ns == "" then
+                            Just schema
+                         else
+                            pool
+                                |> Dict.get ns
+                        )
                             |> Maybe.andThen whenObjectSchema
                             |> Maybe.andThen
                                 (\os ->
@@ -176,6 +180,8 @@ resolveReference ns pool schema ref =
                                                         Just ( ns, def )
                                             )
                                 )
+                     else if newJsonPointer == "" then
+                        Just ( "", schema )
                      else
                         pool
                             |> Dict.get newJsonPointer
