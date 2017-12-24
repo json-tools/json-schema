@@ -139,16 +139,22 @@ resolveReference ns pool schema ref =
             let
                 ( isPointer, ns, path ) =
                     parseJsonPointer (Debug.log "resolving ref" ref) namespace
-                        |> Debug.log "new json pointer"
+                        |> Debug.log "new json pointer (parsed)"
 
                 --|> Debug.log ("parse " ++ (toString ref) ++ " within ns " ++ (toString namespace))
                 newJsonPointer =
                     makeJsonPointer ( isPointer, ns, path )
+                        |> Debug.log "new json pointer (combined)"
+
+                a =
+                    pool
+                        |> Dict.keys
+                        |> Debug.log "pool keys"
             in
                 if limit > 0 then
                     (if isPointer then
                         pool
-                            |> Dict.get (ns ++ "#")
+                            |> Dict.get ns
                             |> Maybe.andThen whenObjectSchema
                             |> Maybe.andThen
                                 (\os ->
