@@ -118,6 +118,8 @@ makeJsonPointer ( isPointer, ns, path ) =
         ("#" :: path)
             |> String.join "/"
             |> (++) ns
+    else if List.isEmpty path then
+        ns
     else
         path
             |> String.join "/"
