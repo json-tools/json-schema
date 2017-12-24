@@ -1002,6 +1002,150 @@ all =
                             """
                             False
                 ]
+            , describe "suite: anyOf complex types"
+                [ test "first anyOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "anyOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "bar": 2
+                            }
+                            """
+                            True
+                , test "second anyOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "anyOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "foo": "baz"
+                            }
+                            """
+                            True
+                , test "both anyOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "anyOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "foo": "baz",
+                                "bar": 2
+                            }
+                            """
+                            True
+                , test "neither anyOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "anyOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "foo": 2,
+                                "bar": "quux"
+                            }
+                            """
+                            False
+                ]
             ]
         , describe "default.json"
             [ describe "suite: invalid type for default"
@@ -2927,6 +3071,150 @@ all =
                             """
                             """
                             "foo"
+                            """
+                            False
+                ]
+            , describe "suite: oneOf complex types"
+                [ test "first oneOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "bar": 2
+                            }
+                            """
+                            True
+                , test "second oneOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "foo": "baz"
+                            }
+                            """
+                            True
+                , test "both oneOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "foo": "baz",
+                                "bar": 2
+                            }
+                            """
+                            False
+                , test "neither oneOf valid (complex)" <|
+                    \() ->
+                        examine
+                            """
+                            {
+                                "oneOf": [
+                                    {
+                                        "properties": {
+                                            "bar": {
+                                                "type": "integer"
+                                            }
+                                        },
+                                        "required": [
+                                            "bar"
+                                        ]
+                                    },
+                                    {
+                                        "properties": {
+                                            "foo": {
+                                                "type": "string"
+                                            }
+                                        },
+                                        "required": [
+                                            "foo"
+                                        ]
+                                    }
+                                ]
+                            }
+                            """
+                            """
+                            {
+                                "foo": 2,
+                                "bar": "quux"
+                            }
                             """
                             False
                 ]
