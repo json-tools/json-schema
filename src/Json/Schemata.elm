@@ -38,11 +38,13 @@ draft4 =
     "properties": {
         "id": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "description": "Identifier of schema"
         },
         "$schema": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "description": "Link to a schema which validates this object"
         },
         "title": {
             "type": "string"
@@ -206,11 +208,13 @@ draft6 =
     "properties": {
         "$id": {
             "type": "string",
-            "format": "uri-reference"
+            "format": "uri-reference",
+            "description": "Identifier of schema"
         },
         "$schema": {
             "type": "string",
-            "format": "uri"
+            "format": "uri",
+            "description": "Link to a schema which validates this object"
         },
         "$ref": {
             "type": "string",

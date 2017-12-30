@@ -7276,7 +7276,7 @@ examine schemaSource dataSource outcome =
                 |> Result.withDefault Encode.null
 
         result =
-            validateValue data schema
+            validateValue { applyDefaults = True } data schema
                 |> Result.mapError toString
                 |> Result.map (\_ -> True)
     in

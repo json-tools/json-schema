@@ -1,4 +1,4 @@
-module Json.Schema.Validation exposing (Error, ValidationError(..), validate, JsonPointer)
+module Json.Schema.Validation exposing (Error, ValidationError(..), ValidationOptions, defaultOptions, validate, JsonPointer)
 
 {-|
 
@@ -7,7 +7,7 @@ module Json.Schema.Validation exposing (Error, ValidationError(..), validate, Js
 Validation fails with list of errors, one for each invalid leaf of the value object.
 When validation succeeds it also returns value being validated. Currently this value is the same as initial value, later version will allow options to be supplied in order to normalize value along the validation (e.g. apply defaults, remove additional properties, coerce types)
 
-@docs validate
+@docs validate, ValidationOptions, defaultOptions
 
 # Validation Errors
 
@@ -37,6 +37,23 @@ import Json.Schema.Definitions
         , blankSubSchema
         , decoder
         )
+
+
+{-|
+Validation options which allow to apply defaults (more options upcoming)
+-}
+type alias ValidationOptions =
+    { applyDefaults : Bool
+    }
+
+
+{-|
+Default validation options, applyDefaults = True
+-}
+defaultOptions : ValidationOptions
+defaultOptions =
+    { applyDefaults = True
+    }
 
 
 {-|
@@ -111,10 +128,10 @@ type ValidationError
 
 {-| Validate value against schema
 -}
-validate : SchemataPool -> Value -> Schema -> Schema -> Result (List Error) Value
-validate pool value rootSchema schema =
+validate : ValidationOptions -> SchemataPool -> Value -> Schema -> Schema -> Result (List Error) Value
+validate validationOptions pool value rootSchema schema =
     let
-        validateSubschema jsonPointer os value =
+        validateSubschema validationOptions jsonPointer os value =
             [ validateMultipleOf
             , validateMaximum
             , validateMinimum
@@ -128,10 +145,10 @@ validate pool value rootSchema schema =
             , validateMinItems
             , validateUniqueItems
             , validateContains
+            , validateProperties
             , validateMaxProperties
             , validateMinProperties
             , validateRequired
-            , validateProperties
             , validatePatternProperties
             , validateAdditionalProperties
             , validateDependencies
@@ -144,9 +161,9 @@ validate pool value rootSchema schema =
             , validateOneOf
             , validateNot
             ]
-                |> failWithListErrors jsonPointer value os
+                |> failWithListErrors validationOptions jsonPointer value os
 
-        validateSchema jsonPointer value s =
+        validateSchema validationOptions jsonPointer value s =
             case s of
                 BooleanSchema bs ->
                     if bs then
@@ -159,7 +176,7 @@ validate pool value rootSchema schema =
                         Just ref ->
                             case ref |> resolveReference jsonPointer.ns pool rootSchema of
                                 Just ( ns, ObjectSchema oss ) ->
-                                    validateSubschema { jsonPointer | ns = ns } oss value
+                                    validateSubschema validationOptions { jsonPointer | ns = ns } oss value
 
                                 Just ( ns, BooleanSchema bs ) ->
                                     if bs then
@@ -171,14 +188,14 @@ validate pool value rootSchema schema =
                                     Err [ Error jsonPointer <| UnresolvableReference ref ]
 
                         Nothing ->
-                            validateSubschema jsonPointer os value
+                            validateSubschema validationOptions jsonPointer os value
 
-        failWithListErrors : JsonPointer -> Value -> SubSchema -> List (JsonPointer -> Value -> SubSchema -> Result (List Error) Value) -> Result (List Error) Value
-        failWithListErrors jsonPointer value schema validators =
+        failWithListErrors : ValidationOptions -> JsonPointer -> Value -> SubSchema -> List (ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value) -> Result (List Error) Value
+        failWithListErrors validationOptions jsonPointer value schema validators =
             validators
                 |> List.foldl
                     (\fn ( errors, val ) ->
-                        case fn jsonPointer val schema of
+                        case fn validationOptions jsonPointer val schema of
                             Ok newValue ->
                                 ( errors, newValue )
 
@@ -195,99 +212,100 @@ validate pool value rootSchema schema =
                                 Err list
                    )
 
-        validateMultipleOf : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMultipleOf jsonPointer =
+        validateMultipleOf : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMultipleOf validationOptions jsonPointer v =
             when .multipleOf
                 Decode.float
                 (\multipleOf x ->
                     if isInt (x / multipleOf) then
-                        Ok True
+                        Ok v
                     else
                         Err [ Error jsonPointer <| MultipleOf multipleOf x ]
                 )
+                v
 
-        validateMaximum : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaximum jsonPointer v s =
+        validateMaximum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMaximum validationOptions jsonPointer v s =
             when .maximum
                 Decode.float
                 (\max x ->
                     case s.exclusiveMaximum of
                         Just (BoolBoundary True) ->
                             if x < max then
-                                Ok True
+                                Ok v
                             else
                                 Err [ Error jsonPointer <| ExclusiveMaximum max x ]
 
                         _ ->
                             if x <= max then
-                                Ok True
+                                Ok v
                             else
                                 Err [ Error jsonPointer <| Maximum max x ]
                 )
                 v
                 s
 
-        validateMinimum : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinimum jsonPointer v s =
+        validateMinimum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMinimum validationOptions jsonPointer v s =
             when .minimum
                 Decode.float
                 (\min x ->
                     case s.exclusiveMinimum of
                         Just (BoolBoundary True) ->
                             if x > min then
-                                Ok True
+                                Ok v
                             else
                                 Err [ Error jsonPointer <| ExclusiveMinimum min x ]
 
                         _ ->
                             if x >= min then
-                                Ok True
+                                Ok v
                             else
                                 Err [ Error jsonPointer <| Minimum min x ]
                 )
                 v
                 s
 
-        validateExclusiveMaximum : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateExclusiveMaximum jsonPointer v s =
+        validateExclusiveMaximum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateExclusiveMaximum validationOptions jsonPointer v s =
             when .exclusiveMaximum
                 Decode.float
                 (\max x ->
                     case max of
                         NumberBoundary m ->
                             if x < m then
-                                Ok True
+                                Ok v
                             else
                                 Err [ Error jsonPointer <| ExclusiveMaximum m x ]
 
                         BoolBoundary _ ->
                             -- draft-04 exclusive boundary validation only works as part of minimum/maximum
-                            Ok True
+                            Ok v
                 )
                 v
                 s
 
-        validateExclusiveMinimum : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateExclusiveMinimum jsonPointer v s =
+        validateExclusiveMinimum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateExclusiveMinimum validationOptions jsonPointer v s =
             when .exclusiveMinimum
                 Decode.float
                 (\min x ->
                     case min of
                         NumberBoundary m ->
                             if x > m then
-                                Ok True
+                                Ok v
                             else
                                 Err [ Error jsonPointer <| ExclusiveMinimum m x ]
 
                         BoolBoundary _ ->
                             -- draft-04 exclusive boundary validation only works as part of minimum/maximum
-                            Ok True
+                            Ok v
                 )
                 v
                 s
 
-        validateMaxLength : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaxLength jsonPointer =
+        validateMaxLength : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMaxLength validationOptions jsonPointer v =
             when .maxLength
                 Decode.string
                 (\maxLength str ->
@@ -296,13 +314,14 @@ validate pool value rootSchema schema =
                             UTF32.length str
                     in
                         if x <= maxLength then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| MaxLength maxLength x ]
                 )
+                v
 
-        validateMinLength : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinLength jsonPointer =
+        validateMinLength : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMinLength validationOptions jsonPointer v =
             when .minLength
                 Decode.string
                 (\minLength str ->
@@ -311,27 +330,29 @@ validate pool value rootSchema schema =
                             UTF32.length str
                     in
                         if x >= minLength then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| MinLength minLength x ]
                 )
+                v
 
-        validatePattern : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validatePattern jsonPointer =
+        validatePattern : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validatePattern validationOptions jsonPointer v =
             when .pattern
                 Decode.string
                 (\pattern str ->
                     if Regex.contains (Regex.regex pattern) str then
-                        Ok True
+                        Ok v
                     else
                         Err [ Error jsonPointer <| Pattern pattern str ]
                 )
+                v
 
-        validateItems : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateItems jsonPointer value schema =
+        validateItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateItems validationOptions jsonPointer value schema =
             let
                 validateItem item schema index =
-                    validateSchema ({ jsonPointer | path = jsonPointer.path ++ [ toString index ] }) item schema
+                    validateSchema validationOptions ({ jsonPointer | path = jsonPointer.path ++ [ toString index ] }) item schema
                         |> Result.map (\_ -> index + 1)
             in
                 case schema.items of
@@ -386,8 +407,8 @@ validate pool value rootSchema schema =
                     _ ->
                         Ok value
 
-        validateMaxItems : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaxItems jsonPointer =
+        validateMaxItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMaxItems validationOptions jsonPointer v =
             when .maxItems
                 (Decode.list Decode.value)
                 (\maxItems list ->
@@ -396,13 +417,14 @@ validate pool value rootSchema schema =
                             List.length list
                     in
                         if x <= maxItems then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| MaxItems maxItems x ]
                 )
+                v
 
-        validateMinItems : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinItems jsonPointer =
+        validateMinItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMinItems validationOptions jsonPointer v =
             when .minItems
                 (Decode.list Decode.value)
                 (\minItems list ->
@@ -411,36 +433,38 @@ validate pool value rootSchema schema =
                             List.length list
                     in
                         if x >= minItems then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| MinItems minItems x ]
                 )
+                v
 
-        validateUniqueItems : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateUniqueItems jsonPointer =
+        validateUniqueItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateUniqueItems validationOptions jsonPointer v =
             when .uniqueItems
                 (Decode.list Decode.value)
                 (\uniqueItems list ->
                     if not uniqueItems then
-                        Ok True
+                        Ok v
                     else
                         case findDuplicateItem list of
                             Just v ->
                                 Err [ Error jsonPointer <| UniqueItems v ]
 
                             Nothing ->
-                                Ok True
+                                Ok v
                 )
+                v
 
-        validateContains : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateContains jsonPointer v =
+        validateContains : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateContains validationOptions jsonPointer v =
             whenSubschema .contains
                 (Decode.list Decode.value)
                 (\contains list ->
                     if
                         List.any
                             (\item ->
-                                case validateSchema jsonPointer item contains of
+                                case validateSchema validationOptions jsonPointer item contains of
                                     Ok _ ->
                                         True
 
@@ -455,8 +479,8 @@ validate pool value rootSchema schema =
                 )
                 v
 
-        validateMaxProperties : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaxProperties jsonPointer =
+        validateMaxProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMaxProperties validationOptions jsonPointer v =
             when .maxProperties
                 (Decode.keyValuePairs Decode.value)
                 (\maxProperties obj ->
@@ -465,13 +489,14 @@ validate pool value rootSchema schema =
                             List.length obj
                     in
                         if x <= maxProperties then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| MaxProperties maxProperties x ]
                 )
+                v
 
-        validateMinProperties : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinProperties jsonPointer =
+        validateMinProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateMinProperties validationOptions jsonPointer v =
             when .minProperties
                 (Decode.keyValuePairs Decode.value)
                 (\minProperties obj ->
@@ -480,19 +505,21 @@ validate pool value rootSchema schema =
                             List.length obj
                     in
                         if x >= minProperties then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| MinProperties minProperties x ]
                 )
+                v
 
-        validateRequired : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateRequired jsonPointer =
+        validateRequired : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateRequired validationOptions jsonPointer v s =
             when .required
                 (Decode.keyValuePairs Decode.value)
                 (\required obj ->
                     let
                         keys =
                             obj
+                                |> Debug.log "validate required"
                                 |> List.map (\( key, _ ) -> key)
 
                         missing =
@@ -500,30 +527,98 @@ validate pool value rootSchema schema =
                                 |> List.filter (flip List.member keys >> not)
                     in
                         if List.isEmpty missing then
-                            Ok True
+                            Ok v
                         else
                             Err [ Error jsonPointer <| Required missing ]
                 )
+                v
+                s
 
-        validateProperties : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateProperties jsonPointer v =
+        addDefaultProperties : ValidationOptions -> JsonPointer -> Maybe Schemata -> List ( String, Value ) -> List ( String, Value )
+        addDefaultProperties validationOptions jsonPointer properties obj =
+            let
+                missing name obj =
+                    obj
+                        |> List.filter (\( n, _ ) -> n == name)
+                        |> List.isEmpty
+
+                defaultFor obj propName schema =
+                    if obj |> missing propName then
+                        case schema of
+                            ObjectSchema os ->
+                                os.default
+                                    |> Maybe.andThen
+                                        (\value ->
+                                            validateSchema { validationOptions | applyDefaults = False } { jsonPointer | path = jsonPointer.path ++ [ propName ] } value schema
+                                                |> Result.toMaybe
+                                        )
+
+                            _ ->
+                                Nothing
+                    else
+                        Nothing
+            in
+                if validationOptions.applyDefaults then
+                    case properties of
+                        Just (Schemata knownProps) ->
+                            knownProps
+                                |> List.foldl
+                                    (\( propName, schema ) resultingObject ->
+                                        case defaultFor obj propName schema of
+                                            Just value ->
+                                                ( propName, value ) :: resultingObject
+
+                                            Nothing ->
+                                                resultingObject
+                                    )
+                                    []
+                                |> List.reverse
+
+                        _ ->
+                            []
+                else
+                    []
+
+        validateProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateProperties validationOptions jsonPointer v subSchema =
             when .properties
                 (Decode.keyValuePairs Decode.value)
                 (\properties obj ->
-                    obj
-                        |> List.reverse
-                        |> List.map
-                            (\( key, value ) ->
-                                case getSchema key properties of
-                                    Just schema ->
-                                        validateSchema { jsonPointer | path = jsonPointer.path ++ [ key ] } value schema
+                    let
+                        revObj =
+                            obj |> List.reverse
 
-                                    Nothing ->
+                        newProps =
+                            addDefaultProperties validationOptions jsonPointer subSchema.properties revObj
+
+                        addedPropNames =
+                            newProps
+                                |> List.map (\( name, _ ) -> name)
+                                |> Debug.log "addedPropNames"
+
+                        upgradedObject =
+                            revObj
+                                ++ newProps
+                                |> Debug.log "upgradedObject"
+                    in
+                        upgradedObject
+                            |> List.map
+                                (\( key, value ) ->
+                                    if List.member key addedPropNames then
                                         Ok value
-                            )
-                        |> concatErrors (Ok v)
+                                    else
+                                        case getSchema key properties of
+                                            Just schema ->
+                                                validateSchema validationOptions { jsonPointer | path = jsonPointer.path ++ [ key ] } value schema
+
+                                            Nothing ->
+                                                Ok value
+                                )
+                            |> concatErrors (upgradedObject |> Encode.object |> Ok)
                 )
                 v
+                subSchema
+                |> Debug.log ("validateProperties result at " ++ (toString jsonPointer))
 
         {-
            Validation succeeds if, for each instance name that matches any regular
@@ -533,8 +628,8 @@ validate pool value rootSchema schema =
 
            Excerpt from http://json-schema.org/latest/json-schema-validation.html#rfc.section.6.19
         -}
-        validatePatternProperties : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validatePatternProperties jsonPointer v =
+        validatePatternProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validatePatternProperties validationOptions jsonPointer v =
             when .patternProperties
                 (Decode.keyValuePairs Decode.value)
                 (\(Schemata patternProperties) obj ->
@@ -544,16 +639,11 @@ validate pool value rootSchema schema =
                                 Ok _ ->
                                     obj
                                         |> getPropsByPattern pattern
-                                        |> List.foldl
-                                            (\( key, value ) res ->
-                                                case res of
-                                                    Ok _ ->
-                                                        validateSchema { jsonPointer | path = jsonPointer.path ++ [ key ] } value schema
-
-                                                    Err _ ->
-                                                        res
+                                        |> List.map
+                                            (\( key, value ) ->
+                                                validateSchema validationOptions { jsonPointer | path = jsonPointer.path ++ [ key ] } value schema
                                             )
-                                            (Ok v)
+                                        |> concatErrors (Ok v)
 
                                 Err _ ->
                                     res
@@ -563,8 +653,8 @@ validate pool value rootSchema schema =
                 )
                 v
 
-        validateAdditionalProperties : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateAdditionalProperties jsonPointer v s =
+        validateAdditionalProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateAdditionalProperties validationOptions jsonPointer v s =
             let
                 rejectMatching :
                     Maybe Schemata
@@ -604,7 +694,7 @@ validate pool value rootSchema schema =
                                             obj
                                                 |> List.map
                                                     (\( key, val ) ->
-                                                        validateSchema { jsonPointer | path = jsonPointer.path ++ [ key ] } val additionalProperties
+                                                        validateSchema validationOptions { jsonPointer | path = jsonPointer.path ++ [ key ] } val additionalProperties
                                                     )
                                                 |> concatErrors (Ok v)
                                )
@@ -612,22 +702,27 @@ validate pool value rootSchema schema =
                     v
                     s
 
-        validateDependencies : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateDependencies jsonPointer v s =
+        validateDependencies : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateDependencies validationOptions jsonPointer v s =
             let
                 validateDep obj =
                     s.dependencies
                         |> List.foldl
                             (\( depName, dep ) res ->
-                                if res == (Ok v) && Dict.member depName (Dict.fromList obj) then
-                                    case dep of
-                                        PropSchema ss ->
-                                            validateSchema jsonPointer v ss
+                                case res of
+                                    Err _ ->
+                                        res
 
-                                        ArrayPropNames keys ->
-                                            validateSchema jsonPointer v (ObjectSchema { blankSubSchema | required = Just keys })
-                                else
-                                    res
+                                    Ok _ ->
+                                        if Dict.member depName (Dict.fromList obj) then
+                                            case dep of
+                                                PropSchema ss ->
+                                                    validateSchema validationOptions jsonPointer v ss
+
+                                                ArrayPropNames keys ->
+                                                    validateSchema validationOptions jsonPointer v (ObjectSchema { blankSubSchema | required = Just keys })
+                                        else
+                                            res
                             )
                             (Ok v)
             in
@@ -641,11 +736,11 @@ validate pool value rootSchema schema =
                         Err _ ->
                             Ok v
 
-        validatePropertyNames : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validatePropertyNames jsonPointer v =
+        validatePropertyNames : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validatePropertyNames validationOptions jsonPointer v =
             let
                 validatePropertyName schema key =
-                    case validateSchema { jsonPointer | path = jsonPointer.path ++ [ key ] } (Encode.string key) schema of
+                    case validateSchema validationOptions { jsonPointer | path = jsonPointer.path ++ [ key ] } (Encode.string key) schema of
                         Ok x ->
                             Nothing
 
@@ -668,19 +763,19 @@ validate pool value rootSchema schema =
                     )
                     v
 
-        validateEnum : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateEnum jsonPointer =
+        validateEnum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateEnum validationOptions jsonPointer =
             when .enum
                 Decode.value
                 (\enum val ->
                     if List.any (\item -> stringify item == (stringify val)) enum then
-                        Ok True
+                        Ok val
                     else
                         Err [ Error jsonPointer Enum ]
                 )
 
-        validateConst : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateConst jsonPointer =
+        validateConst : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateConst validationOptions jsonPointer =
             when .const
                 Decode.value
                 (\const val ->
@@ -692,36 +787,36 @@ validate pool value rootSchema schema =
                             canonical val
                     in
                         if expected == actual then
-                            Ok True
+                            Ok val
                         else
                             Err [ Error jsonPointer Const ]
                 )
 
-        validateType : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateType jsonPointer val s =
+        validateType : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateType validationOptions jsonPointer val s =
             case s.type_ of
                 AnyType ->
                     Ok val
 
                 SingleType st ->
-                    validateSingleType jsonPointer st val
+                    validateSingleType validationOptions jsonPointer st val
 
                 NullableType st ->
-                    case validateSingleType jsonPointer NullType val of
+                    case validateSingleType validationOptions jsonPointer NullType val of
                         Err _ ->
-                            validateSingleType jsonPointer st val
+                            validateSingleType validationOptions jsonPointer st val
 
                         _ ->
                             Ok val
 
                 UnionType listTypes ->
-                    if List.any (\st -> validateSingleType jsonPointer st val == (Ok val)) listTypes then
+                    if List.any (\st -> validateSingleType validationOptions jsonPointer st val == (Ok val)) listTypes then
                         Ok val
                     else
                         Err [ Error jsonPointer <| InvalidType "None of desired types match" ]
 
-        validateSingleType : JsonPointer -> SingleType -> Value -> Result (List Error) Value
-        validateSingleType jsonPointer st val =
+        validateSingleType : ValidationOptions -> JsonPointer -> SingleType -> Value -> Result (List Error) Value
+        validateSingleType validationOptions jsonPointer st val =
             let
                 test : Decoder a -> Result (List Error) Value
                 test d =
@@ -751,15 +846,15 @@ validate pool value rootSchema schema =
                     ObjectType ->
                         test <| Decode.keyValuePairs Decode.value
 
-        validateAllOf : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateAllOf jsonPointer =
+        validateAllOf : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateAllOf validationOptions jsonPointer =
             when .allOf
                 Decode.value
                 (\allOf val ->
                     List.foldl
                         (\schema res ->
                             if res == (Ok val) then
-                                validateSchema jsonPointer val schema
+                                validateSchema validationOptions jsonPointer val schema
                             else
                                 res
                         )
@@ -767,15 +862,15 @@ validate pool value rootSchema schema =
                         allOf
                 )
 
-        validateAnyOf : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateAnyOf jsonPointer =
+        validateAnyOf : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateAnyOf validationOptions jsonPointer =
             when .anyOf
                 Decode.value
                 (\anyOf val ->
                     let
                         validationResults =
                             anyOf
-                                |> List.map (validateSchema jsonPointer val)
+                                |> List.map (validateSchema validationOptions jsonPointer val)
 
                         isOk res =
                             case res of
@@ -792,14 +887,14 @@ validate pool value rootSchema schema =
                                 |> concatErrors (Ok val)
                 )
 
-        validateOneOf : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateOneOf jsonPointer =
+        validateOneOf : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateOneOf validationOptions jsonPointer =
             when .oneOf
                 Decode.value
                 (\oneOf val ->
                     let
                         validSubschema schema =
-                            validateSchema jsonPointer val schema == (Ok val)
+                            validateSchema validationOptions jsonPointer val schema == (Ok val)
                     in
                         case oneOf |> List.filter validSubschema |> List.length of
                             1 ->
@@ -812,12 +907,12 @@ validate pool value rootSchema schema =
                                 Err [ Error jsonPointer <| OneOfManySucceed len ]
                 )
 
-        validateNot : JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateNot jsonPointer =
+        validateNot : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
+        validateNot validationOptions jsonPointer =
             whenSubschema .not
                 Decode.value
                 (\notSchema val ->
-                    if validateSchema jsonPointer val notSchema == (Ok val) then
+                    if validateSchema validationOptions jsonPointer val notSchema == (Ok val) then
                         Err [ Error jsonPointer Not ]
                     else
                         Ok val
@@ -852,7 +947,6 @@ validate pool value rootSchema schema =
                     case Decode.decodeValue decoder value of
                         Ok decoded ->
                             fn v decoded
-                                |> Result.map (\_ -> value)
 
                         Err s ->
                             Ok value
@@ -874,7 +968,7 @@ validate pool value rootSchema schema =
                 Nothing ->
                     Ok value
     in
-        validateSchema (JsonPointer "" []) value schema
+        validateSchema validationOptions (JsonPointer "" []) value schema
 
 
 stringify : Value -> String

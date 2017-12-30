@@ -20,6 +20,7 @@ defaultPool : SchemataPool
 defaultPool =
     Dict.empty
         |> Dict.insert "http://json-schema.org/draft-06/schema" Schemata.draft6
+        |> Dict.insert "http://json-schema.org/draft-06/schema#" Schemata.draft6
         |> Dict.insert "http://json-schema.org/draft-04/schema" Schemata.draft4
 
 
@@ -39,7 +40,7 @@ parseJsonPointer pointer currentNamespace =
             Regex.contains absoluteUri
 
         ( ns, hash ) =
-            case String.split "#" pointer |> Debug.log ("split of " ++ pointer) of
+            case String.split "#" pointer of
                 [] ->
                     ( currentNamespace, "" )
 
@@ -54,14 +55,14 @@ parseJsonPointer pointer currentNamespace =
                 a :: b :: _ ->
                     if a == "" then
                         ( currentNamespace, b )
-                            |> Debug.log "case 3.1"
+                        --|> Debug.log "case 3.1"
                     else if isAbsolute a then
                         ( a, b )
-                            |> Debug.log "case 3.2"
+                        --|> Debug.log "case 3.2"
                     else
                         ( merge currentNamespace a, b )
-                            |> Debug.log "case 3.4"
 
+        --|> Debug.log "case 3.4"
         isPointer =
             hasFragments hash
     in
@@ -120,10 +121,19 @@ makeJsonPointer ( isPointer, ns, path ) =
             |> (++) ns
     else if List.isEmpty path then
         ns
+        -- |> Debug.log "path was empty"
     else
         path
             |> String.join "/"
             |> (++) (ns ++ "#")
+
+
+removeTrailingSlash : String -> String
+removeTrailingSlash s =
+    if String.endsWith "#" s then
+        String.dropRight 1 s
+    else
+        s
 
 
 resolveReference : String -> SchemataPool -> Schema -> String -> Maybe ( String, Schema )
@@ -133,23 +143,25 @@ resolveReference ns pool schema ref =
             schema
                 |> whenObjectSchema
                 |> Maybe.andThen .id
+                |> Maybe.map removeTrailingSlash
                 |> Maybe.withDefault ns
 
         resolveRecursively namespace limit schema ref =
             let
                 ( isPointer, ns, path ) =
-                    parseJsonPointer (Debug.log "resolving ref" ref) namespace
-                        |> Debug.log "new json pointer (parsed)"
+                    parseJsonPointer ({- Debug.log "resolving ref" -} ref) namespace
 
+                --|> Debug.log "new json pointer (parsed)"
                 --|> Debug.log ("parse " ++ (toString ref) ++ " within ns " ++ (toString namespace))
                 newJsonPointer =
                     makeJsonPointer ( isPointer, ns, path )
-                        |> Debug.log "new json pointer (combined)"
 
+                --|> Debug.log "new json pointer (combined)"
                 a =
                     pool
                         |> Dict.keys
-                        |> Debug.log "pool keys"
+
+                --|> Debug.log "pool keys"
             in
                 if limit > 0 then
                     (if isPointer then

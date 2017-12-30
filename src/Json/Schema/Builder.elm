@@ -193,11 +193,11 @@ toSchema (SchemaBuilder sb) =
 
 {-| Validate value using schema controlled by builder.
 -}
-validate : Value -> SchemaBuilder -> Result (List Error) Value
-validate val sb =
+validate : Validation.ValidationOptions -> Value -> SchemaBuilder -> Result (List Error) Value
+validate validationOptions val sb =
     case toSchema sb of
         Ok schema ->
-            Validation.validate Ref.defaultPool val schema schema
+            Validation.validate validationOptions Ref.defaultPool val schema schema
 
         Err s ->
             Ok val
