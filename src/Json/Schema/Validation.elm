@@ -52,7 +52,7 @@ Default validation options, applyDefaults = True
 -}
 defaultOptions : ValidationOptions
 defaultOptions =
-    { applyDefaults = True
+    { applyDefaults = False
     }
 
 
