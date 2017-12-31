@@ -519,7 +519,6 @@ validate validationOptions pool value rootSchema schema =
                     let
                         keys =
                             obj
-                                |> Debug.log "validate required"
                                 |> List.map (\( key, _ ) -> key)
 
                         missing =
@@ -594,12 +593,10 @@ validate validationOptions pool value rootSchema schema =
                         addedPropNames =
                             newProps
                                 |> List.map (\( name, _ ) -> name)
-                                |> Debug.log "addedPropNames"
 
                         upgradedObject =
                             revObj
                                 ++ newProps
-                                |> Debug.log "upgradedObject"
                     in
                         upgradedObject
                             |> List.map
@@ -618,7 +615,6 @@ validate validationOptions pool value rootSchema schema =
                 )
                 v
                 subSchema
-                |> Debug.log ("validateProperties result at " ++ (toString jsonPointer))
 
         {-
            Validation succeeds if, for each instance name that matches any regular
