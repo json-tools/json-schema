@@ -114,7 +114,9 @@ type ValidationError
     | MaxProperties Int Int
     | MinProperties Int Int
     | Required (List String)
+    | RequiredProperty
     | AdditionalPropertiesDisallowed (List String)
+    | AdditionalPropertyDisallowed
     | InvalidPropertyName (List Error)
     | Enum
     | Const
@@ -528,7 +530,13 @@ validate validationOptions pool value rootSchema schema =
                         if List.isEmpty missing then
                             Ok v
                         else
-                            Err [ Error jsonPointer <| Required missing ]
+                            missing
+                                |> List.map
+                                    (\key ->
+                                        Error { jsonPointer | path = jsonPointer.path ++ [ key ] } RequiredProperty
+                                    )
+                                |> (::) (Error jsonPointer <| Required missing)
+                                |> Err
                 )
                 v
                 s
@@ -684,7 +692,13 @@ validate validationOptions pool value rootSchema schema =
                                             else if List.isEmpty obj then
                                                 Ok v
                                             else
-                                                Err [ Error jsonPointer <| AdditionalPropertiesDisallowed <| List.map (\( name, _ ) -> name) obj ]
+                                                obj
+                                                    |> List.map
+                                                        (\( name, _ ) ->
+                                                            Error { jsonPointer | path = jsonPointer.path ++ [ name ] } AdditionalPropertyDisallowed
+                                                        )
+                                                    |> (::) (Error jsonPointer <| AdditionalPropertiesDisallowed <| List.map (\( name, _ ) -> name) obj)
+                                                    |> Err
 
                                         ObjectSchema _ ->
                                             obj
