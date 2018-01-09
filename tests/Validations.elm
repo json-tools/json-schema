@@ -340,7 +340,7 @@ all =
                     buildSchema
                         |> withRequired [ "foo", "bar" ]
                         |> validate defaultOptions (Encode.object [ ( "foo", int 1 ) ])
-                        |> Expect.equal (Err [ error [] <| Required [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| Required [ "bar" ], error [ "bar" ] RequiredProperty ])
             ]
         , describe "properties"
             [ test "success" <|
@@ -436,7 +436,7 @@ all =
                             ]
                         |> withAdditionalProperties (boolSchema False)
                         |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
-                        |> Expect.equal (Err [ error [] <| AdditionalPropertiesDisallowed [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| AdditionalPropertiesDisallowed [ "bar" ], error [ "bar" ] AdditionalPropertyDisallowed ])
             ]
         , describe "dependencies"
             [ test "success" <|
@@ -454,14 +454,14 @@ all =
                             "foo"
                             (buildSchema |> withRequired [ "bar" ])
                         |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ) ])
-                        |> Expect.equal (Err [ error [] <| Required [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| Required [ "bar" ], error [ "bar" ] RequiredProperty ])
               --|> Expect.equal (Err "Required property 'bar' is missing")
             , test "failure when dependency is array of strings" <|
                 \() ->
                     buildSchema
                         |> withPropNamesDependency "foo" [ "bar" ]
                         |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ) ])
-                        |> Expect.equal (Err [ error [] <| Required [ "bar" ] ])
+                        |> Expect.equal (Err [ error [] <| Required [ "bar" ], error [ "bar" ] RequiredProperty ])
             ]
         , describe "propertyNames"
             [ test "success" <|
