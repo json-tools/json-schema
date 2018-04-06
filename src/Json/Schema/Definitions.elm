@@ -26,7 +26,7 @@ Feel free to open [issue](https://github.com/1602/json-schema) to describe your 
 
 # Definitions
 
-@docs Schema, SubSchema, Schemata, Items, Dependency, Type, SingleType, blankSchema, blankSubSchema
+@docs Schema, SubSchema, Schemata, Items, Dependency, Type, SingleType, blankSchema, blankSubSchema, ExclusiveBoundary
 
 # Decoding / encoding
 
@@ -42,7 +42,6 @@ import Util exposing (resultToDecoder, foldResults, isInt)
 import Json.Decode.Pipeline exposing (decode, required, optional, requiredAt, optionalAt)
 import Json.Encode as Encode
 import Json.Decode as Decode exposing (Value, Decoder, field, succeed, fail, lazy, nullable, andThen, string, float, int, bool, list, value)
-import Dict exposing (Dict)
 
 
 {-|
