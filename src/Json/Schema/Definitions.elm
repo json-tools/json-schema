@@ -134,7 +134,7 @@ type Dependency
 
 
 {-|
-Exclusive boundaries. Compatibility layer between draft-04 and draft-06
+Exclusive boundaries. Compatibility layer between draft-04 and draft-06 (keywords `exclusiveMinimum` and `exclusiveMaximum` has been changed from a boolean to a number to be consistent with the principle of keyword independence). Since we currently keep both draft-4 and draft-6 as same type definition, we have a union of `Bool` and `Float` here. It might be not a bad idea to separate type definitions for different drafts of JSON Schema, current API decision will be reconsidered when future versions of JSON Schema will arrive.
 -}
 type ExclusiveBoundary
     = BoolBoundary Bool
