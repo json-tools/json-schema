@@ -28,7 +28,10 @@ import Json.Decode exposing (Value, decodeValue, decodeString)
 import Json.Schema.Helpers exposing (collectIds)
 
 
-{-| Validate value against JSON Schema. Returns True Result if case if object is valid, or string error otherwise.
+{-| Validate value against JSON Schema. Returns Result with updated value in case if validationOptions require so.
+
+    schema
+        |> Json.Schema.validateValue { applyDefaults = True } value
 -}
 validateValue : ValidationOptions -> Value -> Schema -> Result (List Error) Value
 validateValue validationOptions value schema =
