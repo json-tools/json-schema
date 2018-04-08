@@ -1,4 +1,6 @@
-## 4.0.0 (not published)
+## [not published]
+
+## 4.0.0
 
 - support full spec of draft-04 and draft-06
 - functionality validated by [official test suite](https://github.com/json-schema-org/JSON-Schema-Test-Suite)
