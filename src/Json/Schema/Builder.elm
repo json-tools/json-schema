@@ -54,6 +54,8 @@ module Json.Schema.Builder
           -- schema
         , withRef
         , withId
+          -- custom keyword
+        , withCustomKeyword
           -- encode
         , encode
         )
@@ -82,7 +84,7 @@ and union types (e.g. `["string", "object"]`)
 
 ## JSON-Schema
 
-@docs withId, withRef
+@docs withId, withRef, withCustomKeyword
 
 ## Numeric validations
 
@@ -116,7 +118,7 @@ will always succeed for any type other than `number` and `integer`
 
 import Util exposing (foldResults)
 import Json.Schema.Validation as Validation exposing (Error)
-import Json.Decode exposing (Value)
+import Json.Decode as Decode exposing (Value)
 import Json.Encode as Encode
 import Ref
 import Json.Schema.Definitions
@@ -553,6 +555,23 @@ withDefault x =
 withId : String -> SchemaBuilder -> SchemaBuilder
 withId x =
     updateSchema (\s -> { s | id = Just x })
+
+
+{-|
+-}
+withCustomKeyword : String -> Value -> SchemaBuilder -> SchemaBuilder
+withCustomKeyword key val =
+    updateSchema
+        (\s ->
+            { s
+                | source =
+                    s.source
+                        |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                        |> Result.withDefault []
+                        |> (::) ( key, val )
+                        |> Encode.object
+            }
+        )
 
 
 

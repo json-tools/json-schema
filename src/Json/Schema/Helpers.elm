@@ -16,7 +16,6 @@ module Json.Schema.Helpers
 import Dict exposing (Dict)
 import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
 import Json.Encode as Encode
-import Json.Schema.Validation as Validation
 import Json.Schema.Definitions as Schema
     exposing
         ( Type(AnyType, SingleType, NullableType, UnionType)

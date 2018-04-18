@@ -13,6 +13,7 @@ module Json.Schema.Definitions
         , Items(ItemDefinition, ArrayOfItems, NoItems)
         , Dependency(ArrayPropNames, PropSchema)
         , ExclusiveBoundary(BoolBoundary, NumberBoundary)
+        , getCustomKeywordValue
         )
 
 {-|
@@ -34,7 +35,7 @@ Feel free to open [issue](https://github.com/1602/json-schema) to describe your 
 
 # Misc
 
-@docs stringToType
+@docs stringToType, getCustomKeywordValue
 
 -}
 
@@ -204,12 +205,17 @@ encode s =
     let
         optionally : (a -> Value) -> Maybe a -> String -> List ( String, Value ) -> List ( String, Value )
         optionally fn val key res =
-            case val of
-                Just s ->
-                    ( key, fn s ) :: res
-
-                Nothing ->
+            let
+                result =
                     res
+                        |> List.filter (\( k, _ ) -> k /= key)
+            in
+                case val of
+                    Just s ->
+                        ( key, fn s ) :: result
+
+                    Nothing ->
+                        result
 
         encodeItems : Items -> List ( String, Value ) -> List ( String, Value )
         encodeItems items res =
@@ -298,6 +304,12 @@ encode s =
 
                 NumberBoundary f ->
                     Encode.float f
+
+        source : SubSchema -> List ( String, Value )
+        source os =
+            os.source
+                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                |> Result.withDefault []
     in
         case s of
             BooleanSchema bs ->
@@ -342,7 +354,7 @@ encode s =
                 , optionally encodeListSchemas os.oneOf "oneOf"
                 , optionally encode os.not "not"
                 ]
-                    |> List.foldl identity []
+                    |> List.foldl identity (source os)
                     |> List.reverse
                     |> Encode.object
 
@@ -596,3 +608,26 @@ schemataDecoder =
     Decode.keyValuePairs (lazy (\_ -> decoder))
         |> Decode.andThen (\x -> succeed <| List.reverse x)
         |> Decode.map Schemata
+
+
+{-|
+Return custom keyword value by its name, useful when dealing with additional meta information added along with standard JSON Schema keywords.
+-}
+getCustomKeywordValue : String -> Schema -> Maybe Value
+getCustomKeywordValue key schema =
+    case schema of
+        ObjectSchema os ->
+            os.source
+                |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
+                |> Result.withDefault []
+                |> List.filterMap
+                    (\( k, v ) ->
+                        if k == key then
+                            Just v
+                        else
+                            Nothing
+                    )
+                |> List.head
+
+        _ ->
+            Nothing
