@@ -1,4 +1,8 @@
-## [not published]
+## 4.1.0
+
+Added support of custom keywords:
+- Json.Schema.Builder.withCustomKeyword
+- Json.Schema.Definitions.getCustomKeywordValue
 
 ## 4.0.0
 
