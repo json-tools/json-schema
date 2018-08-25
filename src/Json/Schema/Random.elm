@@ -1,13 +1,17 @@
-module Json.Schema.Random exposing (value, valueAt, GeneratorSettings, defaultSettings)
+module Json.Schema.Random exposing
+    ( value, valueAt
+    , GeneratorSettings, defaultSettings
+    )
 
-{-|
-Generate random values based on JSON Schema.
+{-| Generate random values based on JSON Schema.
 
 Experimental module.
+
 
 # Generator
 
 @docs value, valueAt
+
 
 # Settings
 
@@ -15,29 +19,30 @@ Experimental module.
 
 -}
 
+import Char
+import Dict
+import Json.Encode as Encode exposing (Value)
 import Json.Schema.Definitions
     exposing
-        ( Schema(ObjectSchema, BooleanSchema)
-        , Schemata(Schemata)
-        , Type(SingleType)
-        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
-        , Items(ItemDefinition, ArrayOfItems, NoItems)
+        ( Items(..)
+        , Schema(..)
+        , Schemata(..)
+        , SingleType(..)
+        , Type(..)
         )
-import Json.Encode as Encode exposing (Value)
-import Random exposing (Generator, Seed)
-import Char
-import Util exposing (getAt, uncons)
 import Json.Schema.Helpers exposing (collectIds)
+import Random exposing (Generator, Seed)
 import Ref exposing (defaultPool)
-import Dict
+import Util exposing (getAt, uncons)
 
 
-{-|
-Customize generator behaviour using following parameters:
-- optionalPropertyProbability : float from 0 to 1, which affects used while generating object with optional property, default 0.5
-- degradationMultiplier : used in nested objects to affect probability of optional property appearance (must have for recursive objects), default 0.2
-- defaultListLengthLimit : how many items in array to generate when limit is not set by a schema, default 100
-- defaultStringLengthLimit : how many characters in random string to generate when limit is not set by a schema, default 100
+{-| Customize generator behaviour using following parameters:
+
+  - optionalPropertyProbability : float from 0 to 1, which affects used while generating object with optional property, default 0.5
+  - degradationMultiplier : used in nested objects to affect probability of optional property appearance (must have for recursive objects), default 0.2
+  - defaultListLengthLimit : how many items in array to generate when limit is not set by a schema, default 100
+  - defaultStringLengthLimit : how many characters in random string to generate when limit is not set by a schema, default 100
+
 -}
 type alias GeneratorSettings =
     { optionalPropertyProbability : Float
@@ -47,8 +52,7 @@ type alias GeneratorSettings =
     }
 
 
-{-|
-Defaults for GeneratorSettings
+{-| Defaults for GeneratorSettings
 -}
 defaultSettings : GeneratorSettings
 defaultSettings =
@@ -67,21 +71,23 @@ randomString : Int -> Int -> Maybe String -> Generator String
 randomString minLength maxLength format =
     case format of
         Just "url" ->
-            Random.bool
+            randomBool
                 |> Random.map
                     (\x ->
                         if x then
                             "http://example.com/"
+
                         else
                             "https://github.com"
                     )
 
         Just "uri" ->
-            Random.bool
+            randomBool
                 |> Random.map
                     (\x ->
                         if x then
                             "http://example.com/"
+
                         else
                             "https://github.com"
                     )
@@ -89,34 +95,35 @@ randomString minLength maxLength format =
         Just "email" ->
             Random.int 1000 9999
                 |> Random.map
-                    (\x -> "rcp" ++ (toString x) ++ "@receipt.to")
+                    (\x -> "rcp" ++ (x |> String.fromInt) ++ "@receipt.to")
 
         Just "host-name" ->
-            Random.bool
+            randomBool
                 |> Random.map
                     (\x ->
                         if x then
                             "example.com"
+
                         else
                             "github.com"
                     )
 
         Just "date-time" ->
-            Random.bool
+            randomBool
                 |> Random.map (\_ -> "2018-01-01T09:00:00Z")
 
         Just "time" ->
-            Random.bool
+            randomBool
                 |> Random.map (\_ -> "09:00:00")
 
         Just "date" ->
-            Random.bool
+            randomBool
                 |> Random.map (\_ -> "2018-01-01")
 
         _ ->
             Random.int minLength maxLength
-                |> Random.andThen (flip Random.list lowercaseLetter)
-                |> Random.map (String.fromList)
+                |> Random.andThen (\a -> Random.list a lowercaseLetter)
+                |> Random.map String.fromList
 
 
 lowercaseLetter : Generator Char
@@ -130,16 +137,16 @@ randomItemFromList ( head, tail ) =
         list =
             head :: tail
     in
-        list
-            |> List.length
-            |> (+) -1
-            |> Random.int 0
-            |> Random.map (flip getAt list >> (Maybe.withDefault head))
+    list
+        |> List.length
+        |> (+) -1
+        |> Random.int 0
+        |> Random.map ((\a -> getAt a list) >> Maybe.withDefault head)
 
 
 nullGenerator : Generator Value
 nullGenerator =
-    Random.bool |> Random.map (\_ -> Encode.null)
+    randomBool |> Random.map (\_ -> Encode.null)
 
 
 upgradeSettings : GeneratorSettings -> GeneratorSettings
@@ -159,6 +166,7 @@ randomObject settings ns pool props required =
                     v
                         |> valueGenerator (upgradeSettings settings) ns pool
                         |> Random.andThen (\x -> res |> Random.map ((::) ( k, x )))
+
                 else
                     Random.float 0 1
                         |> Random.andThen
@@ -167,35 +175,37 @@ randomObject settings ns pool props required =
                                     v
                                         |> valueGenerator (upgradeSettings settings) ns pool
                                         |> Random.andThen (\x -> res |> Random.map ((::) ( k, x )))
+
                                 else
                                     res
                             )
             )
-            (Random.bool |> Random.map (\_ -> []))
+            (randomBool |> Random.map (\_ -> []))
         |> Random.map (List.reverse >> Encode.object)
 
 
 randomList : GeneratorSettings -> String -> Ref.SchemataPool -> Int -> Int -> Schema -> Generator Value
 randomList settings ns pool minItems maxItems schema =
     Random.int minItems maxItems
-        |> Random.andThen (flip Random.list (valueGenerator (upgradeSettings settings) ns pool schema))
-        |> Random.map (Encode.list)
+        |> Random.andThen (\a -> Random.list a (valueGenerator (upgradeSettings settings) ns pool schema))
+        |> Random.map (Encode.list identity)
 
 
-{-|
-Random value generator.
+{-| Random value generator.
 
     buildSchema
         |> withProperties
             [ ( "foo", buildSchema |> withType "integer" ) ]
         |> toSchema
-        |> Result.withDefault (blankSchema)
+        |> Result.withDefault blankSchema
         |> value defaultSettings
-        |> flip Random.step (Random.initialSeed 2)
-        |> \( v, _ ) ->
-            Expect.equal v (Encode.object [ ( "foo", Encode.int 688281600 ) ])
+        |> (\a -> Random.step a (Random.initialSeed 2))
+        |> (\( v, _ ) ->
+                Expect.equal v (Encode.object [ ( "foo", Encode.int 688281600 ) ])
+           )
 
 See tests for more examples.
+
 -}
 value : GeneratorSettings -> Schema -> Generator Value
 value settings s =
@@ -203,11 +213,10 @@ value settings s =
         ( pool, ns ) =
             collectIds s defaultPool
     in
-        valueGenerator settings ns pool s
+    valueGenerator settings ns pool s
 
 
-{-|
-Random value generator at path.
+{-| Random value generator at path.
 -}
 valueAt : GeneratorSettings -> Schema -> String -> Generator Value
 valueAt settings s ref =
@@ -219,14 +228,15 @@ valueAt settings s ref =
         a =
             pool
                 |> Dict.keys
-                |> Debug.log "pool keys are"
-    in
-        case Ref.resolveReference ns pool s ref of
-            Just ( ns, ss ) ->
-                valueGenerator settings ns pool ss
 
-            Nothing ->
-                nullGenerator
+        -- |> Debug.log "pool keys are"
+    in
+    case Ref.resolveReference ns pool s ref of
+        Just ( nsLocal, ss ) ->
+            valueGenerator settings nsLocal pool ss
+
+        Nothing ->
+            nullGenerator
 
 
 resolve : String -> Ref.SchemataPool -> Schema -> Maybe ( String, Schema )
@@ -239,10 +249,16 @@ resolve ns pool schema =
             case os.ref of
                 Just ref ->
                     Ref.resolveReference ns pool schema ref
-                        |> Debug.log ("resolving this :( " ++ ref ++ " " ++ (toString ns))
 
+                -- |> Debug.log ("resolving this :( " ++ ref ++ " " ++ ns)
                 Nothing ->
                     Just ( ns, schema )
+
+
+randomBool : Generator Bool
+randomBool =
+    Random.float 0 1
+        |> Random.map (\x -> x > 0.5)
 
 
 valueGenerator : GeneratorSettings -> String -> Ref.SchemataPool -> Schema -> Generator Value
@@ -251,13 +267,14 @@ valueGenerator settings ns pool schema =
         Nothing ->
             nullGenerator
 
-        Just ( ns, BooleanSchema b ) ->
+        Just ( nsLocal, BooleanSchema b ) ->
             if b then
-                Random.bool |> Random.map (\_ -> Encode.object [])
-            else
-                Random.bool |> Random.map (\_ -> Encode.null)
+                randomBool |> Random.map (\_ -> Encode.object [])
 
-        Just ( ns, ObjectSchema os ) ->
+            else
+                randomBool |> Random.map (\_ -> Encode.null)
+
+        Just ( nsLocal, ObjectSchema os ) ->
             [ Maybe.andThen uncons os.examples
                 |> Maybe.map randomItemFromList
             , Maybe.andThen uncons os.enum
@@ -278,7 +295,7 @@ valueGenerator settings ns pool schema =
                         |> Just
 
                 SingleType BooleanType ->
-                    Random.bool
+                    randomBool
                         |> Random.map Encode.bool
                         |> Just
 
@@ -295,13 +312,13 @@ valueGenerator settings ns pool schema =
             , os.properties
                 |> Maybe.map (\(Schemata props) -> randomObject settings ns pool props (os.required |> Maybe.withDefault []))
             , case os.items of
-                ItemDefinition schema ->
+                ItemDefinition schemaLocal ->
                     randomList settings
                         ns
                         pool
                         (os.minItems |> Maybe.withDefault 0)
                         (os.maxItems |> Maybe.withDefault settings.defaultListLengthLimit)
-                        schema
+                        schemaLocal
                         |> Just
 
                 --NoItems ->
@@ -312,8 +329,9 @@ valueGenerator settings ns pool schema =
                     (\maybeGenerator res ->
                         if res == Nothing then
                             maybeGenerator
+
                         else
                             res
                     )
                     Nothing
-                |> Maybe.withDefault (nullGenerator)
+                |> Maybe.withDefault nullGenerator

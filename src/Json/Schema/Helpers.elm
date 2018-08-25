@@ -1,29 +1,30 @@
-module Json.Schema.Helpers
-    exposing
-        ( ImpliedType
-        , typeToString
-        , typeToList
-          --, implyType
-          --, for
-        , whenObjectSchema
-          --, makeJsonPointer
-          -- , resolve
-          --, resolveReference
-          --, calcSubSchemaType
-        , collectIds
-        )
+module Json.Schema.Helpers exposing
+    ( ImpliedType
+    , collectIds
+    ,  typeToList
+       --, implyType
+       --, for
+
+    , typeToString
+    ,  whenObjectSchema
+       --, makeJsonPointer
+       -- , resolve
+       --, resolveReference
+       --, calcSubSchemaType
+
+    )
 
 import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Value, decodeValue, decodeString)
+import Json.Decode as Decode exposing (Value, decodeString, decodeValue)
 import Json.Encode as Encode
 import Json.Schema.Definitions as Schema
     exposing
-        ( Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, BooleanType, NullType, ArrayType, ObjectType)
-        , Schema(ObjectSchema, BooleanSchema)
-        , Items(ArrayOfItems, ItemDefinition, NoItems)
+        ( Items(..)
+        , Schema(..)
+        , Schemata(..)
+        , SingleType(..)
         , SubSchema
-        , Schemata(Schemata)
+        , Type(..)
         , blankSchema
         , blankSubSchema
         )
@@ -119,8 +120,10 @@ makeJsonPointer ( isPointer, ns, path ) =
         ("#" :: path)
             |> String.join "/"
             |> (++) ns
+
     else if List.isEmpty path then
         ns
+
     else
         path
             |> String.join "/"
@@ -173,16 +176,17 @@ getListItem index list =
     let
         ( _, result ) =
             List.foldl
-                (\item ( i, result ) ->
+                (\item ( i, resultLocal ) ->
                     if index == i then
                         ( i + 1, Just item )
+
                     else
-                        ( i + 1, result )
+                        ( i + 1, resultLocal )
                 )
                 ( 0, Nothing )
                 list
     in
-        result
+    result
 
 
 setListItem : Int -> a -> List a -> List a
@@ -191,6 +195,7 @@ setListItem index a list =
         (\i item ->
             if index == i then
                 a
+
             else
                 item
         )
@@ -427,42 +432,42 @@ decodeList val =
                        x
                )
 -}
+{-
+   debugSchema : String -> Maybe Schema -> Maybe Schema
+   debugSchema msg schema =
+       let
+           a =
+               case schema of
+                   Just s ->
+                       s
+                           |> Schema.encode
+                           |> Encode.encode 4
+                           |> Debug.log
+                           |> (\f -> f msg)
+
+                   Nothing ->
+                       Debug.log msg "Nothing"
+       in
+       schema
 
 
-debugSchema : String -> Maybe Schema -> Maybe Schema
-debugSchema msg schema =
-    let
-        a =
-            case schema of
-                Just s ->
-                    s
-                        |> Schema.encode
-                        |> Encode.encode 4
-                        |> Debug.log
-                        |> (\f -> f msg)
+   debugSubSchema : String -> Maybe SubSchema -> Maybe SubSchema
+   debugSubSchema msg schema =
+       let
+           a =
+               case schema of
+                   Just s ->
+                       ObjectSchema s
+                           |> Schema.encode
+                           |> Encode.encode 4
+                           |> Debug.log
+                           |> (\f -> f msg)
 
-                Nothing ->
-                    Debug.log msg "Nothing"
-    in
-        schema
-
-
-debugSubSchema : String -> Maybe SubSchema -> Maybe SubSchema
-debugSubSchema msg schema =
-    let
-        a =
-            case schema of
-                Just s ->
-                    ObjectSchema s
-                        |> Schema.encode
-                        |> Encode.encode 4
-                        |> Debug.log
-                        |> (\f -> f msg)
-
-                Nothing ->
-                    Debug.log msg "Nothing"
-    in
-        schema
+                   Nothing ->
+                       Debug.log msg "Nothing"
+       in
+       schema
+-}
 
 
 collectIds : Schema -> SchemataPool -> ( SchemataPool, String )
@@ -476,13 +481,13 @@ collectIds schema pool =
                         ( isPointer, ns, _ ) =
                             parseJsonPointer s ""
                     in
-                        ns
+                    ns
 
                 Nothing ->
                     ""
 
         manageId : String -> Value -> SchemataPool -> List ( String, Value ) -> ( List ( String, Value ), ( SchemataPool, String ) )
-        manageId ns source pool obj =
+        manageId ns source poolLocal obj =
             case List.filter (\( name, _ ) -> name == "id" || name == "$id") obj of
                 ( _, val ) :: _ ->
                     val
@@ -493,28 +498,28 @@ collectIds schema pool =
                                     ( isPointer, newNs, path ) =
                                         parseJsonPointer id ns
                                 in
-                                    case Decode.decodeValue Schema.decoder source of
-                                        Ok schema ->
-                                            ( obj, ( Dict.insert (makeJsonPointer ( isPointer, newNs, path )) schema pool, newNs ) )
+                                case Decode.decodeValue Schema.decoder source of
+                                    Ok schemaLocal ->
+                                        ( obj, ( Dict.insert (makeJsonPointer ( isPointer, newNs, path )) schemaLocal poolLocal, newNs ) )
 
-                                        Err _ ->
-                                            ( obj, ( pool, ns ) )
+                                    Err _ ->
+                                        ( obj, ( poolLocal, ns ) )
                             )
-                        |> Result.withDefault ( obj, ( pool, ns ) )
+                        |> Result.withDefault ( obj, ( poolLocal, ns ) )
 
                 _ ->
-                    ( obj, ( pool, ns ) )
+                    ( obj, ( poolLocal, ns ) )
 
-        walkValue source ( pool, ns ) =
+        walkValue source ( poolLocal, ns ) =
             source
                 |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
                 |> Result.withDefault []
-                |> manageId ns source pool
+                |> manageId ns source poolLocal
                 |> (\( list, res ) -> List.foldl (\( key, val ) -> walkValue val) res list)
     in
-        case schema of
-            ObjectSchema { id, source } ->
-                walkValue source ( pool, getNs id )
+    case schema of
+        ObjectSchema { id, source } ->
+            walkValue source ( pool, getNs id )
 
-            _ ->
-                ( pool, "" )
+        _ ->
+            ( pool, "" )

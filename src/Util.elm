@@ -1,13 +1,13 @@
-module Util exposing (foldResults, resultToDecoder, isInt, uncons, getAt, isUnique, indexOfFirstDuplicate)
+module Util exposing (foldResults, getAt, indexOfFirstDuplicate, isInt, isUnique, resultToDecoder, uncons)
 
-import Json.Decode exposing (Decoder, succeed, fail)
+import Json.Decode exposing (Decoder, fail, succeed)
 
 
 foldResults : List (Result x y) -> Result x (List y)
 foldResults results =
     results
         |> List.foldl
-            (\t -> Result.andThen (\r -> t |> Result.map (flip (::) r)))
+            (\t -> Result.andThen (\r -> t |> Result.map (\a -> (::) a r)))
             (Ok [])
         |> Result.map List.reverse
 
@@ -55,12 +55,14 @@ indexOfFirstDuplicate list =
                 ( index + 1
                 , if res > -1 then
                     res
+
                   else if List.member x sublist then
                     index
+
                   else
                     -1
                 , sublist |> List.drop 1
                 )
             )
             ( 0, -1, list |> List.drop 1 )
-        |> \( _, r, _ ) -> r
+        |> (\( _, r, _ ) -> r)

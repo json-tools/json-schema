@@ -1,12 +1,15 @@
-module Json.Schema exposing (fromValue, fromString, validateValue, validateAt)
+module Json.Schema exposing
+    ( fromValue, fromString
+    , validateValue, validateAt
+    )
 
-{-|
-This library provides bunch of utility methods to work with JSON values using
+{-| This library provides bunch of utility methods to work with JSON values using
 schemas defined in [JSON Schema](http://json-schema.org/) format.
 
 Currently it allows to construct schemata ([draft-6](https://github.com/json-schema-org/json-schema-spec/blob/draft-06/schema.json)), validate values and generate random
 values based on schema (very experimental feature).
 It supports local references, but doesn't support remote references.
+
 
 # Decode schema
 
@@ -14,24 +17,26 @@ Use `fromValue` or `fromString` methods if you receive schema from external sour
 
 @docs fromValue, fromString
 
+
 # Validation
 
 @docs validateValue, validateAt
 
 -}
 
+import Json.Decode exposing (Value, decodeString, decodeValue)
 import Json.Schema.Definitions exposing (Schema, decoder)
-import Ref exposing (defaultPool, SchemataPool)
-import Json.Schemata
-import Json.Schema.Validation exposing (Error, ValidationOptions, ValidationError(UnresolvableReference), JsonPointer, validate)
-import Json.Decode exposing (Value, decodeValue, decodeString)
 import Json.Schema.Helpers exposing (collectIds)
+import Json.Schema.Validation exposing (Error, JsonPointer, ValidationError(..), ValidationOptions, validate)
+import Json.Schemata
+import Ref exposing (SchemataPool, defaultPool)
 
 
 {-| Validate value against JSON Schema. Returns Result with updated value in case if validationOptions require so.
 
     schema
         |> Json.Schema.validateValue { applyDefaults = True } value
+
 -}
 validateValue : ValidationOptions -> Value -> Schema -> Result (List Error) Value
 validateValue validationOptions value schema =
@@ -39,7 +44,7 @@ validateValue validationOptions value schema =
         ( pool, _ ) =
             collectIds schema defaultPool
     in
-        validate validationOptions pool value schema schema
+    validate validationOptions pool value schema schema
 
 
 {-| Validate value using subschema identified by URI.
@@ -50,12 +55,12 @@ validateAt validationOptions value schema uri =
         ( pool, _ ) =
             collectIds schema defaultPool
     in
-        case Ref.resolveReference "" pool schema uri of
-            Just ( ns, resolvedSchema ) ->
-                validate validationOptions pool value schema resolvedSchema
+    case Ref.resolveReference "" pool schema uri of
+        Just ( ns, resolvedSchema ) ->
+            validate validationOptions pool value schema resolvedSchema
 
-            Nothing ->
-                Err [ Error (JsonPointer "" []) <| UnresolvableReference uri ]
+        Nothing ->
+            Err [ Error (JsonPointer "" []) <| UnresolvableReference uri ]
 
 
 {-| Construct JSON Schema from JSON value
@@ -63,6 +68,7 @@ validateAt validationOptions value schema uri =
 fromValue : Value -> Result String Schema
 fromValue =
     decodeValue decoder
+        >> Result.mapError Json.Decode.errorToString
 
 
 {-| Construct JSON Schema from string
@@ -70,3 +76,4 @@ fromValue =
 fromString : String -> Result String Schema
 fromString =
     decodeString decoder
+        >> Result.mapError Json.Decode.errorToString

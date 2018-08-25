@@ -1,7 +1,7 @@
 module Json.Schemata exposing (draft4, draft6)
 
-import Json.Schema.Definitions exposing (decoder, Schema, blankSchema)
 import Json.Decode as Decode
+import Json.Schema.Definitions exposing (Schema, blankSchema, decoder)
 
 
 draft4 : Schema
@@ -324,4 +324,4 @@ draft6 =
 
 decodeUnsafe : String -> Schema
 decodeUnsafe =
-    Decode.decodeString decoder >> (Result.withDefault blankSchema)
+    Decode.decodeString decoder >> Result.withDefault blankSchema

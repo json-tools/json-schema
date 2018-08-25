@@ -1,9 +1,9 @@
-module Json.Schema.Examples exposing (coreSchemaDraft6, bookingSchema)
+module Json.Schema.Examples exposing (bookingSchema, coreSchemaDraft6)
 
-import Json.Schema.Builder exposing (..)
-import Json.Encode as Encode
 import Json.Decode
-import Json.Schema.Definitions exposing (blankSchema, Schema)
+import Json.Encode as Encode
+import Json.Schema.Builder exposing (..)
+import Json.Schema.Definitions exposing (Schema, blankSchema)
 
 
 coreSchemaDraft6 : Schema

@@ -1,74 +1,42 @@
-module Json.Schema.Builder
-    exposing
-        ( SchemaBuilder(SchemaBuilder)
-        , buildSchema
-        , boolSchema
-        , toSchema
-        , validate
-          -- type
-        , withType
-        , withNullableType
-        , withUnionType
-          -- meta
-        , withTitle
-        , withDescription
-        , withDefault
-        , withExamples
-        , withDefinitions
-          -- numeric
-        , withMultipleOf
-        , withMaximum
-        , withMinimum
-        , withExclusiveMaximum
-        , withExclusiveMinimum
-          -- string
-        , withMaxLength
-        , withMinLength
-        , withPattern
-        , withFormat
-          -- array
-        , withItems
-        , withItem
-        , withAdditionalItems
-        , withMaxItems
-        , withMinItems
-        , withUniqueItems
-        , withContains
-          -- object
-        , withMaxProperties
-        , withMinProperties
-        , withRequired
-        , withProperties
-        , withPatternProperties
-        , withAdditionalProperties
-        , withSchemaDependency
-        , withPropNamesDependency
-        , withPropertyNames
-          -- generic
-        , withEnum
-        , withConst
-        , withAllOf
-        , withAnyOf
-        , withOneOf
-        , withNot
-          -- schema
-        , withRef
-        , withId
-          -- custom keyword
-        , withCustomKeyword
-          -- encode
-        , encode
-        )
+module Json.Schema.Builder exposing
+    ( SchemaBuilder(..)
+    , buildSchema, boolSchema, toSchema, encode
+    , withType, withNullableType, withUnionType
+    , withTitle, withDescription, withDefault, withExamples, withDefinitions
+    , withId, withRef, withCustomKeyword
+    , withMultipleOf, withMaximum, withMinimum, withExclusiveMaximum, withExclusiveMinimum
+    , withMaxLength, withMinLength, withPattern, withFormat
+    , withItems, withItem, withAdditionalItems, withMaxItems, withMinItems, withUniqueItems, withContains
+    , withMaxProperties, withMinProperties, withRequired, withProperties, withPatternProperties, withAdditionalProperties, withSchemaDependency, withPropNamesDependency, withPropertyNames
+    , withEnum, withConst, withAllOf, withAnyOf, withOneOf, withNot
+    , validate
+    -- type
+    -- object
+    -- encode
+    -- numeric
+    -- string
+    -- array
+    -- custom keyword
+    -- schema
+    -- generic
+    -- meta
+    )
 
 {-| Convenience API to build a valid JSON schema
 
+
 # Definition
+
 @docs SchemaBuilder
 
+
 # Schema builder creation
+
 @docs buildSchema, boolSchema, toSchema, encode
 
+
 # Building up schema
+
 
 ## Type
 
@@ -78,13 +46,16 @@ and union types (e.g. `["string", "object"]`)
 
 @docs withType, withNullableType, withUnionType
 
+
 ## Meta
 
 @docs withTitle, withDescription, withDefault, withExamples, withDefinitions
 
+
 ## JSON-Schema
 
 @docs withId, withRef, withCustomKeyword
+
 
 ## Numeric validations
 
@@ -93,47 +64,51 @@ will always succeed for any type other than `number` and `integer`
 
 @docs withMultipleOf, withMaximum, withMinimum, withExclusiveMaximum, withExclusiveMinimum
 
+
 ## String validations
 
 @docs withMaxLength, withMinLength, withPattern, withFormat
+
 
 ## Array validations
 
 @docs withItems, withItem, withAdditionalItems, withMaxItems, withMinItems, withUniqueItems, withContains
 
+
 ## Object validations
 
 @docs withMaxProperties, withMinProperties, withRequired, withProperties, withPatternProperties, withAdditionalProperties, withSchemaDependency, withPropNamesDependency, withPropertyNames
+
 
 ## Generic validations
 
 @docs withEnum, withConst, withAllOf, withAnyOf, withOneOf, withNot
 
 
-
 # Validation
+
 @docs validate
 
 -}
 
-import Util exposing (foldResults)
-import Json.Schema.Validation as Validation exposing (Error)
 import Json.Decode as Decode exposing (Value)
 import Json.Encode as Encode
-import Ref
 import Json.Schema.Definitions
     exposing
-        ( Schema(ObjectSchema, BooleanSchema)
-        , ExclusiveBoundary(BoolBoundary, NumberBoundary)
-        , Type(AnyType, SingleType, NullableType, UnionType)
-        , SingleType(IntegerType, NumberType, StringType, NullType, ArrayType, ObjectType, BooleanType)
-        , Schemata(Schemata)
+        ( Dependency(..)
+        , ExclusiveBoundary(..)
+        , Items(..)
+        , Schema(..)
+        , Schemata(..)
+        , SingleType(..)
         , SubSchema
-        , Items(ItemDefinition, ArrayOfItems, NoItems)
-        , Dependency(ArrayPropNames, PropSchema)
-        , stringToType
+        , Type(..)
         , blankSubSchema
+        , stringToType
         )
+import Json.Schema.Validation as Validation exposing (Error)
+import Ref
+import Util exposing (foldResults)
 
 
 {-| Builder for JSON schema providing an API like this:
@@ -143,13 +118,15 @@ import Json.Schema.Definitions
         |> withProperties
             [ ( "foo"
               , buildSchema
-                    |> withType "string" )
+                    |> withType "string"
+              )
             , ( "bar"
               , buildSchema
                     |> withType "integer"
                     |> withMaximum 10
               )
             ]
+
 -}
 type SchemaBuilder
     = SchemaBuilder { errors : List String, schema : Maybe SubSchema, bool : Maybe Bool }
@@ -189,6 +166,7 @@ toSchema (SchemaBuilder sb) =
 
                     Nothing ->
                         Ok <| ObjectSchema blankSubSchema
+
     else
         Err <| String.join ", " sb.errors
 
@@ -214,6 +192,7 @@ validate validationOptions val sb =
 
     buildSchema
         |> withType "boolean"
+
 -}
 withType : String -> SchemaBuilder -> SchemaBuilder
 withType t sb =
@@ -234,6 +213,7 @@ withType t sb =
 
     buildSchema
         |> withNullableType "string"
+
 -}
 withNullableType : String -> SchemaBuilder -> SchemaBuilder
 withNullableType t =
@@ -252,6 +232,7 @@ withNullableType t =
 
     buildSchema
         |> withUnionType [ "string", "object" ]
+
 -}
 withUnionType : List String -> SchemaBuilder -> SchemaBuilder
 withUnionType listTypes sb =
@@ -265,8 +246,8 @@ withUnionType listTypes sb =
                     Err s ->
                         appendError s sb
 
-                    Ok x ->
-                        x
+                    Ok xLocal ->
+                        xLocal
            )
 
 
@@ -277,28 +258,26 @@ withUnionType listTypes sb =
             (buildSchema
                 |> withType "string"
             )
+
 -}
 withContains : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withContains =
     updateWithSubSchema (\sub s -> { s | contains = sub })
 
 
-{-|
--}
+{-| -}
 withNot : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withNot =
     updateWithSubSchema (\sub s -> { s | not = sub })
 
 
-{-|
--}
+{-| -}
 withDefinitions : List ( String, SchemaBuilder ) -> SchemaBuilder -> SchemaBuilder
 withDefinitions =
     updateWithSchemata (\definitions s -> { s | definitions = definitions })
 
 
-{-|
--}
+{-| -}
 withItems : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withItems listSchemas =
     case listSchemas |> toListOfSchemas of
@@ -309,8 +288,7 @@ withItems listSchemas =
             appendError s
 
 
-{-|
--}
+{-| -}
 withItem : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withItem item =
     case item |> toSchema of
@@ -321,36 +299,31 @@ withItem item =
             appendError s
 
 
-{-|
--}
+{-| -}
 withAdditionalItems : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withAdditionalItems =
     updateWithSubSchema (\sub s -> { s | additionalItems = sub })
 
 
-{-|
--}
+{-| -}
 withProperties : List ( String, SchemaBuilder ) -> SchemaBuilder -> SchemaBuilder
 withProperties =
     updateWithSchemata (\properties s -> { s | properties = properties })
 
 
-{-|
--}
+{-| -}
 withPatternProperties : List ( String, SchemaBuilder ) -> SchemaBuilder -> SchemaBuilder
 withPatternProperties =
     updateWithSchemata (\patternProperties s -> { s | patternProperties = patternProperties })
 
 
-{-|
--}
+{-| -}
 withAdditionalProperties : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withAdditionalProperties =
     updateWithSubSchema (\sub s -> { s | additionalProperties = sub })
 
 
-{-|
--}
+{-| -}
 withSchemaDependency : String -> SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withSchemaDependency name sd =
     case sd |> toSchema of
@@ -361,204 +334,175 @@ withSchemaDependency name sd =
             appendError s
 
 
-{-|
--}
+{-| -}
 withPropNamesDependency : String -> List String -> SchemaBuilder -> SchemaBuilder
 withPropNamesDependency name pn =
     updateSchema (\schema -> { schema | dependencies = ( name, ArrayPropNames pn ) :: schema.dependencies })
 
 
-{-|
--}
+{-| -}
 withPropertyNames : SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withPropertyNames =
     updateWithSubSchema (\propertyNames s -> { s | propertyNames = propertyNames })
 
 
-{-|
--}
+{-| -}
 withAllOf : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withAllOf =
     updateWithListOfSchemas (\allOf s -> { s | allOf = allOf })
 
 
-{-|
--}
+{-| -}
 withAnyOf : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withAnyOf =
     updateWithListOfSchemas (\anyOf s -> { s | anyOf = anyOf })
 
 
-{-|
--}
+{-| -}
 withOneOf : List SchemaBuilder -> SchemaBuilder -> SchemaBuilder
 withOneOf =
     updateWithListOfSchemas (\oneOf s -> { s | oneOf = oneOf })
 
 
-{-|
--}
+{-| -}
 withTitle : String -> SchemaBuilder -> SchemaBuilder
 withTitle x =
     updateSchema (\s -> { s | title = Just x })
 
 
-{-|
--}
+{-| -}
 withDescription : String -> SchemaBuilder -> SchemaBuilder
 withDescription x =
     updateSchema (\s -> { s | description = Just x })
 
 
-{-|
--}
+{-| -}
 withMultipleOf : Float -> SchemaBuilder -> SchemaBuilder
 withMultipleOf x =
     updateSchema (\s -> { s | multipleOf = Just x })
 
 
-{-|
--}
+{-| -}
 withMaximum : Float -> SchemaBuilder -> SchemaBuilder
 withMaximum x =
     updateSchema (\s -> { s | maximum = Just x })
 
 
-{-|
--}
+{-| -}
 withMinimum : Float -> SchemaBuilder -> SchemaBuilder
 withMinimum x =
     updateSchema (\s -> { s | minimum = Just x })
 
 
-{-|
--}
+{-| -}
 withExclusiveMaximum : Float -> SchemaBuilder -> SchemaBuilder
 withExclusiveMaximum x =
     updateSchema (\s -> { s | exclusiveMaximum = Just (NumberBoundary x) })
 
 
-{-|
--}
+{-| -}
 withExclusiveMinimum : Float -> SchemaBuilder -> SchemaBuilder
 withExclusiveMinimum x =
     updateSchema (\s -> { s | exclusiveMinimum = Just (NumberBoundary x) })
 
 
-{-|
--}
+{-| -}
 withMaxLength : Int -> SchemaBuilder -> SchemaBuilder
 withMaxLength x =
     updateSchema (\s -> { s | maxLength = Just x })
 
 
-{-|
--}
+{-| -}
 withMinLength : Int -> SchemaBuilder -> SchemaBuilder
 withMinLength x =
     updateSchema (\s -> { s | minLength = Just x })
 
 
-{-|
--}
+{-| -}
 withMaxProperties : Int -> SchemaBuilder -> SchemaBuilder
 withMaxProperties n =
     updateSchema (\s -> { s | maxProperties = Just n })
 
 
-{-|
--}
+{-| -}
 withMinProperties : Int -> SchemaBuilder -> SchemaBuilder
 withMinProperties n =
     updateSchema (\s -> { s | minProperties = Just n })
 
 
-{-|
--}
+{-| -}
 withMaxItems : Int -> SchemaBuilder -> SchemaBuilder
 withMaxItems n =
     updateSchema (\s -> { s | maxItems = Just n })
 
 
-{-|
--}
+{-| -}
 withMinItems : Int -> SchemaBuilder -> SchemaBuilder
 withMinItems n =
     updateSchema (\s -> { s | minItems = Just n })
 
 
-{-|
--}
+{-| -}
 withUniqueItems : Bool -> SchemaBuilder -> SchemaBuilder
 withUniqueItems b =
     updateSchema (\s -> { s | uniqueItems = Just b })
 
 
-{-|
--}
+{-| -}
 withPattern : String -> SchemaBuilder -> SchemaBuilder
 withPattern x =
     updateSchema (\s -> { s | pattern = Just x })
 
 
-{-|
--}
+{-| -}
 withFormat : String -> SchemaBuilder -> SchemaBuilder
 withFormat x =
     updateSchema (\s -> { s | format = Just x })
 
 
-{-|
--}
+{-| -}
 withEnum : List Value -> SchemaBuilder -> SchemaBuilder
 withEnum x =
     updateSchema (\s -> { s | enum = Just x })
 
 
-{-|
--}
+{-| -}
 withRequired : List String -> SchemaBuilder -> SchemaBuilder
 withRequired x =
     updateSchema (\s -> { s | required = Just x })
 
 
-{-|
--}
+{-| -}
 withConst : Value -> SchemaBuilder -> SchemaBuilder
 withConst v =
     updateSchema (\s -> { s | const = Just v })
 
 
-{-|
--}
+{-| -}
 withRef : String -> SchemaBuilder -> SchemaBuilder
 withRef x =
     updateSchema (\s -> { s | ref = Just x })
 
 
-{-|
--}
+{-| -}
 withExamples : List Value -> SchemaBuilder -> SchemaBuilder
 withExamples x =
     updateSchema (\s -> { s | examples = Just x })
 
 
-{-|
--}
+{-| -}
 withDefault : Value -> SchemaBuilder -> SchemaBuilder
 withDefault x =
     updateSchema (\s -> { s | default = Just x })
 
 
-{-|
--}
+{-| -}
 withId : String -> SchemaBuilder -> SchemaBuilder
 withId x =
     updateSchema (\s -> { s | id = Just x })
 
 
-{-|
--}
+{-| -}
 withCustomKeyword : String -> Value -> SchemaBuilder -> SchemaBuilder
 withCustomKeyword key val =
     updateSchema
@@ -660,6 +604,31 @@ updateWithListOfSchemas fn schemasBuilder =
             appendError s
 
 
+toString : String -> String
+toString =
+    Encode.string >> Encode.encode 0
+
+
+exclusiveBoundaryToString : ExclusiveBoundary -> String
+exclusiveBoundaryToString eb =
+    case eb of
+        BoolBoundary b ->
+            boolToString b
+
+        NumberBoundary f ->
+            String.fromFloat f
+
+
+boolToString : Bool -> String
+boolToString b =
+    case b of
+        True ->
+            "true"
+
+        False ->
+            "false"
+
+
 {-| Encode schema into a builder code (elm)
 -}
 encode : Int -> Schema -> String
@@ -688,8 +657,8 @@ encode level s =
         optionally : (a -> String) -> Maybe a -> String -> String -> String
         optionally fn val key res =
             case val of
-                Just s ->
-                    res ++ pipe ++ key ++ " " ++ fn s
+                Just sLocal ->
+                    res ++ pipe ++ key ++ " " ++ fn sLocal
 
                 Nothing ->
                     res
@@ -718,7 +687,7 @@ encode level s =
                         ++ key
                         ++ "\" [ "
                         ++ (apn
-                                |> List.map (\s -> "\"" ++ s ++ "\"")
+                                |> List.map (\sLocal -> "\"" ++ sLocal ++ "\"")
                                 |> String.join ", "
                            )
                         ++ " ]"
@@ -727,6 +696,7 @@ encode level s =
         encodeDependencies deps res =
             if List.isEmpty deps then
                 res
+
             else
                 res
                     ++ pipe
@@ -780,64 +750,65 @@ encode level s =
             l
                 |> List.map (encode (level + 1))
                 |> String.join comma2
-                |> \s -> indent ++ "  [ " ++ s ++ indent ++ "  ]"
+                |> (\sLocal -> indent ++ "  [ " ++ sLocal ++ indent ++ "  ]")
 
         encodeSchemata : Schemata -> String
         encodeSchemata (Schemata l) =
             l
-                |> List.map (\( s, x ) -> "( \"" ++ s ++ "\"" ++ comma4 ++ encode (level + 2) x ++ indent ++ "    )")
+                |> List.map (\( sLocal, x ) -> "( \"" ++ sLocal ++ "\"" ++ comma4 ++ encode (level + 2) x ++ indent ++ "    )")
                 |> String.join comma2
-                |> \s -> indent ++ "  [ " ++ s ++ indent ++ "  ]"
+                |> (\sLocal -> indent ++ "  [ " ++ sLocal ++ indent ++ "  ]")
 
-        addParens s =
+        addParens sLocal =
             "( "
-                ++ s
+                ++ sLocal
                 ++ " )"
     in
-        case s of
-            BooleanSchema bs ->
-                if bs then
-                    "boolSchema True"
-                else
-                    "boolSchema False"
+    case s of
+        BooleanSchema bs ->
+            if bs then
+                "boolSchema True"
 
-            ObjectSchema os ->
-                [ encodeType os.type_
-                , optionally toString os.id "withId"
-                , optionally toString os.ref "withRef"
-                , optionally toString os.title "withTitle"
-                , optionally toString os.description "withDescription"
-                , optionally (\x -> x |> Encode.encode 0 |> toString |> \x -> "(" ++ x ++ " |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)") os.default "withDefault"
-                , optionally (\examples -> examples |> Encode.list |> Encode.encode 0) os.examples "withExamples"
-                , optionally encodeSchemata os.definitions "withDefinitions"
-                , optionally toString os.multipleOf "withMultipleOf"
-                , optionally toString os.maximum "withMaximum"
-                , optionally toString os.exclusiveMaximum "withExclusiveMaximum"
-                , optionally toString os.minimum "withMinimum"
-                , optionally toString os.exclusiveMinimum "withExclusiveMinimum"
-                , optionally toString os.maxLength "withMaxLength"
-                , optionally toString os.minLength "withMinLength"
-                , optionally toString os.pattern "withPattern"
-                , optionally toString os.format "withFormat"
-                , encodeItems os.items
-                , optionally (encode (level + 1) >> addParens) os.additionalItems "withAdditionalItems"
-                , optionally toString os.maxItems "withMaxItems"
-                , optionally toString os.minItems "withMinItems"
-                , optionally (Encode.bool >> toString) os.uniqueItems "withUniqueItems"
-                , optionally (encode (level + 1) >> addParens) os.contains "withContains"
-                , optionally toString os.maxProperties "withMaxProperties"
-                , optionally toString os.minProperties "withMinProperties"
-                , optionally (\s -> s |> List.map Encode.string |> Encode.list |> Encode.encode 0) os.required "withRequired"
-                , optionally encodeSchemata os.properties "withProperties"
-                , optionally encodeSchemata os.patternProperties "withPatternProperties"
-                , optionally (encode (level + 1) >> addParens) os.additionalProperties "withAdditionalProperties"
-                , encodeDependencies os.dependencies
-                , optionally (encode (level + 1) >> addParens) os.propertyNames "withPropertyNames"
-                , optionally (\examples -> examples |> Encode.list |> Encode.encode 0 |> \x -> "( " ++ x ++ " |> List.map Encode.string )") os.enum "withEnum"
-                , optionally (Encode.encode 0 >> addParens) os.const "withConst"
-                , optionally encodeListSchemas os.allOf "withAllOf"
-                , optionally encodeListSchemas os.anyOf "withAnyOf"
-                , optionally encodeListSchemas os.oneOf "withOneOf"
-                , optionally (encode (level + 1) >> addParens) os.not "withNot"
-                ]
-                    |> List.foldl identity "buildSchema"
+            else
+                "boolSchema False"
+
+        ObjectSchema os ->
+            [ encodeType os.type_
+            , optionally toString os.id "withId"
+            , optionally toString os.ref "withRef"
+            , optionally toString os.title "withTitle"
+            , optionally toString os.description "withDescription"
+            , optionally (\x -> x |> Encode.encode 0 |> toString |> (\xLocal -> "(" ++ xLocal ++ " |> Decode.decodeString Decode.value |> Result.withDefault Encode.null)")) os.default "withDefault"
+            , optionally (\examples -> examples |> Encode.list identity |> Encode.encode 0) os.examples "withExamples"
+            , optionally encodeSchemata os.definitions "withDefinitions"
+            , optionally String.fromFloat os.multipleOf "withMultipleOf"
+            , optionally String.fromFloat os.maximum "withMaximum"
+            , optionally exclusiveBoundaryToString os.exclusiveMaximum "withExclusiveMaximum"
+            , optionally String.fromFloat os.minimum "withMinimum"
+            , optionally exclusiveBoundaryToString os.exclusiveMinimum "withExclusiveMinimum"
+            , optionally String.fromInt os.maxLength "withMaxLength"
+            , optionally String.fromInt os.minLength "withMinLength"
+            , optionally toString os.pattern "withPattern"
+            , optionally toString os.format "withFormat"
+            , encodeItems os.items
+            , optionally (encode (level + 1) >> addParens) os.additionalItems "withAdditionalItems"
+            , optionally String.fromInt os.maxItems "withMaxItems"
+            , optionally String.fromInt os.minItems "withMinItems"
+            , optionally boolToString os.uniqueItems "withUniqueItems"
+            , optionally (encode (level + 1) >> addParens) os.contains "withContains"
+            , optionally String.fromInt os.maxProperties "withMaxProperties"
+            , optionally String.fromInt os.minProperties "withMinProperties"
+            , optionally (\sLocal -> sLocal |> List.map Encode.string |> Encode.list identity |> Encode.encode 0) os.required "withRequired"
+            , optionally encodeSchemata os.properties "withProperties"
+            , optionally encodeSchemata os.patternProperties "withPatternProperties"
+            , optionally (encode (level + 1) >> addParens) os.additionalProperties "withAdditionalProperties"
+            , encodeDependencies os.dependencies
+            , optionally (encode (level + 1) >> addParens) os.propertyNames "withPropertyNames"
+            , optionally (\examples -> examples |> Encode.list identity |> Encode.encode 0 |> (\x -> "( " ++ x ++ " |> List.map Encode.string )")) os.enum "withEnum"
+            , optionally (Encode.encode 0 >> addParens) os.const "withConst"
+            , optionally encodeListSchemas os.allOf "withAllOf"
+            , optionally encodeListSchemas os.anyOf "withAnyOf"
+            , optionally encodeListSchemas os.oneOf "withOneOf"
+            , optionally (encode (level + 1) >> addParens) os.not "withNot"
+            ]
+                |> List.foldl identity "buildSchema"

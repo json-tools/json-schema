@@ -1,14 +1,13 @@
-module Ref exposing (resolveReference, parseJsonPointer, defaultPool, SchemataPool)
+module Ref exposing (SchemataPool, defaultPool, parseJsonPointer, resolveReference)
 
-import Regex exposing (regex, HowMany(All))
-import Json.Decode as Decode
-import Json.Schema.Definitions exposing (Schema(ObjectSchema, BooleanSchema), SubSchema, Schemata(Schemata), decoder)
 import Dict exposing (Dict)
+import Json.Decode as Decode
+import Json.Schema.Definitions exposing (Schema(..), Schemata(..), SubSchema, decoder)
 import Json.Schemata as Schemata
+import Regex exposing (fromString)
 
 
-{-|
-Pool of schemata used in refs lookup by id
+{-| Pool of schemata used in refs lookup by id
 -}
 type alias SchemataPool =
     Dict String Schema
@@ -29,7 +28,8 @@ parseJsonPointer pointer currentNamespace =
     let
         merge base relative =
             if isAbsolute base && hasFragments base then
-                base |> Regex.replace All lastFragment (\_ -> "/" ++ relative)
+                base |> Regex.replace lastFragment (\_ -> "/" ++ relative)
+
             else
                 relative
 
@@ -47,8 +47,10 @@ parseJsonPointer pointer currentNamespace =
                 a :: [] ->
                     if a == "" then
                         ( currentNamespace, "" )
+
                     else if isAbsolute a then
                         ( a, "" )
+
                     else
                         ( merge currentNamespace a, "" )
 
@@ -56,9 +58,11 @@ parseJsonPointer pointer currentNamespace =
                     if a == "" then
                         ( currentNamespace, b )
                         --|> Debug.log "case 3.1"
+
                     else if isAbsolute a then
                         ( a, b )
                         --|> Debug.log "case 3.2"
+
                     else
                         ( merge currentNamespace a, b )
 
@@ -66,51 +70,53 @@ parseJsonPointer pointer currentNamespace =
         isPointer =
             hasFragments hash
     in
-        ( isPointer
-        , ns
-        , if isPointer then
-            hash
-                |> String.split "/"
-                |> List.drop 1
-                |> List.map unescapeJsonPathFragment
-          else if hash /= "" then
-            [ hash ]
-          else
-            []
-        )
+    ( isPointer
+    , ns
+    , if isPointer then
+        hash
+            |> String.split "/"
+            |> List.drop 1
+            |> List.map unescapeJsonPathFragment
+
+      else if hash /= "" then
+        [ hash ]
+
+      else
+        []
+    )
 
 
 absoluteUri : Regex.Regex
 absoluteUri =
-    regex "\\/\\/|^\\/"
+    fromString "\\/\\/|^\\/" |> Maybe.withDefault Regex.never
 
 
 lastFragment : Regex.Regex
 lastFragment =
-    regex "\\/[^\\/]*$"
+    fromString "\\/[^\\/]*$" |> Maybe.withDefault Regex.never
 
 
 tilde : Regex.Regex
 tilde =
-    regex "~0"
+    fromString "~0" |> Maybe.withDefault Regex.never
 
 
 slash : Regex.Regex
 slash =
-    regex "~1"
+    fromString "~1" |> Maybe.withDefault Regex.never
 
 
 percent : Regex.Regex
 percent =
-    regex "%25"
+    fromString "%25" |> Maybe.withDefault Regex.never
 
 
 unescapeJsonPathFragment : String -> String
 unescapeJsonPathFragment s =
     s
-        |> Regex.replace All tilde (\_ -> "~")
-        |> Regex.replace All slash (\_ -> "/")
-        |> Regex.replace All percent (\_ -> "%")
+        |> Regex.replace tilde (\_ -> "~")
+        |> Regex.replace slash (\_ -> "/")
+        |> Regex.replace percent (\_ -> "%")
 
 
 makeJsonPointer : ( Bool, String, List String ) -> String
@@ -119,9 +125,11 @@ makeJsonPointer ( isPointer, ns, path ) =
         ("#" :: path)
             |> String.join "/"
             |> (++) ns
+
     else if List.isEmpty path then
         ns
         -- |> Debug.log "path was empty"
+
     else
         path
             |> String.join "/"
@@ -132,6 +140,7 @@ removeTrailingSlash : String -> String
 removeTrailingSlash s =
     if String.endsWith "#" s then
         String.dropRight 1 s
+
     else
         s
 
@@ -146,15 +155,15 @@ resolveReference ns pool schema ref =
                 |> Maybe.map removeTrailingSlash
                 |> Maybe.withDefault ns
 
-        resolveRecursively namespace limit schema ref =
+        resolveRecursively namespace limit localSchema localRef =
             let
-                ( isPointer, ns, path ) =
-                    parseJsonPointer ({- Debug.log "resolving ref" -} ref) namespace
+                ( isPointer, localNs, path ) =
+                    parseJsonPointer {- Debug.log "resolving ref" -} localRef namespace
 
                 --|> Debug.log "new json pointer (parsed)"
-                --|> Debug.log ("parse " ++ (toString ref) ++ " within ns " ++ (toString namespace))
+                --|> Debug.log ("parse " ++ (toString localRef) ++ " within ns " ++ (toString namespace))
                 newJsonPointer =
-                    makeJsonPointer ( isPointer, ns, path )
+                    makeJsonPointer ( isPointer, localNs, path )
 
                 --|> Debug.log "new json pointer (combined)"
                 a =
@@ -163,46 +172,49 @@ resolveReference ns pool schema ref =
 
                 --|> Debug.log "pool keys"
             in
-                if limit > 0 then
-                    (if isPointer then
-                        (if ns == "" then
-                            Just schema
-                         else
-                            pool
-                                |> Dict.get ns
-                        )
-                            |> Maybe.andThen whenObjectSchema
-                            |> Maybe.andThen
-                                (\os ->
-                                    os.source
-                                        |> Decode.decodeValue (Decode.at path decoder)
-                                        |> Result.toMaybe
-                                        |> Maybe.andThen
-                                            (\def ->
-                                                case def of
-                                                    ObjectSchema oss ->
-                                                        case oss.ref of
-                                                            Just r ->
-                                                                resolveRecursively ns (limit - 1) schema r
+            if limit > 0 then
+                if isPointer then
+                    (if localNs == "" then
+                        Just localSchema
 
-                                                            Nothing ->
-                                                                Just ( ns, def )
-
-                                                    BooleanSchema _ ->
-                                                        Just ( ns, def )
-                                            )
-                                )
-                     else if newJsonPointer == "" then
-                        Just ( "", schema )
                      else
                         pool
-                            |> Dict.get newJsonPointer
-                            |> Maybe.map (\x -> ( ns, x ))
+                            |> Dict.get localNs
                     )
+                        |> Maybe.andThen whenObjectSchema
+                        |> Maybe.andThen
+                            (\os ->
+                                os.source
+                                    |> Decode.decodeValue (Decode.at path decoder)
+                                    |> Result.toMaybe
+                                    |> Maybe.andThen
+                                        (\def ->
+                                            case def of
+                                                ObjectSchema oss ->
+                                                    case oss.ref of
+                                                        Just r ->
+                                                            resolveRecursively localNs (limit - 1) localSchema r
+
+                                                        Nothing ->
+                                                            Just ( localNs, def )
+
+                                                BooleanSchema _ ->
+                                                    Just ( localNs, def )
+                                        )
+                            )
+
+                else if newJsonPointer == "" then
+                    Just ( "", localSchema )
+
                 else
-                    Just ( ns, schema )
+                    pool
+                        |> Dict.get newJsonPointer
+                        |> Maybe.map (\x -> ( localNs, x ))
+
+            else
+                Just ( localNs, localSchema )
     in
-        resolveRecursively rootNs 10 schema ref
+    resolveRecursively rootNs 10 schema ref
 
 
 
