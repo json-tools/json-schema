@@ -712,6 +712,34 @@ all =
                                 ]
                             )
             ]
+        , describe "defaults"
+            [ test "apply default value" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "key", buildSchema
+                                |> withType "string"
+                                |> JSB.withDefault (Encode.string "def")
+                            ) ]
+                        |> JSB.validate { applyDefaults = True } (Encode.object [])
+                        |> Expect.equal
+                            (Ok <| Encode.object [ ("key", Encode.string  "def" ) ])
+            , test "apply default value in nested object" <|
+                \() ->
+                    buildSchema
+                        |> withProperties
+                            [ ( "obj", buildSchema
+                                |> withProperties
+                                    [ ( "key", buildSchema
+                                        |> withType "string"
+                                        |> JSB.withDefault (Encode.string "def")
+                                    ) ]
+                            ) ]
+                        |> JSB.validate { applyDefaults = True } (Encode.object [])
+                        |> Result.map (Encode.encode 0)
+                        |> Expect.equal
+                            (Ok """{"obj":{"key":"def"}}""")
+            ]
         ]
 
 

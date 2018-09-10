@@ -546,8 +546,9 @@ validate validationOptions pool value rootSchema schema =
             let
                 missing name obj =
                     obj
-                        |> List.filter (\( n, _ ) -> n == name)
-                        |> List.isEmpty
+                        |> List.map Tuple.first
+                        |> List.member name
+                        |> not
 
                 defaultFor obj propName schema =
                     if obj |> missing propName then
@@ -558,6 +559,19 @@ validate validationOptions pool value rootSchema schema =
                                         (\value ->
                                             validateSchema { validationOptions | applyDefaults = False } { jsonPointer | path = jsonPointer.path ++ [ propName ] } value schema
                                                 |> Result.toMaybe
+                                        )
+                                    |> (\x ->
+                                        case x of
+                                            Just _ ->
+                                                x
+
+                                            Nothing ->
+                                                if os.properties /= Nothing then
+                                                    addDefaultProperties validationOptions { jsonPointer | path = jsonPointer.path ++ [ propName ] } os.properties []
+                                                        |> Encode.object
+                                                        |> Just
+                                                else
+                                                    Nothing
                                         )
 
                             _ ->
