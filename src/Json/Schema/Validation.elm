@@ -25,14 +25,14 @@ import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (float, int, string)
 import Json.Schema.Definitions
     exposing
-        ( Dependency(..)
-        , ExclusiveBoundary(..)
-        , Items(..)
-        , Schema(..)
-        , Schemata(..)
-        , SingleType(..)
+        ( Dependency(ArrayPropNames, PropSchema)
+        , ExclusiveBoundary(BoolBoundary, NumberBoundary)
+        , Items(ArrayOfItems, ItemDefinition, NoItems)
+        , Schema(BooleanSchema, ObjectSchema)
+        , Schemata(Schemata)
+        , SingleType(ArrayType, BooleanType, IntegerType, NullType, NumberType, ObjectType, StringType)
         , SubSchema
-        , Type(..)
+        , Type(AnyType, NullableType, SingleType, UnionType)
         , blankSchema
         , blankSubSchema
         , decoder
@@ -565,8 +565,9 @@ validate validationOptions pool value rootSchema schema =
             let
                 missing name objLocal =
                     objLocal
-                        |> List.filter (\( n, _ ) -> n == name)
-                        |> List.isEmpty
+                        |> List.map Tuple.first
+                        |> List.member name
+                        |> not
 
                 defaultFor objLocal propName schemaLocal =
                     if objLocal |> missing propName then
@@ -578,6 +579,20 @@ validate validationOptions pool value rootSchema schema =
                                             validateSchema { validationOptionsLocal | applyDefaults = False } { jsonPointer | path = jsonPointer.path ++ [ propName ] } valueLocal schemaLocal
                                                 |> Result.toMaybe
                                         )
+                                    |> (\x ->
+                                            case x of
+                                                Just _ ->
+                                                    x
+
+                                                Nothing ->
+                                                    if os.properties /= Nothing then
+                                                        addDefaultProperties validationOptions { jsonPointer | path = jsonPointer.path ++ [ propName ] } os.properties []
+                                                            |> Encode.object
+                                                            |> Just
+
+                                                    else
+                                                        Nothing
+                                       )
 
                             _ ->
                                 Nothing
