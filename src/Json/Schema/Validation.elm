@@ -25,14 +25,14 @@ import Json.Decode as Decode exposing (Decoder, Value)
 import Json.Encode as Encode exposing (float, int, string)
 import Json.Schema.Definitions
     exposing
-        ( Dependency(ArrayPropNames, PropSchema)
-        , ExclusiveBoundary(BoolBoundary, NumberBoundary)
-        , Items(ArrayOfItems, ItemDefinition, NoItems)
-        , Schema(BooleanSchema, ObjectSchema)
-        , Schemata(Schemata)
-        , SingleType(ArrayType, BooleanType, IntegerType, NullType, NumberType, ObjectType, StringType)
+        ( Dependency(..)
+        , ExclusiveBoundary(..)
+        , Items(..)
+        , Schema(..)
+        , Schemata(..)
+        , SingleType(..)
         , SubSchema
-        , Type(AnyType, NullableType, SingleType, UnionType)
+        , Type(..)
         , blankSchema
         , blankSubSchema
         , decoder
