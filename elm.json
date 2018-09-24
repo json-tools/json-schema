@@ -1,9 +1,9 @@
 {
     "type": "package",
-    "name": "1602/json-schema",
+    "name": "json-tools/json-schema",
     "summary": "JSON Schema for elm",
     "license": "BSD-3-Clause",
-    "version": "4.1.1",
+    "version": "1.0.0",
     "exposed-modules": [
         "Json.Schema",
         "Json.Schema.Random",
