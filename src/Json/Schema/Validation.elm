@@ -628,18 +628,15 @@ validate validationOptions pool value rootSchema schema =
                 (Decode.keyValuePairs Decode.value)
                 (\properties obj ->
                     let
-                        revObj =
-                            obj |> List.reverse
-
                         newProps =
-                            addDefaultProperties validationOptionsLocal jsonPointer subSchema.properties revObj
+                            addDefaultProperties validationOptionsLocal jsonPointer subSchema.properties obj
 
                         addedPropNames =
                             newProps
                                 |> List.map (\( name, _ ) -> name)
 
                         upgradedObject =
-                            revObj
+                            obj
                                 ++ newProps
                     in
                     upgradedObject
