@@ -961,7 +961,7 @@ validate validationOptions pool value rootSchema schema =
                         [] ->
                             Err [ Error jsonPointer <| OneOfNoneSucceed validationResults ]
 
-                        len ->
+                        _ ->
                             Err [ Error jsonPointer <| OneOfManySucceed validationResults ]
                 )
 
