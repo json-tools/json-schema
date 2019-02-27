@@ -121,8 +121,8 @@ type ValidationError
     | Enum
     | Const
     | InvalidType String
-    | OneOfNoneSucceed
-    | OneOfManySucceed Int
+    | OneOfNoneSucceed (List (Result (List Error) Value))
+    | OneOfManySucceed (List (Result (List Error) Value))
     | Not
     | UnresolvableReference String
     | AlwaysFail
@@ -947,18 +947,22 @@ validate validationOptions pool value rootSchema schema =
                 Decode.value
                 (\oneOf val ->
                     let
-                        validSubschema schemaLocal =
-                            validateSchema validationOptionsLocal jsonPointer val schemaLocal == Ok val
-                    in
-                    case oneOf |> List.filter validSubschema |> List.length of
-                        1 ->
-                            Ok val
+                        validationResults =
+                            oneOf |> List.map (validateSchema validationOptionsLocal jsonPointer val)
 
-                        0 ->
-                            Err [ Error jsonPointer OneOfNoneSucceed ]
+                        successfulValidations =
+                            validationResults
+                                |> List.filterMap Result.toMaybe
+                    in
+                    case successfulValidations of
+                        v :: [] ->
+                            Ok v
+
+                        [] ->
+                            Err [ Error jsonPointer <| OneOfNoneSucceed validationResults ]
 
                         len ->
-                            Err [ Error jsonPointer <| OneOfManySucceed len ]
+                            Err [ Error jsonPointer <| OneOfManySucceed validationResults ]
                 )
 
         validateNot : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
