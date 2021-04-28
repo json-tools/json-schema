@@ -179,7 +179,7 @@ validate validationOptions val sb =
         Ok schema ->
             Validation.validate validationOptions Ref.defaultPool val schema schema
 
-        Err s ->
+        Err _ ->
             Ok val
 
 
@@ -621,12 +621,11 @@ exclusiveBoundaryToString eb =
 
 boolToString : Bool -> String
 boolToString b =
-    case b of
-        True ->
-            "true"
+    if b then
+        "true"
 
-        False ->
-            "false"
+    else
+        "false"
 
 
 {-| Encode schema into a builder code (elm)

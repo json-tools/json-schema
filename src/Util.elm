@@ -7,7 +7,7 @@ foldResults : List (Result x y) -> Result x (List y)
 foldResults results =
     results
         |> List.foldl
-            (\t -> Result.andThen (\r -> t |> Result.map (\a -> (::) a r)))
+            (\t -> Result.andThen (\r -> t |> Result.map (\a -> a :: r)))
             (Ok [])
         |> Result.map List.reverse
 

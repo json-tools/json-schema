@@ -158,19 +158,10 @@ resolveReference ns pool schema ref =
         resolveRecursively namespace limit localSchema localRef =
             let
                 ( isPointer, localNs, path ) =
-                    parseJsonPointer {- Debug.log "resolving ref" -} localRef namespace
+                    parseJsonPointer localRef namespace
 
-                --|> Debug.log "new json pointer (parsed)"
-                --|> Debug.log ("parse " ++ (toString localRef) ++ " within ns " ++ (toString namespace))
                 newJsonPointer =
                     makeJsonPointer ( isPointer, localNs, path )
-
-                --|> Debug.log "new json pointer (combined)"
-                a =
-                    pool
-                        |> Dict.keys
-
-                --|> Debug.log "pool keys"
             in
             if limit > 0 then
                 if isPointer then

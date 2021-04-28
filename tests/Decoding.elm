@@ -1,36 +1,41 @@
 module Decoding exposing (all)
 
-import Test exposing (Test, describe, test, only, skip)
+import Expect
+import Json.Decode as Decode
+import Json.Encode as Encode exposing (Value)
 import Json.Schema.Builder
     exposing
         ( SchemaBuilder
-        , buildSchema
         , boolSchema
+        , buildSchema
         , toSchema
-        , withType
-        , withNullableType
-        , withUnionType
-        , withContains
-        , withDefinitions
-        , withItems
-        , withItem
         , withAdditionalItems
-        , withProperties
-        , withPatternProperties
         , withAdditionalProperties
-        , withSchemaDependency
-        , withPropNamesDependency
-        , withPropertyNames
         , withAllOf
         , withAnyOf
+        , withContains
+        , withDefinitions
+        , withItem
+        , withItems
+        , withNullableType
         , withOneOf
+        , withPatternProperties
+        , withPropNamesDependency
+        , withProperties
+        , withPropertyNames
+        , withSchemaDependency
         , withTitle
-        , withNot
+        , withType
+        , withUnionType
         )
 import Json.Schema.Definitions as Schema exposing (Schema, decoder)
-import Expect
-import Json.Encode as Encode exposing (Value)
-import Json.Decode as Decode exposing (decodeValue)
+import Test exposing (Test, describe, test)
+
+
+decodeValue : Decode.Decoder a -> Value -> Result String a
+decodeValue decoder value =
+    Decode.decodeValue decoder value
+        |> Result.mapError Decode.errorToString
 
 
 all : Test
@@ -81,10 +86,7 @@ all =
         , test "type=[null,integer]" <|
             \() ->
                 [ ( "type"
-                  , Encode.list
-                        [ Encode.string "null"
-                        , Encode.string "integer"
-                        ]
+                  , Encode.list Encode.string [ "null", "integer" ]
                   )
                 ]
                     |> decodesInto
@@ -94,10 +96,7 @@ all =
         , test "type=[string,integer]" <|
             \() ->
                 [ ( "type"
-                  , Encode.list
-                        [ Encode.string "integer"
-                        , Encode.string "string"
-                        ]
+                  , Encode.list Encode.string [ "integer", "string" ]
                   )
                 ]
                     |> decodesInto
@@ -120,7 +119,7 @@ all =
                         )
         , test "items=[blankSchema]" <|
             \() ->
-                [ ( "items", Encode.list <| [ Encode.object [] ] ) ]
+                [ ( "items", Encode.list Encode.object [ [] ] ) ]
                     |> decodesInto
                         (buildSchema
                             |> withItems [ buildSchema ]
@@ -176,7 +175,7 @@ all =
                         )
         , test "dependencies={foo=[bar]}" <|
             \() ->
-                [ ( "dependencies", Encode.object [ ( "foo", Encode.list [ Encode.string "bar" ] ) ] ) ]
+                [ ( "dependencies", Encode.object [ ( "foo", Encode.list Encode.string [ "bar" ] ) ] ) ]
                     |> decodesInto
                         (buildSchema
                             |> withPropNamesDependency "foo" [ "bar" ]
@@ -190,31 +189,31 @@ all =
                         )
         , test "enum=[]" <|
             \() ->
-                [ ( "enum", Encode.list [] ) ]
+                [ ( "enum", Encode.list Encode.object [] ) ]
                     |> decodeSchema
                     |> Expect.err
         , test "allOf=[]" <|
             \() ->
-                [ ( "allOf", Encode.list [] ) ]
+                [ ( "allOf", Encode.list Encode.object [] ) ]
                     |> decodeSchema
                     |> Expect.err
         , test "allOf=[blankSchema]" <|
             \() ->
-                [ ( "allOf", Encode.list [ Encode.object [] ] ) ]
+                [ ( "allOf", Encode.list Encode.object [ [] ] ) ]
                     |> decodesInto
                         (buildSchema
                             |> withAllOf [ buildSchema ]
                         )
         , test "oneOf=[blankSchema]" <|
             \() ->
-                [ ( "oneOf", Encode.list [ Encode.object [] ] ) ]
+                [ ( "oneOf", Encode.list Encode.object [ [] ] ) ]
                     |> decodesInto
                         (buildSchema
                             |> withOneOf [ buildSchema ]
                         )
         , test "anyOf=[blankSchema]" <|
             \() ->
-                [ ( "anyOf", Encode.list [ Encode.object [] ] ) ]
+                [ ( "anyOf", Encode.list Encode.object [ [] ] ) ]
                     |> decodesInto
                         (buildSchema
                             |> withAnyOf [ buildSchema ]
@@ -234,17 +233,9 @@ all =
         ]
 
 
-shouldResultWithSchema : Schema -> Result x Schema -> Expect.Expectation
-shouldResultWithSchema s =
-    s
-        |> Ok
-        |> Expect.equal
-
-
 decodeSchema : List ( String, Value ) -> Result String Schema
 decodeSchema list =
-    list
-        |> Encode.object
+    Encode.object list
         |> decodeValue Schema.decoder
 
 

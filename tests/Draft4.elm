@@ -1,11 +1,11 @@
 module Draft4 exposing (all)
 
-import Json.Encode as Encode exposing (Value)
-import Json.Decode as Decode exposing (decodeString, value)
-import Json.Schema.Definitions exposing (blankSchema, decoder)
-import Json.Schema exposing (validateValue)
-import Test exposing (Test, describe, test, only)
 import Expect
+import Json.Decode exposing (decodeString, value)
+import Json.Encode as Encode
+import Json.Schema exposing (validateValue)
+import Json.Schema.Definitions exposing (blankSchema, decoder)
+import Test exposing (Test, describe, test)
 
 
 all : Test
@@ -5856,16 +5856,17 @@ examine schemaSource dataSource outcome =
 
         result =
             validateValue { applyDefaults = False } data schema
-                |> Result.mapError toString
+                |> Result.mapError Debug.toString
                 |> Result.map (\_ -> True)
     in
-        if outcome then
-            result
-                |> Expect.equal (Ok True)
-        else
-            case result of
-                Ok x ->
-                    Expect.fail "Unexpected success"
+    if outcome then
+        result
+            |> Expect.equal (Ok True)
 
-                Err _ ->
-                    Expect.pass
+    else
+        case result of
+            Ok _ ->
+                Expect.fail "Unexpected success"
+
+            Err _ ->
+                Expect.pass

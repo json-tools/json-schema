@@ -28,8 +28,7 @@ import Json.Decode exposing (Value, decodeString, decodeValue)
 import Json.Schema.Definitions exposing (Schema, decoder)
 import Json.Schema.Helpers exposing (collectIds)
 import Json.Schema.Validation exposing (Error, JsonPointer, ValidationError(..), ValidationOptions, validate)
-import Json.Schemata
-import Ref exposing (SchemataPool, defaultPool)
+import Ref
 
 
 {-| Validate value against JSON Schema. Returns Result with updated value in case if validationOptions require so.
@@ -42,7 +41,7 @@ validateValue : ValidationOptions -> Value -> Schema -> Result (List Error) Valu
 validateValue validationOptions value schema =
     let
         ( pool, _ ) =
-            collectIds schema defaultPool
+            collectIds schema Ref.defaultPool
     in
     validate validationOptions pool value schema schema
 
@@ -53,10 +52,10 @@ validateAt : ValidationOptions -> Value -> Schema -> String -> Result (List Erro
 validateAt validationOptions value schema uri =
     let
         ( pool, _ ) =
-            collectIds schema defaultPool
+            collectIds schema Ref.defaultPool
     in
     case Ref.resolveReference "" pool schema uri of
-        Just ( ns, resolvedSchema ) ->
+        Just ( _, resolvedSchema ) ->
             validate validationOptions pool value schema resolvedSchema
 
         Nothing ->
