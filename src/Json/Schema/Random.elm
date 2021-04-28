@@ -20,7 +20,6 @@ Experimental module.
 -}
 
 import Char
-import Dict
 import Json.Encode as Encode exposing (Value)
 import Json.Schema.Definitions
     exposing
@@ -31,7 +30,7 @@ import Json.Schema.Definitions
         , Type(..)
         )
 import Json.Schema.Helpers exposing (collectIds)
-import Random exposing (Generator, Seed)
+import Random exposing (Generator)
 import Ref exposing (defaultPool)
 import Util exposing (getAt, uncons)
 
@@ -223,13 +222,6 @@ valueAt settings s ref =
     let
         ( pool, ns ) =
             collectIds s defaultPool
-
-        --|> Debug.log "pool is"
-        a =
-            pool
-                |> Dict.keys
-
-        -- |> Debug.log "pool keys are"
     in
     case Ref.resolveReference ns pool s ref of
         Just ( nsLocal, ss ) ->
@@ -267,14 +259,14 @@ valueGenerator settings ns pool schema =
         Nothing ->
             nullGenerator
 
-        Just ( nsLocal, BooleanSchema b ) ->
+        Just ( _, BooleanSchema b ) ->
             if b then
                 randomBool |> Random.map (\_ -> Encode.object [])
 
             else
                 randomBool |> Random.map (\_ -> Encode.null)
 
-        Just ( nsLocal, ObjectSchema os ) ->
+        Just ( _, ObjectSchema os ) ->
             [ Maybe.andThen uncons os.examples
                 |> Maybe.map randomItemFromList
             , Maybe.andThen uncons os.enum

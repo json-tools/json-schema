@@ -14,8 +14,8 @@ module Json.Schema.Helpers exposing
 
     )
 
-import Dict exposing (Dict)
-import Json.Decode as Decode exposing (Value, decodeString, decodeValue)
+import Dict
+import Json.Decode as Decode
 import Json.Encode as Encode
 import Json.Schema.Definitions as Schema
     exposing
@@ -25,10 +25,8 @@ import Json.Schema.Definitions as Schema
         , SingleType(..)
         , SubSchema
         , Type(..)
-        , blankSchema
-        , blankSubSchema
         )
-import Ref exposing (SchemataPool, parseJsonPointer, resolveReference)
+import Ref exposing (SchemataPool, parseJsonPointer)
 
 
 type alias ImpliedType =
@@ -169,40 +167,6 @@ makeJsonPointer ( isPointer, ns, path ) =
                            }
 
 -}
-
-
-getListItem : Int -> List a -> Maybe a
-getListItem index list =
-    let
-        ( _, result ) =
-            List.foldl
-                (\item ( i, resultLocal ) ->
-                    if index == i then
-                        ( i + 1, Just item )
-
-                    else
-                        ( i + 1, resultLocal )
-                )
-                ( 0, Nothing )
-                list
-    in
-    result
-
-
-setListItem : Int -> a -> List a -> List a
-setListItem index a list =
-    List.indexedMap
-        (\i item ->
-            if index == i then
-                a
-
-            else
-                item
-        )
-        list
-
-
-
 {-
    calcSubSchemaType : Maybe Value -> Schema -> SubSchema -> Maybe ( Type, SubSchema )
    calcSubSchemaType actualValue schema os =
@@ -395,26 +359,6 @@ setListItem index a list =
                )
                Nothing
 -}
-
-
-encodeDict : Dict String Value -> Value
-encodeDict dict =
-    Encode.object (Dict.toList dict)
-
-
-decodeDict : Value -> Dict String Value
-decodeDict val =
-    Decode.decodeValue (Decode.dict Decode.value) val
-        |> Result.withDefault Dict.empty
-
-
-decodeList : Value -> List Value
-decodeList val =
-    Decode.decodeValue (Decode.list Decode.value) val
-        |> Result.withDefault []
-
-
-
 {-
    getDefinition : Maybe Schemata -> String -> Maybe Schema
    getDefinition defs name =
@@ -478,7 +422,7 @@ collectIds schema pool =
             case uri of
                 Just s ->
                     let
-                        ( isPointer, ns, _ ) =
+                        ( _, ns, _ ) =
                             parseJsonPointer s ""
                     in
                     ns
@@ -486,7 +430,7 @@ collectIds schema pool =
                 Nothing ->
                     ""
 
-        manageId : String -> Value -> SchemataPool -> List ( String, Value ) -> ( List ( String, Value ), ( SchemataPool, String ) )
+        manageId : String -> Encode.Value -> SchemataPool -> List ( String, Encode.Value ) -> ( List ( String, Encode.Value ), ( SchemataPool, String ) )
         manageId ns source poolLocal obj =
             case List.filter (\( name, _ ) -> name == "id" || name == "$id") obj of
                 ( _, val ) :: _ ->
@@ -515,7 +459,7 @@ collectIds schema pool =
                 |> Decode.decodeValue (Decode.keyValuePairs Decode.value)
                 |> Result.withDefault []
                 |> manageId ns source poolLocal
-                |> (\( list, res ) -> List.foldl (\( key, val ) -> walkValue val) res list)
+                |> (\( list, res ) -> List.foldl (\( _, val ) -> walkValue val) res list)
     in
     case schema of
         ObjectSchema { id, source } ->

@@ -12,11 +12,12 @@
     "generate-tests": "node ./generate-tests.js draft-6 > tests/Draft6.elm && node ./generate-tests.js draft-4 > tests/Draft4.elm"
   },
   "devDependencies": {
-    "elm": "^0.18.0",
-    "elm-live": "^2.7.4",
-    "elm-test": "^0.18.7"
+    "elm": "^0.19.1-5",
+    "elm-live": "^4.0.2",
+    "elm-test": "^0.19.1"
   },
   "dependencies": {
+    "elm-format": "^0.8.5",
     "gh-pages": "^1.0.0"
   }
 }

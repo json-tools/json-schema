@@ -29,9 +29,9 @@ Feel free to open [issue](https://github.com/1602/json-schema) to describe your 
 -}
 
 import Json.Decode as Decode exposing (Decoder, Value, andThen, bool, fail, field, float, int, lazy, list, nullable, string, succeed, value)
-import Json.Decode.Pipeline as DecodePipeline exposing (optional, optionalAt, required, requiredAt)
+import Json.Decode.Pipeline as DecodePipeline exposing (optional, requiredAt)
 import Json.Encode as Encode
-import Util exposing (foldResults, isInt, resultToDecoder)
+import Util exposing (foldResults, resultToDecoder)
 
 
 {-| Schema can be either boolean or actual object containing validation and meta properties
@@ -180,10 +180,6 @@ blankSubSchema =
     , not = Nothing
     , source = Encode.object []
     }
-
-
-type RowEncoder a
-    = RowEncoder (Maybe a) String (a -> Value)
 
 
 {-| -}
@@ -591,6 +587,7 @@ singleTypeDecoder s =
 schemataDecoder : Decoder Schemata
 schemataDecoder =
     Decode.keyValuePairs (lazy (\_ -> decoder))
+        |> Decode.andThen (\x -> succeed <| List.reverse x)
         |> Decode.map Schemata
 
 

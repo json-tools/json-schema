@@ -1,6 +1,5 @@
 module Json.Schema.Examples exposing (bookingSchema, coreSchemaDraft6)
 
-import Json.Decode
 import Json.Encode as Encode
 import Json.Schema.Builder exposing (..)
 import Json.Schema.Definitions exposing (Schema, blankSchema)
@@ -50,7 +49,7 @@ coreSchemaDraft6 =
             , ( "stringArray"
               , buildSchema
                     |> withType "array"
-                    |> withDefault ([] |> Encode.list)
+                    |> withDefault (Encode.list Encode.object [])
                     |> withItem (buildSchema |> withType "string")
               )
             ]

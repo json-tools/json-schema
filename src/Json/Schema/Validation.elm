@@ -22,7 +22,7 @@ When validation succeeds it also returns value being validated. Currently this v
 
 import Dict
 import Json.Decode as Decode exposing (Decoder, Value)
-import Json.Encode as Encode exposing (float, int, string)
+import Json.Encode as Encode
 import Json.Schema.Definitions
     exposing
         ( Dependency(..)
@@ -33,11 +33,9 @@ import Json.Schema.Definitions
         , SingleType(..)
         , SubSchema
         , Type(..)
-        , blankSchema
         , blankSubSchema
         , decoder
         )
-import Json.Schemata as Schemata
 import Ref exposing (SchemataPool, resolveReference)
 import Regex
 import String.UTF32 as UTF32
@@ -181,7 +179,7 @@ validate validationOptions pool value rootSchema schema =
                                 Just ( ns, ObjectSchema oss ) ->
                                     validateSubschema validationOptionsLocal { jsonPointer | ns = ns } oss valueLocal
 
-                                Just ( ns, BooleanSchema bs ) ->
+                                Just ( _, BooleanSchema bs ) ->
                                     if bs then
                                         Ok valueLocal
 
@@ -217,7 +215,7 @@ validate validationOptions pool value rootSchema schema =
                    )
 
         validateMultipleOf : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMultipleOf validationOptionsLocal jsonPointer v =
+        validateMultipleOf _ jsonPointer v =
             when .multipleOf
                 Decode.float
                 (\multipleOf x ->
@@ -230,7 +228,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateMaximum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaximum validationOptionsLocal jsonPointer v s =
+        validateMaximum _ jsonPointer v s =
             when .maximum
                 Decode.float
                 (\max x ->
@@ -253,7 +251,7 @@ validate validationOptions pool value rootSchema schema =
                 s
 
         validateMinimum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinimum validationOptionsLocal jsonPointer v s =
+        validateMinimum _ jsonPointer v s =
             when .minimum
                 Decode.float
                 (\min x ->
@@ -276,7 +274,7 @@ validate validationOptions pool value rootSchema schema =
                 s
 
         validateExclusiveMaximum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateExclusiveMaximum validationOptionsLocal jsonPointer v s =
+        validateExclusiveMaximum _ jsonPointer v s =
             when .exclusiveMaximum
                 Decode.float
                 (\max x ->
@@ -296,7 +294,7 @@ validate validationOptions pool value rootSchema schema =
                 s
 
         validateExclusiveMinimum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateExclusiveMinimum validationOptionsLocal jsonPointer v s =
+        validateExclusiveMinimum _ jsonPointer v s =
             when .exclusiveMinimum
                 Decode.float
                 (\min x ->
@@ -316,7 +314,7 @@ validate validationOptions pool value rootSchema schema =
                 s
 
         validateMaxLength : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaxLength validationOptionsLocal jsonPointer v =
+        validateMaxLength _ jsonPointer v =
             when .maxLength
                 Decode.string
                 (\maxLength str ->
@@ -333,7 +331,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateMinLength : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinLength validationOptionsLocal jsonPointer v =
+        validateMinLength _ jsonPointer v =
             when .minLength
                 Decode.string
                 (\minLength str ->
@@ -350,7 +348,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validatePattern : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validatePattern validationOptionsLocal jsonPointer v =
+        validatePattern _ jsonPointer v =
             when .pattern
                 Decode.string
                 (\pattern str ->
@@ -422,7 +420,7 @@ validate validationOptions pool value rootSchema schema =
                     Ok valueLocal
 
         validateMaxItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaxItems validationOptionsLocal jsonPointer v =
+        validateMaxItems _ jsonPointer v =
             when .maxItems
                 (Decode.list Decode.value)
                 (\maxItems list ->
@@ -439,7 +437,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateMinItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinItems validationOptionsLocal jsonPointer v =
+        validateMinItems _ jsonPointer v =
             when .minItems
                 (Decode.list Decode.value)
                 (\minItems list ->
@@ -456,7 +454,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateUniqueItems : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateUniqueItems validationOptionsLocal jsonPointer v =
+        validateUniqueItems _ jsonPointer v =
             when .uniqueItems
                 (Decode.list Decode.value)
                 (\uniqueItems list ->
@@ -498,7 +496,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateMaxProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMaxProperties validationOptionsLocal jsonPointer v =
+        validateMaxProperties _ jsonPointer v =
             when .maxProperties
                 (Decode.keyValuePairs Decode.value)
                 (\maxProperties obj ->
@@ -515,7 +513,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateMinProperties : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateMinProperties validationOptionsLocal jsonPointer v =
+        validateMinProperties _ jsonPointer v =
             when .minProperties
                 (Decode.keyValuePairs Decode.value)
                 (\minProperties obj ->
@@ -532,7 +530,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateRequired : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateRequired validationOptionsLocal jsonPointer v s =
+        validateRequired _ jsonPointer v s =
             when .required
                 (Decode.keyValuePairs Decode.value)
                 (\required obj ->
@@ -628,15 +626,18 @@ validate validationOptions pool value rootSchema schema =
                 (Decode.keyValuePairs Decode.value)
                 (\properties obj ->
                     let
+                        revObj =
+                            obj |> List.reverse
+
                         newProps =
-                            addDefaultProperties validationOptionsLocal jsonPointer subSchema.properties obj
+                            addDefaultProperties validationOptionsLocal jsonPointer subSchema.properties revObj
 
                         addedPropNames =
                             newProps
                                 |> List.map (\( name, _ ) -> name)
 
                         upgradedObject =
-                            obj
+                            revObj
                                 ++ newProps
                     in
                     upgradedObject
@@ -789,7 +790,7 @@ validate validationOptions pool value rootSchema schema =
             let
                 validatePropertyName schemaLocal key =
                     case validateSchema validationOptionsLocal { jsonPointer | path = jsonPointer.path ++ [ key ] } (Encode.string key) schemaLocal of
-                        Ok x ->
+                        Ok _ ->
                             Nothing
 
                         Err list ->
@@ -813,7 +814,7 @@ validate validationOptions pool value rootSchema schema =
                 v
 
         validateEnum : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateEnum validationOptionsLocal jsonPointer =
+        validateEnum _ jsonPointer =
             when .enum
                 Decode.value
                 (\enum val ->
@@ -825,7 +826,7 @@ validate validationOptions pool value rootSchema schema =
                 )
 
         validateConst : ValidationOptions -> JsonPointer -> Value -> SubSchema -> Result (List Error) Value
-        validateConst validationOptionsLocal jsonPointer =
+        validateConst _ jsonPointer =
             when .const
                 Decode.value
                 (\const val ->
@@ -868,7 +869,7 @@ validate validationOptions pool value rootSchema schema =
                         Err [ Error jsonPointer <| InvalidType "None of desired types match" ]
 
         validateSingleType : ValidationOptions -> JsonPointer -> SingleType -> Value -> Result (List Error) Value
-        validateSingleType validationOptionsLocal jsonPointer st val =
+        validateSingleType _ jsonPointer st val =
             let
                 test : Decoder a -> Result (List Error) Value
                 test d =
@@ -1004,7 +1005,7 @@ validate validationOptions pool value rootSchema schema =
                         Ok decoded ->
                             fn v decoded
 
-                        Err s ->
+                        Err _ ->
                             Ok valueLocal
 
                 Nothing ->
@@ -1018,7 +1019,7 @@ validate validationOptions pool value rootSchema schema =
                             fn v decoded
                                 |> Result.map (\_ -> valueLocal)
 
-                        Err s ->
+                        Err _ ->
                             Ok valueLocal
 
                 Nothing ->
@@ -1055,7 +1056,7 @@ concatErrors =
 
                 Err list ->
                     case res of
-                        Ok xx ->
+                        Ok _ ->
                             x
 
                         Err list2 ->

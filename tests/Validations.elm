@@ -1,50 +1,50 @@
 module Validations exposing (all)
 
+import Expect
+import Json.Decode exposing (decodeValue)
+import Json.Encode as Encode exposing (int)
 import Json.Schema.Builder as JSB
     exposing
-        ( buildSchema
-        , boolSchema
-        , withItem
-        , withItems
+        ( boolSchema
+        , buildSchema
+        , validate
         , withAdditionalItems
-        , withContains
-        , withProperties
-        , withPatternProperties
         , withAdditionalProperties
-        , withSchemaDependency
-        , withPropNamesDependency
-        , withPropertyNames
-        , withType
-        , withNullableType
-        , withUnionType
         , withAllOf
         , withAnyOf
-        , withOneOf
-        , withMultipleOf
-        , withMaximum
-        , withMinimum
+        , withConst
+        , withContains
+        , withEnum
         , withExclusiveMaximum
         , withExclusiveMinimum
-        , withPattern
-        , withEnum
-        , withRequired
-        , withMaxLength
-        , withMinLength
-        , withMaxProperties
-        , withMinProperties
+        , withItem
+        , withItems
         , withMaxItems
+        , withMaxLength
+        , withMaxProperties
+        , withMaximum
         , withMinItems
+        , withMinLength
+        , withMinProperties
+        , withMinimum
+        , withMultipleOf
+        , withNullableType
+        , withOneOf
+        , withPattern
+        , withPatternProperties
+        , withPropNamesDependency
+        , withProperties
+        , withPropertyNames
+        , withRequired
+        , withSchemaDependency
+        , withType
+        , withUnionType
         , withUniqueItems
-        , withConst
-        , validate
         )
-import Json.Encode as Encode exposing (int)
-import Json.Decode as Decode exposing (decodeValue)
-import Json.Schema.Validation as Validation exposing (Error, defaultOptions, JsonPointer, ValidationError(..))
 import Json.Schema.Definitions exposing (blankSchema)
-import Test exposing (Test, describe, test, only)
+import Json.Schema.Validation as Validation exposing (Error, JsonPointer, ValidationError(..), defaultOptions)
 import Ref
-import Expect
+import Test exposing (Test, describe, test)
 
 
 all : Test
@@ -185,13 +185,13 @@ all =
                 \() ->
                     buildSchema
                         |> withItem (buildSchema |> withMaximum 10)
-                        |> JSB.validate defaultOptions (Encode.list [ int 1 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 1 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withItem (buildSchema |> withMaximum 10)
-                        |> JSB.validate defaultOptions (Encode.list [ int 1, int 11 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 1, 11 ])
                         |> Expect.equal (Err [ error [ "1" ] <| Maximum 10 11 ])
             ]
         , describe "items: array of schema"
@@ -204,7 +204,7 @@ all =
                             , buildSchema
                                 |> withMaximum 100
                             ]
-                        |> JSB.validate defaultOptions (Encode.list [ int 1, int 20 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 1, 20 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
@@ -215,7 +215,7 @@ all =
                             , buildSchema
                                 |> withMaximum 100
                             ]
-                        |> JSB.validate defaultOptions (Encode.list [ int 100, int 2 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 100, 2 ])
                         |> Expect.equal (Err [ error [ "0" ] <| Maximum 11 100 ])
             ]
         , describe "items: array of schema with additional items"
@@ -229,7 +229,7 @@ all =
                                 |> withMaximum 100
                             ]
                         |> withAdditionalItems (buildSchema |> withMaximum 1)
-                        |> JSB.validate defaultOptions (Encode.list [ int 1, int 20, int 1 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 1, 20, 1 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
@@ -241,7 +241,7 @@ all =
                                 |> withMaximum 100
                             ]
                         |> withAdditionalItems (buildSchema |> withMaximum 1)
-                        |> JSB.validate defaultOptions (Encode.list [ int 2, int 2, int 100 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 2, 2, 100 ])
                         |> Expect.equal (Err [ error [ "2" ] <| Maximum 1 100 ])
             ]
         , describe "maxItems"
@@ -249,13 +249,13 @@ all =
                 \() ->
                     buildSchema
                         |> withMaxItems 3
-                        |> validate defaultOptions (Encode.list [ int 1, int 2 ])
+                        |> validate defaultOptions (Encode.list Encode.int [ 1, 2 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withMaxItems 2
-                        |> validate defaultOptions (Encode.list [ int 1, int 2, int 3 ])
+                        |> validate defaultOptions (Encode.list Encode.int [ 1, 2, 3 ])
                         |> Expect.equal (Err [ error [] <| MaxItems 2 3 ])
             ]
         , describe "minItems"
@@ -263,13 +263,13 @@ all =
                 \() ->
                     buildSchema
                         |> withMinItems 2
-                        |> validate defaultOptions (Encode.list [ int 1, int 2, int 3 ])
+                        |> validate defaultOptions (Encode.list Encode.int [ 1, 2, 3 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withMinItems 3
-                        |> validate defaultOptions (Encode.list [ int 1, int 2 ])
+                        |> validate defaultOptions (Encode.list Encode.int [ 1, 2 ])
                         |> Expect.equal (Err [ error [] <| MinItems 3 2 ])
             ]
         , describe "uniqueItems"
@@ -277,13 +277,13 @@ all =
                 \() ->
                     buildSchema
                         |> withUniqueItems True
-                        |> validate defaultOptions (Encode.list [ int 1, int 2, int 3 ])
+                        |> validate defaultOptions (Encode.list Encode.int [ 1, 2, 3 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withUniqueItems True
-                        |> validate defaultOptions (Encode.list [ int 1, int 1 ])
+                        |> validate defaultOptions (Encode.list Encode.int [ 1, 1 ])
                         |> Expect.equal (Err [ error [] <| UniqueItems (int 1) ])
             ]
         , describe "contains"
@@ -291,13 +291,13 @@ all =
                 \() ->
                     buildSchema
                         |> withContains (buildSchema |> withMaximum 1)
-                        |> JSB.validate defaultOptions (Encode.list [ int 10, int 20, int 1 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 10, 20, 1 ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withContains (buildSchema |> withMaximum 1)
-                        |> JSB.validate defaultOptions (Encode.list [ int 10, int 20 ])
+                        |> JSB.validate defaultOptions (Encode.list Encode.int [ 10, 20 ])
                         |> Expect.equal (Err [ error [] Contains ])
             ]
         , describe "maxProperties"
@@ -305,13 +305,13 @@ all =
                 \() ->
                     buildSchema
                         |> withMaxProperties 3
-                        |> validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withMaxProperties 1
-                        |> validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> Expect.equal (Err [ error [] <| MaxProperties 1 2 ])
             ]
         , describe "minProperties"
@@ -319,13 +319,13 @@ all =
                 \() ->
                     buildSchema
                         |> withMinProperties 1
-                        |> validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withMinProperties 3
-                        |> validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> Expect.equal (Err [ error [] <| MinProperties 3 2 ])
             ]
         , describe "required"
@@ -333,13 +333,13 @@ all =
                 \() ->
                     buildSchema
                         |> withRequired [ "foo", "bar" ]
-                        |> validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withRequired [ "foo", "bar" ]
-                        |> validate defaultOptions (Encode.object [ ( "foo", int 1 ) ])
+                        |> validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ) ])
                         |> Expect.equal (Err [ error [] <| Required [ "bar" ], error [ "bar" ] RequiredProperty ])
             ]
         , describe "properties"
@@ -350,7 +350,7 @@ all =
                             [ ( "foo", buildSchema |> withMaximum 10 )
                             , ( "bar", buildSchema |> withMaximum 20 )
                             ]
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
@@ -359,7 +359,7 @@ all =
                             [ ( "foo", buildSchema |> withMaximum 10 )
                             , ( "bar", buildSchema |> withMaximum 20 )
                             ]
-                        |> JSB.validate defaultOptions (Encode.object [ ( "bar", int 28 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "bar", Encode.int 28 ) ])
                         |> Expect.equal (Err [ error [ "bar" ] <| Maximum 20 28 ])
             ]
         , describe "patternProperties"
@@ -370,7 +370,7 @@ all =
                             [ ( "o{2}", buildSchema |> withMaximum 10 )
                             , ( "a", buildSchema |> withMaximum 20 )
                             ]
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
@@ -379,7 +379,7 @@ all =
                             [ ( "o{2}", buildSchema |> withMaximum 10 )
                             , ( "a", buildSchema |> withMaximum 20 )
                             ]
-                        |> JSB.validate defaultOptions (Encode.object [ ( "bar", int 28 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "bar", Encode.int 28 ) ])
                         |> Expect.equal (Err [ error [ "bar" ] <| Maximum 20 28 ])
             ]
         , describe "additionalProperties"
@@ -390,7 +390,7 @@ all =
                             [ ( "o{2}", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 100 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "success: props" <|
                 \() ->
@@ -399,7 +399,7 @@ all =
                             [ ( "foo", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 100 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "success: boolean true" <|
                 \() ->
@@ -408,7 +408,7 @@ all =
                             [ ( "foo", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties (boolSchema True)
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 100 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
@@ -417,7 +417,7 @@ all =
                             [ ( "o{2}", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties (buildSchema |> withMaximum 20)
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 100 ), ( "bar", Encode.int 200 ) ])
                         |> Expect.equal (Err [ error [ "bar" ] <| Maximum 20 200 ])
             , test "success: boolean false" <|
                 \() ->
@@ -426,7 +426,7 @@ all =
                             [ ( "o{2}", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties (boolSchema False)
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 100 ) ])
                         |> expectOk
             , test "failure: boolean false" <|
                 \() ->
@@ -435,7 +435,7 @@ all =
                             [ ( "o{2}", buildSchema |> withMaximum 100 )
                             ]
                         |> withAdditionalProperties (boolSchema False)
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 100 ), ( "bar", int 200 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 100 ), ( "bar", Encode.int 200 ) ])
                         |> Expect.equal (Err [ error [] <| AdditionalPropertiesDisallowed [ "bar" ], error [ "bar" ] AdditionalPropertyDisallowed ])
             ]
         , describe "dependencies"
@@ -445,7 +445,7 @@ all =
                         |> withSchemaDependency
                             "foo"
                             (buildSchema |> withRequired [ "bar" ])
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure when dependency is a schema" <|
                 \() ->
@@ -453,14 +453,15 @@ all =
                         |> withSchemaDependency
                             "foo"
                             (buildSchema |> withRequired [ "bar" ])
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ) ])
                         |> Expect.equal (Err [ error [] <| Required [ "bar" ], error [ "bar" ] RequiredProperty ])
-              --|> Expect.equal (Err "Required property 'bar' is missing")
+
+            --|> Expect.equal (Err "Required property 'bar' is missing")
             , test "failure when dependency is array of strings" <|
                 \() ->
                     buildSchema
                         |> withPropNamesDependency "foo" [ "bar" ]
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ) ])
                         |> Expect.equal (Err [ error [] <| Required [ "bar" ], error [ "bar" ] RequiredProperty ])
             ]
         , describe "propertyNames"
@@ -468,26 +469,26 @@ all =
                 \() ->
                     buildSchema
                         |> withPropertyNames (buildSchema |> withPattern "^ba")
-                        |> JSB.validate defaultOptions (Encode.object [ ( "baz", int 1 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "baz", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
                         |> withPropertyNames (buildSchema |> withPattern "^ba")
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 1 ), ( "bar", int 2 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 1 ), ( "bar", Encode.int 2 ) ])
                         |> Expect.equal (Err [ error [] <| InvalidPropertyName [ error [ "foo" ] <| Pattern "^ba" "foo" ] ])
             ]
         , describe "enum"
             [ test "success" <|
                 \() ->
                     buildSchema
-                        |> withEnum [ int 1, int 2 ]
+                        |> withEnum [ Encode.int 1, Encode.int 2 ]
                         |> validate defaultOptions (Encode.int 2)
                         |> expectOk
             , test "failure" <|
                 \() ->
                     buildSchema
-                        |> withEnum [ int 1, int 2 ]
+                        |> withEnum [ Encode.int 1, Encode.int 2 ]
                         |> validate defaultOptions (Encode.int 3)
                         |> Expect.equal (Err [ error [] Enum ])
             ]
@@ -517,7 +518,7 @@ all =
                     buildSchema
                         |> withType "string"
                         |> JSB.validate defaultOptions (Encode.int 1)
-                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a String but instead got: 1" ])
+                        |> Expect.equal (Err [ error [] <| typeError "STRING" "1" ])
             ]
         , describe "type=number"
             [ test "success" <|
@@ -531,13 +532,13 @@ all =
                     buildSchema
                         |> withType "number"
                         |> JSB.validate defaultOptions (Encode.string "bar")
-                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a Float but instead got: \"bar\"" ])
+                        |> Expect.equal (Err [ error [] <| typeError "FLOAT" "\"bar\"" ])
             , test "failure with null" <|
                 \() ->
                     buildSchema
                         |> withType "number"
                         |> JSB.validate defaultOptions Encode.null
-                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a Float but instead got: null" ])
+                        |> Expect.equal (Err [ error [] <| typeError "FLOAT" "null" ])
             ]
         , describe "type=null,number"
             [ test "success" <|
@@ -557,7 +558,7 @@ all =
                     buildSchema
                         |> withNullableType "number"
                         |> JSB.validate defaultOptions (Encode.string "bar")
-                        |> Expect.equal (Err [ error [] <| InvalidType "Expecting a Float but instead got: \"bar\"" ])
+                        |> Expect.equal (Err [ error [] <| typeError "FLOAT" "\"bar\"" ])
             ]
         , describe "type=number,string"
             [ test "success for number" <|
@@ -614,7 +615,7 @@ all =
                     buildSchema
                         |> withAllOf
                             [ buildSchema |> withMinimum 0
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.int 1)
                         |> expectOk
@@ -623,7 +624,7 @@ all =
                     buildSchema
                         |> withAnyOf
                             [ buildSchema |> withMinimum 0
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.float 0.5)
                         |> expectOk
@@ -632,7 +633,7 @@ all =
                     buildSchema
                         |> withAnyOf
                             [ buildSchema |> withMinimum 0
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.int -1)
                         |> Expect.equal
@@ -648,7 +649,7 @@ all =
                     buildSchema
                         |> withOneOf
                             [ buildSchema |> withMinimum 10
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.int 1)
                         |> expectOk
@@ -657,7 +658,7 @@ all =
                     buildSchema
                         |> withOneOf
                             [ buildSchema |> withMinimum 0
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.int 0)
                         |> expectOk
@@ -666,7 +667,7 @@ all =
                     buildSchema
                         |> withOneOf
                             [ buildSchema |> withMinimum 0
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.int -1)
                         |> Expect.equal (Err [ error [] OneOfNoneSucceed ])
@@ -675,7 +676,7 @@ all =
                     buildSchema
                         |> withOneOf
                             [ buildSchema |> withMinimum 0
-                            , buildSchema |> withEnum [ int 1 ]
+                            , buildSchema |> withEnum [ Encode.int 1 ]
                             ]
                         |> JSB.validate defaultOptions (Encode.int 1)
                         |> Expect.equal (Err [ error [] <| OneOfManySucceed 2 ])
@@ -704,11 +705,11 @@ all =
                             [ ( "foo", buildSchema |> withMaximum 1 )
                             , ( "bar", buildSchema |> withMaximum 2 )
                             ]
-                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", int 7 ), ( "bar", int 28 ) ])
+                        |> JSB.validate defaultOptions (Encode.object [ ( "foo", Encode.int 7 ), ( "bar", Encode.int 28 ) ])
                         |> Expect.equal
                             (Err
-                                [ error [ "foo" ] <| Maximum 1 7
-                                , error [ "bar" ] <| Maximum 2 28
+                                [ error [ "bar" ] <| Maximum 2 28
+                                , error [ "foo" ] <| Maximum 1 7
                                 ]
                             )
             ]
@@ -717,30 +718,45 @@ all =
                 \() ->
                     buildSchema
                         |> withProperties
-                            [ ( "key", buildSchema
-                                |> withType "string"
-                                |> JSB.withDefault (Encode.string "def")
-                            ) ]
+                            [ ( "key"
+                              , buildSchema
+                                    |> withType "string"
+                                    |> JSB.withDefault (Encode.string "def")
+                              )
+                            ]
                         |> JSB.validate { applyDefaults = True } (Encode.object [])
                         |> Expect.equal
-                            (Ok <| Encode.object [ ("key", Encode.string  "def" ) ])
+                            (Ok <| Encode.object [ ( "key", Encode.string "def" ) ])
             , test "apply default value in nested object" <|
                 \() ->
                     buildSchema
                         |> withProperties
-                            [ ( "obj", buildSchema
-                                |> withProperties
-                                    [ ( "key", buildSchema
-                                        |> withType "string"
-                                        |> JSB.withDefault (Encode.string "def")
-                                    ) ]
-                            ) ]
+                            [ ( "obj"
+                              , buildSchema
+                                    |> withProperties
+                                        [ ( "key"
+                                          , buildSchema
+                                                |> withType "string"
+                                                |> JSB.withDefault (Encode.string "def")
+                                          )
+                                        ]
+                              )
+                            ]
                         |> JSB.validate { applyDefaults = True } (Encode.object [])
                         |> Result.map (Encode.encode 0)
                         |> Expect.equal
                             (Ok """{"obj":{"key":"def"}}""")
             ]
         ]
+
+
+typeError : String -> String -> ValidationError
+typeError type_ value =
+    InvalidType <| """Problem with the given value:
+
+""" ++ value ++ """
+
+Expecting a """ ++ type_
 
 
 error : List String -> ValidationError -> Error
@@ -752,7 +768,7 @@ expectOk : Result x a -> Expect.Expectation
 expectOk e =
     case e of
         Err x ->
-            Expect.fail <| "Unexpected error: " ++ (toString x)
+            Expect.fail <| "Unexpected error: " ++ Debug.toString x
 
         Ok _ ->
             Expect.pass
